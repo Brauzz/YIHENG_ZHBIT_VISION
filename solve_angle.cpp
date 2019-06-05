@@ -1,0 +1,175 @@
+#include "solve_angle.h"
+
+using namespace cv;
+
+SolveAngle::SolveAngle()
+{
+}
+
+SolveAngle::SolveAngle(const char* file_path, float c_x, float c_y, float c_z, float barrel_y)
+{
+    FileStorage fs(file_path, FileStorage::READ);
+    barrel_ptz_offset_y = barrel_y;
+    ptz_camera_x = c_x;       // +left
+    ptz_camera_y = c_y;       // + camera is  ptz
+    ptz_camera_z = c_z;//-225;     // - camera is front ptz
+
+    fs["Camera_Matrix"] >> cameraMatrix;
+    fs["Distortion_Coefficients"] >> distCoeffs;
+    cout << cameraMatrix << endl;
+    cout << distCoeffs << endl;
+    Generate3DPoints(0,Point2f(0,0));
+    Mat(objectPoints).convertTo(object_point_mat, CV_32F);
+    Mat rvec(3, 1, DataType<double>::type);
+    Mat tvec(3, 1, DataType<double>::type);
+}
+
+void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist, float& theta_y)
+{
+    solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
+    double rm[3][3];
+    Mat rotMat(3, 3, CV_64FC1, rm);
+    Rodrigues(rvec, rotMat);
+//    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;
+    theta_y = atan2(rm[1][0], rm[0][0]) * 57.2958;//x
+//    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;//y
+//    theta_y = atan2(rm[2][1], rm[2][2]) * 57.2958;//z
+    /* coordinate choose */
+    double theta = -atan(ptz_camera_y + barrel_ptz_offset_y)/overlap_dist;
+    double r_data[] = {1,0,0,0,cos(theta),sin(theta),0,-sin(theta),cos(theta)};
+    double t_data[] = {ptz_camera_x,ptz_camera_y,ptz_camera_z};
+    Mat t_camera_ptz(3,1,CV_64FC1,t_data);
+    Mat r_camera_ptz(3,3,CV_64FC1,r_data);
+    /* translate camera coordinate to PTZ coordinate */
+    Mat position_in_ptz;
+    position_in_ptz = r_camera_ptz * tvec - t_camera_ptz;
+    /* calculte angles to with gravity, so that make barrel aim at target */
+    double bullet_speed = ballet_speed;
+    const double *_xyz = (const double *)position_in_ptz.data;
+    double down_t = 0.0;
+    if(bullet_speed > 10e-3)
+        down_t = _xyz[2] /1000.0 / bullet_speed;
+    double offset_gravity = 0.5 * 9.8 * down_t*down_t * 1000;
+            offset_gravity = 0;
+    double xyz[3] = {_xyz[0], _xyz[1] - offset_gravity, _xyz[2]};
+    double alpha = 0.0, thta = 0.0;
+    alpha = asin(barrel_ptz_offset_y/sqrt(xyz[1]*xyz[1] + xyz[2]*xyz[2]));
+
+    if(xyz[1] < 0)
+    {
+        thta = atan(-xyz[1]/xyz[2]);
+        angle_y = -(alpha+thta); //camera coordinate
+    }else if(xyz[1] < barrel_ptz_offset_y)
+    {
+        theta = atan(xyz[1]/xyz[2]);
+        angle_y = -(alpha - thta);
+    }else
+    {
+        theta = atan(xyz[1]/xyz[2]);
+        angle_y = (theta-alpha);   // camera coordinate
+    }
+    angle_x = atan2(xyz[0],xyz[2]);
+    angle_x = angle_x * 180/CV_PI;
+    angle_y = angle_y * 180/CV_PI;
+    dist = xyz[2];
+}
+
+
+//--------------------------ICRA------------------------------------
+void SolveAngle::getAngle_ICRA(vector<Point2f> &image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist)
+{
+    Point3f offset_(0, 0, 0);
+    float offset_yaw_ = 0.0;
+    float offset_pitch_ = 0.0;
+    solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
+    Point3f postion = (Point3f)tvec;
+    angle_x = (float)(atan2(postion.x + offset_.x, postion.z + offset_.z))*180.0f/3.1415926535 + (float)(offset_yaw_);
+    angle_y = -GetPitch_ICRA((postion.z + offset_.z) / 1000, -(postion.y + offset_.y) / 1000, ballet_speed)*180.0f/3.1415926535 + (float)(offset_pitch_);
+    dist = postion.z;
+}
+
+float SolveAngle::BulletModel_ICRA(float x, float v, float angle)
+{ //x:m,v:m/s,angle:rad
+    float init_k_ = 0.1f;
+    float GRAVITY = 9.7887f; //shenzhen 9.7887  zhuhai
+    float t, y;
+    t = (float)((exp(init_k_ * x) - 1) / (init_k_ * v * cos(angle)));
+    y = (float)(v * sin(angle) * t - GRAVITY * t * t / 2);
+    return y;
+}
+
+float SolveAngle::GetPitch_ICRA(float x, float y, float v) {
+    float y_temp, y_actual, dy;
+    float a = 0.0;
+    y_temp = y;
+    // by iteration
+    for (int i = 0; i < 20; i++) {
+        a = (float) atan2(y_temp, x);
+        y_actual = BulletModel_ICRA(x, v, a);
+        dy = y - y_actual;
+        y_temp = y_temp + dy;
+        if (fabsf(dy) < 0.001) {
+            break;
+        }
+        //printf("iteration num %d: angle %f,temp target y:%f,err of y:%f\n",i+1,a*180/3.1415926535,yTemp,dy);
+    }
+    return a;
+}
+//--------------------------/ICRA------------------------------------
+
+void SolveAngle::Generate3DPoints(uint8_t mode, Point2f offset_point)
+{
+    objectPoints.clear();
+    float x, y, z, width = 0.0, height = 0.0;
+    switch (mode) {
+    case 0:     // small_armor
+        width = 140;//230;//140;      // mm the armor two led width
+        height = 60;      // mm the armor led height
+        break;
+    case 1:     // big_armor
+        width = 230;//230;//140;      // mm the armor two led width
+        height = 60;      // mm the armor led height
+        break;
+
+    case 2:     // buff_armor
+        width = 230;//230;//140;      // mm the armor two led width
+        height = 130;      // mm the armor led height
+        break;
+    }
+
+    x = -width/2; y = -height/2; z = 0;
+    objectPoints.push_back(cv::Point3f(x, y, z)+cv::Point3f(offset_point.x, offset_point.y, 0));
+    x = width/2; y = -height/2; z = 0;
+    objectPoints.push_back(cv::Point3f(x, y, z)+cv::Point3f(offset_point.x, offset_point.y, 0));
+    x = width/2; y = height/2; z = 0;
+    objectPoints.push_back(cv::Point3f(x, y, z)+cv::Point3f(offset_point.x, offset_point.y, 0));
+    x = -width/2; y = height/2; z = 0;
+    objectPoints.push_back(cv::Point3f(x, y, z)+cv::Point3f(offset_point.x, offset_point.y, 0));
+}
+
+void CodeRotateByZ(double x, double y, double thetaz, double& outx, double& outy)
+{
+    double x1 = x;
+    double y1 = y;
+    double rz = thetaz * CV_PI / 180;
+    outx = cos(rz) * x1 - sin(rz) * y1;
+    outy = sin(rz) * x1 + cos(rz) * y1;
+}
+
+void CodeRotateByY(double x, double z, double thetay, double& outx, double &outz)
+{
+    double x1 = x;
+    double z1 = z;
+    double ry = thetay * 3.14 / 180;
+    outx = cos(ry) * x1 + sin(ry) * z1;
+    outz = cos(ry) * z1 - sin(ry) * x1;
+}
+
+void CodeRotateByX(double y, double z, double thetax, double& outy, double& outz)
+{
+    double y1 = y;
+    double z1 = z;
+    double rx = thetax * 3.14 / 180;
+    outy = cos(rx) * y1 - sin(rx) * z1;
+    outz = cos(rx) * z1 + sin(rx) * y1;
+}
