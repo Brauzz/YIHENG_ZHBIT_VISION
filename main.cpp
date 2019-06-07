@@ -14,8 +14,8 @@ int main(int argc, char *argv[])
     std::thread stm32_task(&ImageProduceProcess::GetSTM32, ImageControl);
     produce_task.join();
     process_task.join();
-    gimbal_task.detach();
-    stm32_task.detach();
+//    gimbal_task.detach();
+//    stm32_task.detach();
     return 1;
 }
 

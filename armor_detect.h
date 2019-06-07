@@ -17,7 +17,7 @@ public:
 
     RotatedRect rect;
     bool matched;
-    int match_index;
+    size_t match_index;
     float match_factor;
 };
 
@@ -34,12 +34,12 @@ public:
 
     int get_average_intensity(const Mat& img) ;
 
-    void max_match(vector<LED_Stick>& LED,const int& i, const int& j);
-
+    void max_match(vector<LED_Stick>& LED, size_t i, size_t j);
+    void classification_lights(void);
     bool is_suitable_size(void) const;
 
     LED_Stick Led_stick[2];
-    int error_angle;
+    float error_angle;
     Point2i center;
     Rect2i rect;
     int average_intensity;
@@ -81,3 +81,4 @@ private:
 
 
 bool ArmorDetectTask(Mat &img, Param_ &param);
+

@@ -3,7 +3,10 @@
 #include <fcntl.h>      // File Control Definitions
 #include <errno.h>      // ERROR Number Definitions
 #include <termios.h>    // POSIX Terminal Control Definitions
+#include "opencv.hpp"
 
+int cccc = 0;
+double t1 = 0.0, t2 = 0.0;
 SerialPort::SerialPort(){}
 SerialPort::SerialPort(char* filename, int buadrate)
 {
@@ -86,10 +89,14 @@ bool SerialPort::read_data(const struct serial_receive_data *data, int8_t &mode,
     //        printf("buffer1 = %d\t\buffer1 = %d\t buffer1 = %d\tbuffer1 = %d\t\n", read_buffer[1], read_buffer[2], read_buffer[3], read_buffer[4]);
     if(read_buffer[0] == data->head && read_buffer[6] == data->end)
     {
+        cccc++;
+        t1 = cv::getTickCount();
+        double t = (t1-t2)*1000/cv::getTickFrequency();
+        cout << t  << endl;
         mode = int8_t(read_buffer[1]);
         my_car_color = int8_t(read_buffer[2]);
-        bullet_speed = float(short((read_buffer[4]<<8) | read_buffer[3]))/100;
-        float bullet_speed_tmp = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0;
+        bullet_speed = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
+        float bullet_speed_tmp = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
         cancel_kalman = int8_t(read_buffer[5]);
         if(bullet_speed_tmp < 10){
             bullet_speed = last_bullet_speed;
@@ -100,8 +107,10 @@ bool SerialPort::read_data(const struct serial_receive_data *data, int8_t &mode,
             bullet_speed = last_bullet_speed;
         }
         success_ = false;
+        t2 = cv::getTickCount();
         return 1;
     }
+    cout << "count "<< cccc << endl;
     success_ = true;
     return 0;
 }

@@ -26,16 +26,16 @@ ImageProduceProcess::ImageProduceProcess()
 void ImageProduceProcess::ImageProduce()
 {
 
-    CaptureVideo camera6mm("/dev/video1", 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
-    camera6mm.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
-    camera6mm.setExposureTime(0, 20);                         // 手动曝光，设置曝光时间。
-    camera6mm.startStream();                                  // 打开视频流
-    camera6mm.info();                                         // 输出摄像头信息
+    CaptureVideo short_camera("/dev/video1", 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
+    short_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
+    short_camera.setExposureTime(0, 20);                         // 手动曝光，设置曝光时间。
+    short_camera.startStream();                                  // 打开视频流
+    short_camera.info();                                         // 输出摄像头信息
     while(1)
     {
         while(prdIdx - csmIdx >= BUFFER_SIZE)
             END_THREAD;
-        camera6mm >> data[prdIdx % BUFFER_SIZE].img;
+        short_camera >> data[prdIdx % BUFFER_SIZE].img;
         ++prdIdx;
         END_THREAD;
     }
@@ -50,7 +50,7 @@ void ImageProduceProcess::GetGimbal()
 
     while(1)
     {
-        serial_gimbal_.success_ = serial_gimbal_.read_gimbal(&gim_rx_data_, curr_gimbal_yaw);
+//        serial_gimbal_.success_ = serial_gimbal_.read_gimbal(&gim_rx_data_, curr_gimbal_yaw);
 
         if(serial_gimbal_.success_)
         {
@@ -62,8 +62,8 @@ void ImageProduceProcess::GetGimbal()
                 gim_count++;
             }
             gimbal_yaw= gim_count*360+curr_gimbal_yaw;
-
-            if(vec_gimbal_yaw.size() < 120)    // 缓存120组历史陀螺仪数据
+//            INFO(gimbal_yaw);
+            if(vec_gimbal_yaw.size() < 120)    // 缓存120组历史陀螺仪数据zz
             {
                 vec_gimbal_yaw.push_back(gimbal_yaw);
             }else
@@ -83,24 +83,22 @@ void ImageProduceProcess::GetGimbal()
 void ImageProduceProcess::GetSTM32()
 {
     while(1){
-        if(prdIdx%50 == 0)
-        {
             int8_t modae;
             serial_.read_data(&rx_data, mode_, color_, bullet_speed_, cancel_kalman_);
-            //            if(mode_ == 0)
-            //                cout << " mode=auto_aim  ";
-            //            else
-            //                cout << " mode=buff_aim  ";
-            //            if(color_ == 0)
-            //                cout << "  BLUE  ";
-            //            else
-            //                cout << "  RED  ";
-            ////            cout << "bullet_speed = " << bullet_speed_;
-            //            if(cancel_kalman_ == 0)
-            //                cout << "  use_kalman "<<endl;
-            //            else
-            //                cout << "  cancel_kalman "<<endl;
-        }
+//                        if(mode_ == 0)
+//                            cout << " mode=auto_aim  ";
+//                        else
+//                            cout << " mode=buff_aim  ";
+//                        if(color_ == 0)
+//                            cout << "  BLUE  ";
+//                        else
+//                            cout << "  RED  ";
+//            //            cout << "bullet_speed = " << bullet_speed_;
+//                        if(cancel_kalman_ == 0)
+//                            cout << "  use_kalman "<<endl;
+//                        else
+//                            cout << "  cancel_kalman "<<endl;
+//            INFO(bullet_speed_);
         END_THREAD;
     }
 }
@@ -117,7 +115,7 @@ void ImageProduceProcess::ImageProcess()
     cv::createTrackbar("Qp","control",&km_Qp,1000);
     cv::createTrackbar("Qv","control",&km_Qv,1000);
     cv::createTrackbar("rp","control",&km_Rp,1000);
-    //    cv::createTrackbar("rv","control",&km_Rv,1000);
+    cv::createTrackbar("rv","control",&km_Rv,1000);
     cv::createTrackbar("t","control",&km_t,10);
     cv::createTrackbar("pt","control",&km_pt,500);
     createTrackbar("history_index", "control", &history_index, 120);
@@ -136,6 +134,7 @@ void ImageProduceProcess::ImageProcess()
         while(prdIdx - csmIdx == 0);
         data[csmIdx % BUFFER_SIZE].img.copyTo(image);
         ++csmIdx;
+        imshow("src", image);
         double t1 = getTickCount();
         bool find_flag = ArmorDetectTask(image, para_armor);   // 装甲板检测
         if(find_flag)
@@ -150,6 +149,8 @@ void ImageProduceProcess::ImageProcess()
 
             //---predict
             protectDate(km_Qp, km_Qv, km_Rp, km_Rv, km_t, km_pt);
+
+            km_pt = distance/2000*km_pt+30;
             //        float max_limit_angle_y = 10;
             //        float min_limit_angle_y = 5;
             //        if(abs(theta_y)>max_limit_angle_y)
@@ -159,8 +160,6 @@ void ImageProduceProcess::ImageProcess()
             //        {
             //            km_pt = km_pt * (max_limit_angle_y - abs(theta_y))/max_limit_angle_y;
             //        }
-
-            km_pt = distance/2000*km_pt+30;
             zeyu_predict.setQRT(km_Qp,km_Qv,km_Rp,km_t,km_pt);
             if(serial_gimbal_.success_)   // gimbal is successed
             {
@@ -176,7 +175,7 @@ void ImageProduceProcess::ImageProcess()
                     gimbal_angle_x = vec_gimbal_yaw_tmp.at(0);
                 //                    printf("gimbla_angle%f\r\n", gimbal_angle_x);
                 float gim_and_pnp_angle_x = -gimbal_angle_x + angle_x;  // 陀螺仪角度+pnp解析角度，从而获得敌人绝对角度
-                INFO(gim_and_pnp_angle_x);
+//                INFO(gim_and_pnp_angle_x);
                 predict_angle_x = zeyu_predict.run_position(gim_and_pnp_angle_x);   // kalman滤波预测
                 predict_angle_x += gimbal_angle_x;
                 angle_x = predict_angle_x;
@@ -184,18 +183,19 @@ void ImageProduceProcess::ImageProcess()
         }
 
         //--/predict
-        limit_angle(angle_x, 5);
-        tx_data.get_xy_data(-angle_x*100, -angle_y*100, find_flag);
-        serial_.send_data(tx_data);
+        limit_angle(angle_x, 4);
+//        tx_data.get_xy_data(-angle_x*100, -angle_y*100, find_flag);
+//        serial_.send_data(tx_data);
 
 
-        //        imshow("image",image);
-        //        if(waitKey(1)>0)
-        //            end_thread_flag = true;
+                imshow("image",image);
+//                waitKey(0);
+                if(waitKey(1)>0)
+                    end_thread_flag = true;
         //        usleep(1);
         double t2 = getTickCount();
         double t = (t2 - t1)*1000/getTickFrequency();
-        INFO(t);
+//        INFO(t);
         END_THREAD;
 
     }
