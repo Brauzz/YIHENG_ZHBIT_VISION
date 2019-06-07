@@ -30,6 +30,7 @@ bool ArmorDetectTask(Mat &img, Param_ &param)
     cvtColor(img,gray,COLOR_BGR2GRAY);
     //    Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
     //    dilate(img, img, element);
+
     vector<cv::Mat> bgr;
     split(img, bgr);
     Mat result_img;
@@ -176,12 +177,16 @@ bool ArmorDetectTask(Mat &img, Param_ &param)
         param.offset_image = Point2i(param.offset_x, param.offset_y);
         Point2f offset_point = Point2f(100, 100) - static_cast<Point2f>(param.offset_image);
         target.Led_stick[0].rect.points(point_tmp);
+
         point_2d[0] = point_tmp[1] + offset_point;
         point_2d[3] = point_tmp[0] + offset_point;
-        target.Led_stick[0].rect.points(point_tmp);
+        target.Led_stick[1].rect.points(point_tmp);
         point_2d[1] = point_tmp[2] + offset_point;
         point_2d[2] = point_tmp[3] + offset_point;
-
+        circle(img, point_2d[0],3,Scalar(255,255,255),1);
+        circle(img, point_2d[1],3,Scalar(0,0,255),1);
+        circle(img, point_2d[2],3,Scalar(0,255,0),1);
+        circle(img, point_2d[3],3,Scalar(255,0,0),1);
         param.points_2d.clear();
         for(int i=0;i<4;i++)
         {
@@ -189,9 +194,6 @@ bool ArmorDetectTask(Mat &img, Param_ &param)
         }
         return 1;
     }
-
-
-
     return 0;
 }
 
@@ -265,7 +267,7 @@ void armor::max_match(vector<LED_Stick>& LED,size_t i,size_t j){
     Led_stick[0].rect = L;
     Led_stick[1].rect = R;
     float angle_8 = L.angle - R.angle;
-    cout << L.angle << " "<< R.angle << endl;
+//    cout << L.angle << " "<< R.angle << endl;
     if(angle_8 < 1e-3f)
         angle_8 = 0.0f;
     float f = error_angle + angle_8 /*+ abs(LED.at(i).rect.center.y - LED.at(j).rect.center.y)*/;

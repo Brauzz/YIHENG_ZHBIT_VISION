@@ -150,8 +150,6 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
                             target_2d_point.at(l),
                             FONT_HERSHEY_COMPLEX, 0.5,Scalar(255,255,255));
                 }
-
-
                 //-----------\new alorithm -----------------------------------
                 return 1;
             }

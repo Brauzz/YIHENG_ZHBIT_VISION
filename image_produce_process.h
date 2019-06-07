@@ -11,6 +11,7 @@
 #include "solve_angle.h"
 #include "predict.h"
 #include "settings.h"
+#include "fstream"
 
 #define END_THREAD if(end_thread_flag) return;
 #define INFO(a) cout<<#a<<a<<endl;
@@ -30,18 +31,20 @@ class ImageProduceProcess
 public:
     ImageProduceProcess();
     void ImageProduce();
+    void ImageProduceLong();
     void ImageProcess();
     void GetGimbal();
     void GetSTM32();
 public:
 
     int8_t mode_;
+//    bool cap_mode_;
     int8_t color_;
     float bullet_speed_;
     int8_t cancel_kalman_;
     // kalman predict
-    int km_Qp = 1000, km_Qv = 1, km_Rp = 1, km_Rv = 1;
-    int km_t = 4, km_pt = 70;
+    int km_Qp = 300, km_Qv = 1, km_Rp = 1, km_Rv = 1;
+    int km_t = 1, km_pt = 70;
     int history_index = 1;
 private:
     serial_gimbal_data gim_rx_data_;
