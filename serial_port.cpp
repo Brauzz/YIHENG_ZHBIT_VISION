@@ -8,7 +8,7 @@
 //int cccc = 0;
 //double t1 = 0.0, t2 = 0.0;
 SerialPort::SerialPort(){}
-SerialPort::SerialPort(char* filename, int buadrate)
+SerialPort::SerialPort(const char* filename, int buadrate)
 {
     file_name_ = filename;
     buadrate_ = buadrate;
@@ -212,7 +212,7 @@ void serial_transmit_data::get_xy_data(int16_t x, int16_t y, int8_t found)
     raw_data[2] = (y>>8) &0xff;
     raw_data[3] = x & 0xff;
     raw_data[4] = (x>>8) &0xff;
-    raw_data[5] = found;
+    raw_data[5] = static_cast<uchar>(found);
 }
 
 

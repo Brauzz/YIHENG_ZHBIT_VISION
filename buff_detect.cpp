@@ -15,13 +15,7 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
         subtract(bgr[0], bgr[2], result_img);
     }
     Mat binary_color_img;
-    double t1 = getTickCount();
-    int th = threshold(result_img, binary_color_img, 10, 255, CV_THRESH_BINARY|CV_THRESH_OTSU);
-    double t2 = getTickCount();
-    double t = (t2-t1)*1000/getTickFrequency();
-//    cout << t <<endl;
-
-//    cout << "TH" << th << endl;
+    double th = threshold(result_img, binary_color_img, 10, 255, CV_THRESH_BINARY|CV_THRESH_OTSU);
     imshow("mask", binary_color_img);
     if(th < 20)
         return 0;
@@ -30,7 +24,7 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
     vector<vector<Point>> contours;
     vector<Vec4i> hierarchy;
     findContours(binary_color_img,contours,hierarchy,CV_RETR_CCOMP,CHAIN_APPROX_SIMPLE);
-    for(int i=0; i < contours.size();i++)
+    for(size_t i=0; i < contours.size();i++)
     {
         if(hierarchy[i][3]<0)
             continue;
@@ -39,13 +33,13 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
         small_contour_area = contourArea(contours[i]);
         if(small_contour_area < 5)
             continue;
-        big_contour_area = contourArea(contours[hierarchy[i][3]]);
+        big_contour_area = contourArea(contours[static_cast<size_t>(hierarchy[i][3])]);
         if(big_contour_area < 5)
             continue;
         small_contour_length = arcLength(contours[i], true);
         if(small_contour_length < 5)
             continue;
-        big_contour_length =  arcLength(contours[hierarchy[i][3]], true);
+        big_contour_length =  arcLength(contours[static_cast<size_t>(hierarchy[i][3])], true);
         if(big_contour_length < 5)
             continue;
 
@@ -55,7 +49,7 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
                 && small_contour_length * 1 < big_contour_length)
         {
             // --debug--
-            RotatedRect big_target_rect = minAreaRect(contours[hierarchy[i][3]]);
+            RotatedRect big_target_rect = minAreaRect(contours[static_cast<size_t>(hierarchy[i][3])]);
             Point2f big_points_tmp[4];
             big_target_rect.points(big_points_tmp);
             for(int j=0; j < 4; j++)
@@ -145,9 +139,9 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
 
                 for(int l=0;l<4;l++)
                 {
-                    circle(img, target_2d_point.at(l), 3, Scalar(0,255,255));
+                    circle(img, target_2d_point.at(static_cast<size_t>(l)), 3, Scalar(0,255,255));
                     putText(img, to_string(l),
-                            target_2d_point.at(l),
+                            target_2d_point.at(static_cast<size_t>(l)),
                             FONT_HERSHEY_COMPLEX, 0.5,Scalar(255,255,255));
                 }
                 //-----------\new alorithm -----------------------------------
@@ -162,9 +156,9 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
 }
 
 
-float calcDistanceFor2Point(Point2f p1, Point2f p2)
+double calcDistanceFor2Point(Point2f p1, Point2f p2)
 {
-    return sqrt(pow((p1.x-p2.x), 2) + pow((p1.y - p2.y),2));
+    return pow(pow((p1.x-p2.x), 2) + pow((p1.y - p2.y), 2), 0.5);
 }
 void conversionAbsolutePoint(Point2f *point_tmp, vector<Point2f>& dst
                              ,Point2f offset

@@ -1,19 +1,9 @@
 #include "armor_detect.h"
 
-
 //#define DEBUG_DETECT
 #define show_rect_angle
 #define show_rect_bound
 #define USE_FIT
-
-/* armor ArmorDetectTask(Mat& img);
-* @breif input the img output the target armor
-* @param img input the image the capture get
-* @return VecPoint2f the Armor led stick four point
-* is order is top left, top right, bottom right, bootom left
-* @author cz
-* @date 2018.1.28
-*/
 
 
 double calc_distance(Point2f p1, Point2f p2)
@@ -127,7 +117,7 @@ bool ArmorDetectTask(Mat &img, Param_ &param)
         for(size_t j = i + 1; j < LED_Stick_v.size() ; j++)
         {
             armor arm_tmp( LED_Stick_v.at(i), LED_Stick_v.at(j) );
-            if (arm_tmp.error_angle < 5.5)
+            if (arm_tmp.error_angle < 5.5f)
             {
                 putText(img, to_string(int(arm_tmp.error_angle)), arm_tmp.center , FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255), 1);
                 if(arm_tmp.is_suitable_size())
@@ -339,190 +329,3 @@ bool armor::is_suitable_size(void) const
     return false;
 }
 
-
-
-//bool ArmorDetectTask2(Mat &img, Param_ &param)
-//{
-
-//    double t1 = getTickCount();
-//    Mat binary_brightness_img, binary_color_img, gray;
-
-//    //    Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
-//    //    dilate(img, img, element);
-//    vector<cv::Mat> bgr;
-//    split(img, bgr);
-//    Mat result_img;
-
-//    if(param.color == 0)
-//    {
-//        subtract(bgr[2], bgr[1], result_img);
-//    }else
-//    {
-//        subtract(bgr[0], bgr[2], result_img);
-//    }
-//#if(1)
-//    cvtColor(img,gray,COLOR_BGR2GRAY);
-//    double show_bin_th = threshold(gray, binary_brightness_img, param.gray_th, 255, CV_THRESH_BINARY);
-//#else
-//    uint8_t show_bin_th = threshold(bgr[2], binary_brightness_img, param.gray_th, 255, CV_THRESH_BINARY|CV_THRESH_OTSU);
-//#endif
-//    double show_color_th = threshold(result_img, binary_color_img, param.color_th, 255, CV_THRESH_BINARY);
-
-
-//    //    printf("bin_th = %d, color_th = %d\r\n", show_bin_th, show_color_th);
-//#ifdef DEBUG_DETECT
-//    imshow("binary_brightness_img", binary_brightness_img);
-//    imshow("binary_color_img", binary_color_img);
-//#endif
-
-//    vector<vector<Point>> contours_light;
-//    vector<vector<Point>> contours_brightness;
-//    vector<vector<Point>> contours;
-//    findContours(binary_color_img, contours_light, RETR_EXTERNAL, CHAIN_APPROX_NONE);
-//    findContours(binary_brightness_img, contours_brightness, RETR_EXTERNAL, CHAIN_APPROX_NONE);
-//    for(size_t i = 0; i < contours_brightness.size(); i++)
-//    {
-//        double area = contourArea(contours_brightness[i]);
-//        if (area < 20.0 || 1e5 < area) continue;
-//        for(size_t ii = 0; ii < contours_light.size(); ii++)
-//        {
-//            if(pointPolygonTest(contours_light[ii], contours_brightness[i][0], false) >= 0.0 )
-//            {
-//                contours.push_back(contours_brightness[i]);
-//            }
-//        }
-//    }
-
-//    RotatedRect RA[16], R[16];
-//    int hi = 0;
-
-//    for(size_t i = 0; i < contours.size(); i++)
-//    {
-//        vector<Point> points;
-//        points = contours[i];
-//        RotatedRect rrect = fitEllipse(points);
-//        cv::Point2f* vertices = new cv::Point2f[4];
-//        rrect.points(vertices);
-
-//        for(int j = 0; j < 4; j++)
-//        {
-//            line(img,vertices[j],vertices[(j+1)%4], Scalar(0, 255, 0), 2);
-//        }
-
-//        double high = static_cast<double>(rrect.size.height);
-
-//        for(size_t j = 1; j < contours.size(); j++)
-//        {
-//            vector<Point> pointsA;
-//            double area = contourArea(contours[j]);
-//            if(area < 20 || 1e5 < area) continue;
-
-//            pointsA = contours[j];
-//            RotatedRect rrectA = fitEllipse(pointsA);
-
-
-//            double max_height, min_height;
-//            if(rrect.size.height > rrectA.size.height)
-//            {
-//                max_height = static_cast<double>(rrect.size.height);
-//                min_height = static_cast<double>(rrectA.size.height);
-//            }
-//            else
-//            {
-//                max_height = static_cast<double>(rrectA.size.height);
-//                min_height = static_cast<double>(rrect.size.height);
-//            }
-
-//            double lights_angle_error = static_cast<double>(abs(rrect.angle - rrectA.angle));
-//            double highA = static_cast<double>(rrectA.size.height);
-//            double lights_center_distance = sqrt((rrect.center.x - rrectA.center.x)*(rrect.center.x - rrectA.center.x)
-//                                                 + (rrect.center.y - rrectA.center.y)*(rrect.center.y - rrectA.center.y));
-//            double lights_x_distance = abs(rrect.center.x - rrectA.center.x);
-//            double armor_wh_ratio = lights_center_distance/((highA+high)/2);     // judge big armor and small armor
-//            double lights_height_diff = max_height - min_height;
-//            double lights_width_diff = abs(rrect.size.width - rrectA.size.width);
-//            double lights_avg_height = (rrect.size.height + rrectA.size.height)/200;
-//            double lights_avg_angle = abs(rrect.angle + rrectA.angle)/2;
-//            if((armor_wh_ratio < 3.0 - lights_avg_height && armor_wh_ratio > 2.0 - lights_avg_height
-//                && lights_angle_error <= 5.0 && lights_height_diff <= 8.0 && lights_width_diff <=5.0
-//                && (lights_avg_angle <= 30 || lights_avg_angle >= 150.0) && lights_x_distance > 0.6*lights_height_diff)
-//                    || (armor_wh_ratio < 5.0 - lights_avg_height && armor_wh_ratio > 3.2 - lights_avg_height
-//                        && lights_angle_error <= 7.0 && lights_height_diff <= 15.0 && lights_width_diff <= 8.0
-//                        && (lights_avg_angle <= 30.0 || lights_avg_angle >= 150.0) && lights_x_distance > 0.7*lights_height_diff))
-//            {
-//                R[hi] = rrect;
-//                RA[hi] = rrectA;
-//                hi++;
-//            }
-//        }
-//    }
-//    double min = 666;
-//    int mark = 0;
-//    for(int i = 0;i < hi;i++){     //多个目标存在，打center更近装甲板
-//        float dist = sqrt(pow(320-(R[i].center.x+RA[i].center.x)/2.0f,2)+pow(180-(R[i].center.y+RA[i].center.y)/2.0f,2));
-//        if(dist < min)
-//        {
-//            mark = i;
-//            min = dist;
-//        }
-//    }
-//    if(hi != 0){
-//        cv::circle(img,Point((R[mark].center.x+RA[mark].center.x)/2,
-//                             (R[mark].center.y+RA[mark].center.y)/2),
-//                   15,cv::Scalar(0,0,255),4);
-//        RotatedRect right, left;
-//        if(R[mark].center.x > RA[mark].center.x)
-//        {
-//            right = R[mark];
-//            left = RA[mark];
-//        }else
-//        {
-//            right = RA[mark];
-//            left = R[mark];
-//        }
-//        Point2f point_tmp[4];
-//        Point2f point_2d[4];
-//        left.points(point_tmp);
-//        point_2d[0] = point_tmp[1] + static_cast<Point2f>(param.offset_image);
-//        point_2d[3] = point_tmp[0] + static_cast<Point2f>(param.offset_image);
-//        right.points(point_tmp);
-//        point_2d[1] = point_tmp[2] + static_cast<Point2f>(param.offset_image);
-//        point_2d[2] = point_tmp[3] + static_cast<Point2f>(param.offset_image);
-
-//        param.points_2d.clear();
-//        for(int i=0;i<4;i++)
-//        {
-//            param.points_2d.push_back(point_2d[i]);
-//        }
-//        return 1;
-//    }
-//    return 0;
-//}
-
-
-
-//bool ArmorDetectTask0(Mat &img, Param_ &param)
-//{
-//    Mat binary_brightness_img;
-//    Mat gray;
-//    cvtColor(img,gray,COLOR_BGR2GRAY);
-//    uint8_t show_bin_th = threshold(gray, binary_brightness_img, param.gray_th, 255, CV_THRESH_BINARY);
-//    vector<vector<Point>> contours_brightness;
-//    findContours(binary_brightness_img, contours_brightness, RETR_EXTERNAL, CHAIN_APPROX_NONE);
-//    for(size_t i = 0; i < contours_brightness.size(); i++)
-//    {
-//        double area = contourArea(contours_brightness[i]);
-//        if (area < 20.0 || 1e5 < area) continue;
-//        double length = arcLength( Mat(contours_brightness[i]), true);
-//        if (length > 30 && length <400)
-//        {
-//            RotatedRect minRect = minAreaRect( Mat(contours_brightness[i]));
-//            RotatedRect fitRect = fitEllipse(Mat(contours_brightness[i]));
-//            //            printf("minRect angle = %f, width = %f, height = %f\r\n", minRect.angle, minRect.size.width, minRect.size.height);
-//            //            printf("fitRect angle = %f, width = %f, height = %f\r\n", fitRect.angle, fitRect.size.width, fitRect.size.height);
-
-
-//        }
-//    }
-//    return 0;
-//}

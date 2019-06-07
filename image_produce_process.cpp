@@ -198,7 +198,7 @@ void ImageProduceProcess::ImageProcess()
             //---predict
             protectDate(km_Qp, km_Qv, km_Rp, km_Rv, km_t, km_pt);
 
-            km_pt = distance/2500*km_pt+20;
+            float pre_time = distance/2500*static_cast<float>(km_pt)+20.0f;
 //                    float max_limit_angle_y = 15;
 //                    float min_limit_angle_y = 5;
 //                    if(fabs(theta_y)>max_limit_angle_y)
@@ -208,15 +208,15 @@ void ImageProduceProcess::ImageProcess()
 //                    {
 //                        km_pt = km_pt * (max_limit_angle_y - abs(theta_y))/max_limit_angle_y;
 //                    }*/
-            zeyu_predict.setQRT(km_Qp,km_Qv,km_Rp,km_t,km_pt);
+            zeyu_predict.setQRT(km_Qp,km_Qv,km_Rp,km_t,pre_time);
             if(serial_gimbal_.success_)   // gimbal is successed
             {
                 //            cout << "true" << endl;
                 if(history_index==0)
                     history_index = 1;
                 vector<float> vec_gimbal_yaw_tmp = vec_gimbal_yaw;
-                if(vec_gimbal_yaw_tmp.size()>history_index)
-                    gimbal_angle_x = vec_gimbal_yaw_tmp.at(vec_gimbal_yaw_tmp.size()-history_index);
+                if(vec_gimbal_yaw_tmp.size() > static_cast<size_t>(history_index))
+                    gimbal_angle_x = vec_gimbal_yaw_tmp.at(vec_gimbal_yaw_tmp.size()-static_cast<size_t>(history_index));
                 else if(vec_gimbal_yaw_tmp.size()==0)
                     gimbal_angle_x = 0.0;
                 else
@@ -234,7 +234,7 @@ void ImageProduceProcess::ImageProcess()
         limit_angle(angle_x, 5);
 //        file << csmIdx << " " << angle_x << " " << angle_y << "\n";
 
-        tx_data.get_xy_data(-angle_x*100, -angle_y*100, find_flag);
+        tx_data.get_xy_data(static_cast<int16_t>(-angle_x*100), static_cast<int16_t>(-angle_y*100), find_flag);
         serial_.send_data(tx_data);
 
 

@@ -5,7 +5,7 @@
 using namespace std;
 using namespace cv;
 
-int main(int argc, char *argv[])
+int main()
 {
     ImageProduceProcess ImageControl;
     std::thread produce_task(&ImageProduceProcess::ImageProduce, ImageControl);

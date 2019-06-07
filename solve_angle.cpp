@@ -31,20 +31,20 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
     Mat rotMat(3, 3, CV_64FC1, rm);
     Rodrigues(rvec, rotMat);
 //    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;
-    theta_y = atan2(rm[1][0], rm[0][0]) * 57.2958;//x
+    theta_y = atan2(static_cast<float>(rm[1][0]), static_cast<float>(rm[0][0])) * 57.2958f;//x
 //    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;//y
 //    theta_y = atan2(rm[2][1], rm[2][2]) * 57.2958;//z
     /* coordinate choose */
-    double theta = -atan(ptz_camera_y + barrel_ptz_offset_y)/overlap_dist;
+    double theta = -atan(static_cast<double>(ptz_camera_y + barrel_ptz_offset_y))/static_cast<double>(overlap_dist);
     double r_data[] = {1,0,0,0,cos(theta),sin(theta),0,-sin(theta),cos(theta)};
-    double t_data[] = {ptz_camera_x,ptz_camera_y,ptz_camera_z};
+    double t_data[] = {static_cast<double>(ptz_camera_x),static_cast<double>(ptz_camera_y),static_cast<double>(ptz_camera_z)};
     Mat t_camera_ptz(3,1,CV_64FC1,t_data);
     Mat r_camera_ptz(3,3,CV_64FC1,r_data);
     /* translate camera coordinate to PTZ coordinate */
     Mat position_in_ptz;
     position_in_ptz = r_camera_ptz * tvec - t_camera_ptz;
     /* calculte angles to with gravity, so that make barrel aim at target */
-    double bullet_speed = ballet_speed;
+    double bullet_speed = static_cast<double>( ballet_speed);
     const double *_xyz = (const double *)position_in_ptz.data;
     double down_t = 0.0;
     if(bullet_speed > 10e-3)
@@ -53,25 +53,25 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
 //            offset_gravity = 0;
     double xyz[3] = {_xyz[0], _xyz[1] - offset_gravity, _xyz[2]};
     double alpha = 0.0, thta = 0.0;
-    alpha = asin(barrel_ptz_offset_y/sqrt(xyz[1]*xyz[1] + xyz[2]*xyz[2]));
+    alpha = asin(static_cast<double>(barrel_ptz_offset_y)/sqrt(xyz[1]*xyz[1] + xyz[2]*xyz[2]));
 
     if(xyz[1] < 0)
     {
         thta = atan(-xyz[1]/xyz[2]);
-        angle_y = -(alpha+thta); //camera coordinate
-    }else if(xyz[1] < barrel_ptz_offset_y)
+        angle_y = static_cast<float>(-(alpha+thta)); //camera coordinate
+    }else if(xyz[1] < static_cast<double>(barrel_ptz_offset_y))
     {
         theta = atan(xyz[1]/xyz[2]);
-        angle_y = -(alpha - thta);
+        angle_y = static_cast<float>(-(alpha - thta));
     }else
     {
         theta = atan(xyz[1]/xyz[2]);
-        angle_y = (theta-alpha);   // camera coordinate
+        angle_y = static_cast<float>((theta-alpha));   // camera coordinate
     }
-    angle_x = atan2(xyz[0],xyz[2]);
-    angle_x = angle_x * 180/CV_PI;
-    angle_y = angle_y * 180/CV_PI;
-    dist = xyz[2];
+    angle_x = static_cast<float>(atan2(xyz[0],xyz[2]));
+    angle_x = static_cast<float>(angle_x) * 57.2957805f;
+    angle_y = static_cast<float>(angle_y) * 57.2957805f;
+    dist = static_cast<float>(xyz[2]);
 }
 
 

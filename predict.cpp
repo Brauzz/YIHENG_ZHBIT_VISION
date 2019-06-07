@@ -7,7 +7,7 @@ ZeYuPredict::ZeYuPredict(float Qp, float Qv, float Rp,float Rv,float dta, float 
     A = (Mat_<float>(2,2) << 1, dta, 0, 1);
     B = (Mat_<float>(2,2) << 1, 1/2*pow(dta,2), 0, 1);
     H = (Mat_<float>(1,2) << 1, 0);
-    Rvar = Rp;
+    Rvar = static_cast<double>(Rp);
     //state
     po = (Mat_<float>(2,2)<< 1000, 1000, 1000, 1000);//0.00623 don't worried, because it can update
     po_pre = po;
@@ -26,7 +26,7 @@ float ZeYuPredict::run_position(float gim_angle)
     x_pre = A * xkf ;
     po_pre = A * po * A.t() + Qvar;
     kg = po_pre * H.t() * (H * po_pre * H.t() + Rvar).inv();
-    xkf = x_pre + kg* (gim_angle - H * x_pre);
+    xkf = x_pre + kg* (static_cast<double>(gim_angle) - H * x_pre);
     v = xkf.at<float>(1,0);
     float error = v - last_v;
     last_v = v;
@@ -39,12 +39,12 @@ float ZeYuPredict::run_position(float gim_angle)
     return predict;
 }
 
-void ZeYuPredict::setQRT(int Qp, int Qv, int Rp ,int dta, int pre_dta)
+void ZeYuPredict::setQRT(int Qp, int Qv, int Rp ,int dta, float pre_dta)
 {
     Qvar = (Mat_<float>(2,2)<< Qp*0.001, 0, 0, Qv*0.001);
     Rvar = Rp*0.001;
-    delta = (float)dta;
-    pre_delta = (float)pre_dta;
+    delta = static_cast<float>(dta);
+    pre_delta = pre_dta;
 }
 
 void ZeYuPredict::SetDelta(float dta)
@@ -59,7 +59,7 @@ void ZeYuPredict::SetPreDelta(float pre_dta)
 
 void ZeYuPredict::InitFilters(float gim_angle)
 {
-    x_pre = gim_angle;
+    x_pre = static_cast<double>(gim_angle);
 }
 
 void ZeYuPredict::ClearFilters()

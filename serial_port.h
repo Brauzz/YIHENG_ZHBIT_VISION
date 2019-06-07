@@ -33,8 +33,7 @@ class SerialPort
 public:
     //"/dev/ttyTHS0"
     SerialPort();
-    SerialPort(char* stm32_name, char* gimbal_name);
-    SerialPort(char* filename, int buadrate);
+    SerialPort(const char* filename, int buadrate);
 
     void restart_serial(void);
     void send_data(const struct serial_transmit_data& data);
@@ -43,7 +42,7 @@ public:
     int fd;
     bool success_;
 private:
-    char* file_name_;
+    const char* file_name_;
     int buadrate_;
     float last_bullet_speed;
 };
