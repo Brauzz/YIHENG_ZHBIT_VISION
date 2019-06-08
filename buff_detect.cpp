@@ -1,8 +1,23 @@
+/****************************************************************************
+ *  Copyright (C) 2019 cz.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ ***************************************************************************/
 #include "buff_detect.h"
-
 bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color, Point2f offset_tvec, float &theta_angle)
 {
-    // preprocessing
+    // **预处理** -图像进行相应颜色的二值化
     target_2d_point.clear();
     vector<cv::Mat> bgr;
     split(img, bgr);
@@ -15,22 +30,17 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
         subtract(bgr[0], bgr[2], result_img);
     }
     Mat binary_color_img;
-    double t1 = getTickCount();
-    int th = threshold(result_img, binary_color_img, 10, 255, CV_THRESH_BINARY|CV_THRESH_OTSU);
-    double t2 = getTickCount();
-    double t = (t2-t1)*1000/getTickFrequency();
-//    cout << t <<endl;
-
-//    cout << "TH" << th << endl;
+    double th = threshold(result_img, binary_color_img, 10, 255, CV_THRESH_BINARY|CV_THRESH_OTSU);
     imshow("mask", binary_color_img);
     if(th < 20)
         return 0;
-    // find contours
+    // **寻找击打矩形目标** -通过几何关系
+    //TODO(cz): 建议使用拟合椭圆的方法重新实现
     RotatedRect small_target_rect;
     vector<vector<Point>> contours;
     vector<Vec4i> hierarchy;
     findContours(binary_color_img,contours,hierarchy,CV_RETR_CCOMP,CHAIN_APPROX_SIMPLE);
-    for(int i=0; i < contours.size();i++)
+    for(size_t i=0; i < contours.size();i++)
     {
         if(hierarchy[i][3]<0)
             continue;
@@ -39,13 +49,13 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
         small_contour_area = contourArea(contours[i]);
         if(small_contour_area < 5)
             continue;
-        big_contour_area = contourArea(contours[hierarchy[i][3]]);
+        big_contour_area = contourArea(contours[static_cast<size_t>(hierarchy[i][3])]);
         if(big_contour_area < 5)
             continue;
         small_contour_length = arcLength(contours[i], true);
         if(small_contour_length < 5)
             continue;
-        big_contour_length =  arcLength(contours[hierarchy[i][3]], true);
+        big_contour_length =  arcLength(contours[static_cast<size_t>(hierarchy[i][3])], true);
         if(big_contour_length < 5)
             continue;
 
@@ -55,7 +65,7 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
                 && small_contour_length * 1 < big_contour_length)
         {
             // --debug--
-            RotatedRect big_target_rect = minAreaRect(contours[hierarchy[i][3]]);
+            RotatedRect big_target_rect = minAreaRect(contours[static_cast<size_t>(hierarchy[i][3])]);
             Point2f big_points_tmp[4];
             big_target_rect.points(big_points_tmp);
             for(int j=0; j < 4; j++)
@@ -80,7 +90,7 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
                 small_target.rrect.size.width = tmp;
             }
 
-            // find the target
+            // **目标数据转换** -用于计算世界坐标预测，计算绝对四个点，和计算角度
             if(small_target.rrect.size.height/small_target.rrect.size.width < 3.0f
                     && small_target.rrect.size.height/small_target.rrect.size.width > 1.0f)
             {
@@ -103,8 +113,8 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
                     // 上下装甲板边沿  此时装甲板水平和+角度
                     Point2f Lower_edge = (origin_point_tmp[0] + origin_point_tmp[3])/2.0f;
                     Point2f upper_edge = (origin_point_tmp[1] + origin_point_tmp[2])/2.0f;
-//                    circle(img, Lower_edge, 10, Scalar(0,0,255),-1);
-//                    circle(img, upper_edge, 10, Scalar(255,0,0),-1);
+                    //                    circle(img, Lower_edge, 10, Scalar(0,0,255),-1);
+                    //                    circle(img, upper_edge, 10, Scalar(255,0,0),-1);
                     // 通过父轮廓中心判断中心靠近哪个边缘
                     float lower_edge_dist = calcDistanceFor2Point(Lower_edge, big_target_center);
                     float upper_edge_dist = calcDistanceFor2Point(upper_edge, big_target_center);
@@ -133,7 +143,7 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
                     {
                         // 流水灯靠近左边沿
                         conversionAbsolutePoint(origin_point_tmp, target_2d_point, point_offset, 2, 3, 0, 1);
-                         theta_angle =  - small_target.origin_rrect.angle;
+                        theta_angle =  - small_target.origin_rrect.angle;
                     }
                     else
                     {
@@ -145,9 +155,9 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
 
                 for(int l=0;l<4;l++)
                 {
-                    circle(img, target_2d_point.at(l), 3, Scalar(0,255,255));
+                    circle(img, target_2d_point.at(static_cast<size_t>(l)), 3, Scalar(0,255,255));
                     putText(img, to_string(l),
-                            target_2d_point.at(l),
+                            target_2d_point.at(static_cast<size_t>(l)),
                             FONT_HERSHEY_COMPLEX, 0.5,Scalar(255,255,255));
                 }
                 //-----------\new alorithm -----------------------------------
@@ -162,10 +172,21 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
 }
 
 
-float calcDistanceFor2Point(Point2f p1, Point2f p2)
+double calcDistanceFor2Point(Point2f p1, Point2f p2)
 {
-    return sqrt(pow((p1.x-p2.x), 2) + pow((p1.y - p2.y),2));
+    return pow(pow((p1.x-p2.x), 2) + pow((p1.y - p2.y), 2), 0.5);
 }
+
+/**
+ * @brief conversionAbsolutePoint 对不同情况的点进行补偿
+ * @param point_tmp 原始点
+ * @param dst 最终处理
+ * @param offset 补偿值
+ * @param i1 转换序号
+ * @param i2
+ * @param i3
+ * @param i4
+ */
 void conversionAbsolutePoint(Point2f *point_tmp, vector<Point2f>& dst
                              ,Point2f offset
                              ,int8_t i1, int8_t i2, int8_t i3, int8_t i4)

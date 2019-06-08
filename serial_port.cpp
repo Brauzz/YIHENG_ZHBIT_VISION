@@ -1,3 +1,19 @@
+/****************************************************************************
+ *  Copyright (C) 2019 cz.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ ***************************************************************************/
 #include "serial_port.h"
 #include <unistd.h>     // UNIX Standard Definitions
 #include <fcntl.h>      // File Control Definitions
@@ -8,7 +24,8 @@
 //int cccc = 0;
 //double t1 = 0.0, t2 = 0.0;
 SerialPort::SerialPort(){}
-SerialPort::SerialPort(char* filename, int buadrate)
+
+SerialPort::SerialPort(const char* filename, int buadrate)
 {
     file_name_ = filename;
     buadrate_ = buadrate;
@@ -212,7 +229,7 @@ void serial_transmit_data::get_xy_data(int16_t x, int16_t y, int8_t found)
     raw_data[2] = (y>>8) &0xff;
     raw_data[3] = x & 0xff;
     raw_data[4] = (x>>8) &0xff;
-    raw_data[5] = found;
+    raw_data[5] = static_cast<uchar>(found);
 }
 
 

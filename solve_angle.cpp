@@ -1,3 +1,19 @@
+/****************************************************************************
+ *  Copyright (C) 2019 cz.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ ***************************************************************************/
 #include "solve_angle.h"
 
 using namespace cv;
@@ -8,12 +24,14 @@ SolveAngle::SolveAngle()
 
 SolveAngle::SolveAngle(const char* file_path, float c_x, float c_y, float c_z, float barrel_y)
 {
+    //读取摄像头标定xml文件
     FileStorage fs(file_path, FileStorage::READ);
+    // 相关坐标转换偏移数据
     barrel_ptz_offset_y = barrel_y;
     ptz_camera_x = c_x;       // +left
     ptz_camera_y = c_y;       // + camera is  ptz
     ptz_camera_z = c_z;//-225;     // - camera is front ptz
-
+    // 读取相机内参和畸变矩阵
     fs["Camera_Matrix"] >> cameraMatrix;
     fs["Distortion_Coefficients"] >> distCoeffs;
     cout << cameraMatrix << endl;
@@ -26,52 +44,57 @@ SolveAngle::SolveAngle(const char* file_path, float c_x, float c_y, float c_z, f
 
 void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist, float& theta_y)
 {
+    // 姿态结算
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
+
+    // 估计装甲板y轴坐标旋转量
     double rm[3][3];
     Mat rotMat(3, 3, CV_64FC1, rm);
     Rodrigues(rvec, rotMat);
 //    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;
-    theta_y = atan2(rm[1][0], rm[0][0]) * 57.2958;//x
+    theta_y = atan2(static_cast<float>(rm[1][0]), static_cast<float>(rm[0][0])) * 57.2958f;//x
 //    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;//y
 //    theta_y = atan2(rm[2][1], rm[2][2]) * 57.2958;//z
-    /* coordinate choose */
-    double theta = -atan(ptz_camera_y + barrel_ptz_offset_y)/overlap_dist;
+
+    // 坐标系转换 -摄像头坐标到云台坐标
+    double theta = -atan(static_cast<double>(ptz_camera_y + barrel_ptz_offset_y))/static_cast<double>(overlap_dist);
     double r_data[] = {1,0,0,0,cos(theta),sin(theta),0,-sin(theta),cos(theta)};
-    double t_data[] = {ptz_camera_x,ptz_camera_y,ptz_camera_z};
+    double t_data[] = {static_cast<double>(ptz_camera_x),static_cast<double>(ptz_camera_y),static_cast<double>(ptz_camera_z)};
     Mat t_camera_ptz(3,1,CV_64FC1,t_data);
     Mat r_camera_ptz(3,3,CV_64FC1,r_data);
-    /* translate camera coordinate to PTZ coordinate */
     Mat position_in_ptz;
     position_in_ptz = r_camera_ptz * tvec - t_camera_ptz;
-    /* calculte angles to with gravity, so that make barrel aim at target */
-    double bullet_speed = ballet_speed;
+
+    //计算子弹下坠补偿
+    double bullet_speed = static_cast<double>( ballet_speed);
     const double *_xyz = (const double *)position_in_ptz.data;
     double down_t = 0.0;
     if(bullet_speed > 10e-3)
         down_t = _xyz[2] /1000.0 / bullet_speed;
     double offset_gravity = 0.5 * 9.8 * down_t*down_t * 1000;
 //            offset_gravity = 0;
+    // 计算角度
     double xyz[3] = {_xyz[0], _xyz[1] - offset_gravity, _xyz[2]};
     double alpha = 0.0, thta = 0.0;
-    alpha = asin(barrel_ptz_offset_y/sqrt(xyz[1]*xyz[1] + xyz[2]*xyz[2]));
+    alpha = asin(static_cast<double>(barrel_ptz_offset_y)/sqrt(xyz[1]*xyz[1] + xyz[2]*xyz[2]));
 
     if(xyz[1] < 0)
     {
         thta = atan(-xyz[1]/xyz[2]);
-        angle_y = -(alpha+thta); //camera coordinate
-    }else if(xyz[1] < barrel_ptz_offset_y)
+        angle_y = static_cast<float>(-(alpha+thta)); //camera coordinate
+    }else if(xyz[1] < static_cast<double>(barrel_ptz_offset_y))
     {
         theta = atan(xyz[1]/xyz[2]);
-        angle_y = -(alpha - thta);
+        angle_y = static_cast<float>(-(alpha - thta));
     }else
     {
         theta = atan(xyz[1]/xyz[2]);
-        angle_y = (theta-alpha);   // camera coordinate
+        angle_y = static_cast<float>((theta-alpha));   // camera coordinate
     }
-    angle_x = atan2(xyz[0],xyz[2]);
-    angle_x = angle_x * 180/CV_PI;
-    angle_y = angle_y * 180/CV_PI;
-    dist = xyz[2];
+    angle_x = static_cast<float>(atan2(xyz[0],xyz[2]));
+    angle_x = static_cast<float>(angle_x) * 57.2957805f;
+    angle_y = static_cast<float>(angle_y) * 57.2957805f;
+    dist = static_cast<float>(xyz[2]);
 }
 
 
@@ -82,7 +105,7 @@ void SolveAngle::getAngle_ICRA(vector<Point2f> &image_point, float ballet_speed,
     float offset_yaw_ = 0.0;
     float offset_pitch_ = 0.0;
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
-    Point3f postion = (Point3f)tvec;
+    Point3f postion = static_cast<Point3f>(tvec);
     angle_x = (float)(atan2(postion.x + offset_.x, postion.z + offset_.z))*180.0f/3.1415926535 + (float)(offset_yaw_);
     angle_y = -GetPitch_ICRA((postion.z + offset_.z) / 1000, -(postion.y + offset_.y) / 1000, ballet_speed)*180.0f/3.1415926535 + (float)(offset_pitch_);
     dist = postion.z;

@@ -1,3 +1,19 @@
+/****************************************************************************
+ *  Copyright (C) 2019 cz.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ ***************************************************************************/
 #pragma once
 #include <opencv2/opencv.hpp>
 using namespace cv;
@@ -10,7 +26,7 @@ public:
     void SetPreDelta(float pre_dta);
     void ClearFilters(void);
     void InitFilters(float gim_angle);
-    void setQRT(int Qp, int Qv, int Rp ,int dta, int pre_dta);
+    void setQRT(int Qp, int Qv, int Rp , int dta, float pre_dta);
     float run_position(float gim_angle);
 
     bool exit_flag;
@@ -36,56 +52,56 @@ private:
 };
 
 
-class PredictMode{
-public:
-    PredictMode(int _find_size = 5, int _lost_size = 3)
-        :find_cnt_size(_find_size),lost_cnt_size(_lost_size),mode(false){}
-    bool getResult(bool find_flag)
-    {
-        if(lost_history.size()<lost_cnt_size)
-        {
-            lost_history.push_back(find_flag);
-        }
-        else {
-            lost_history.push_back(find_flag);
-            lost_history.erase(lost_history.begin());
-        }
+//class PredictMode{
+//public:
+//    PredictMode(int _find_size = 5, int _lost_size = 3)
+//        :find_cnt_size(_find_size),lost_cnt_size(_lost_size),mode(false){}
+//    bool getResult(bool find_flag)
+//    {
+//        if(lost_history.size()<lost_cnt_size)
+//        {
+//            lost_history.push_back(find_flag);
+//        }
+//        else {
+//            lost_history.push_back(find_flag);
+//            lost_history.erase(lost_history.begin());
+//        }
 
-        if(find_history.size()<find_cnt_size)
-        {
-            find_history.push_back(find_flag);
-        }
-        else {
-            find_history.push_back(find_flag);
-            find_history.erase(find_history.begin());
-        }
-        std::vector<bool>::iterator iter;
-        int lost_cnt = 0, find_cnt = 0;
-        for (iter=lost_history.begin();iter!=lost_history.end();iter++){
-            if(*iter == 0)
-                lost_cnt++;
-        }
+//        if(find_history.size()<find_cnt_size)
+//        {
+//            find_history.push_back(find_flag);
+//        }
+//        else {
+//            find_history.push_back(find_flag);
+//            find_history.erase(find_history.begin());
+//        }
+//        std::vector<bool>::iterator iter;
+//        int lost_cnt = 0, find_cnt = 0;
+//        for (iter=lost_history.begin();iter!=lost_history.end();iter++){
+//            if(*iter == 0)
+//                lost_cnt++;
+//        }
 
-        for (iter=find_history.begin();iter!=find_history.end();iter++){
-            if(*iter == 1)
-                find_cnt++;
-        }
-        if(lost_cnt == lost_cnt_size)
-        {
-            mode = 0;
-        }
-        else if(find_cnt == find_cnt_size)
-        {
-            mode = 1;
-        }
-        return mode;
-    }
+//        for (iter=find_history.begin();iter!=find_history.end();iter++){
+//            if(*iter == 1)
+//                find_cnt++;
+//        }
+//        if(lost_cnt == lost_cnt_size)
+//        {
+//            mode = 0;
+//        }
+//        else if(find_cnt == find_cnt_size)
+//        {
+//            mode = 1;
+//        }
+//        return mode;
+//    }
 
-private:
-    bool mode;
-    int lost_cnt_size;
-    std::vector<bool> lost_history;
+//private:
+//    bool mode;
+//    int lost_cnt_size;
+//    std::vector<bool> lost_history;
 
-    int find_cnt_size;
-    std::vector<bool> find_history;
-};
+//    int find_cnt_size;
+//    std::vector<bool> find_history;
+//};

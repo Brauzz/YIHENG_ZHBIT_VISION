@@ -1,52 +1,78 @@
-#include "image_produce_process.h"
+/****************************************************************************
+ *  Copyright (C) 2019 cz.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ ***************************************************************************/
+#include "thread_control.h"
 
-struct ImageData
-{
-    Mat img;
-//    unsigned int frame;
-};
-//设置结束线程标志位，负责结束所有线程。
-static volatile bool end_thread_flag  = false;
-static volatile unsigned int prdIdx;
-static volatile unsigned int csmIdx;
-static volatile bool cap_mode_ = 0;
-static vector<float> vec_gimbal_yaw;
+#define GALAXY;
+
+static volatile bool end_thread_flag  = false;  // 设置结束线程标志位，负责结束所有线程。
+static volatile unsigned int produce_index;     // 图像生成序号，用于线程之间逻辑
+static volatile unsigned int consumption_index; // 图像消耗序号
+static volatile bool cap_mode_ = 0;             // 初始时摄像头模式为0，短焦
+static vector<float> vec_gimbal_yaw;            // yaw陀螺仪数据存储
 static ImageData data[BUFFER_SIZE];
 
-ImageProduceProcess::ImageProduceProcess()
+ThreadControl::ThreadControl()
 {
     cout <<"Open the thread of ImageDate" << endl;
-
     SerialPort serial("/dev/ttyUSB1",0);
     SerialPort serial_gimbal("/dev/ttyUSB0", 1);
     serial_ = serial;
     serial_gimbal_ = serial_gimbal;
-    cap_mode_ = false;
+    mode_ = false;
+    //    cap_mode_ = false;
 }
 
 // 图像生成线程
-void ImageProduceProcess::ImageProduce()
+void ThreadControl::ImageProduce()
 {
 
-    CaptureVideo short_camera("/dev/video1", 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
+    CaptureVideo short_camera("/dev/video0", 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
     short_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
-    short_camera.setExposureTime(0, 20);                         // 手动曝光，设置曝光时间。
+    short_camera.setExposureTime(0, 100);                         // 手动曝光，设置曝光时间。
     short_camera.startStream();                                  // 打开视频流
     short_camera.info();                                         // 输出摄像头信息
     while(1)
     {
-        while(prdIdx - csmIdx >= BUFFER_SIZE || cap_mode_ == true)
+        // 等待图像进入处理瞬间，再去生成图像
+        while(produce_index - consumption_index >= BUFFER_SIZE || cap_mode_ == true)
             END_THREAD;
-        short_camera >> data[prdIdx % BUFFER_SIZE].img;
-        ++prdIdx;
+        short_camera >> data[produce_index % BUFFER_SIZE].img;
+        ++produce_index;
         END_THREAD;
     }
 }
 
 // 图像生成线程
-void ImageProduceProcess::ImageProduceLong()
+void ThreadControl::ImageProduceLong()
 {
+#ifdef GALAXY
+    // 工业相机类初始化
+    CameraDevice galaxy;
+    galaxy.init();
+    while(1)
+    {
+        while(produce_index - consumption_index >= BUFFER_SIZE || cap_mode_ == false)
+            END_THREAD;
+        galaxy.getImage(data[produce_index % BUFFER_SIZE].img);
+        ++produce_index;
+        END_THREAD;
+    }
 
+#else
     CaptureVideo long_camera("/dev/video2", 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
     long_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
     long_camera.setExposureTime(0, 20);                         // 手动曝光，设置曝光时间。
@@ -60,9 +86,10 @@ void ImageProduceProcess::ImageProduceLong()
         ++prdIdx;
         END_THREAD;
     }
+#endif
 }
 
-void ImageProduceProcess::GetGimbal()
+void ThreadControl::GetGimbal()
 {
     cout << "receivec task open !" << endl;
     float last_gimbal_yaw = 0.0, curr_gimbal_yaw = 0.0, gimbal_yaw = 0.0;
@@ -75,6 +102,7 @@ void ImageProduceProcess::GetGimbal()
 
         if(serial_gimbal_.success_)
         {
+            // 陀螺仪角度(-180~180)数据处理 ->(-99999~99999)
             if(curr_gimbal_yaw - last_gimbal_yaw > 270)
             {
                 gim_count --;
@@ -83,7 +111,7 @@ void ImageProduceProcess::GetGimbal()
                 gim_count++;
             }
             gimbal_yaw= gim_count*360+curr_gimbal_yaw;
-//            INFO(gimbal_yaw);
+            //            INFO(gimbal_yaw);
             if(vec_gimbal_yaw.size() < 120)    // 缓存120组历史陀螺仪数据zz
             {
                 vec_gimbal_yaw.push_back(gimbal_yaw);
@@ -101,34 +129,35 @@ void ImageProduceProcess::GetGimbal()
     }
 }
 
-void ImageProduceProcess::GetSTM32()
+void ThreadControl::GetSTM32()
 {
     while(1){
-//            int8_t modae;
-            if(prdIdx%50 == 0)
-            {
+        //            int8_t modae;
+        // 每50帧读取一次stm32数据
+        if(produce_index%50 == 0)
+        {
             serial_.read_data(&rx_data, mode_, color_, bullet_speed_, cancel_kalman_);
-//                        if(mode_ == 0)
-//                            cout << " mode=auto_aim  ";
-//                        else
-//                            cout << " mode=buff_aim  ";
-//                        if(color_ == 0)
-//                            cout << "  BLUE  ";
-//                        else
-//                            cout << "  RED  ";
-//            //            cout << "bullet_speed = " << bullet_speed_;
-//                        if(cancel_kalman_ == 0)
-//                            cout << "  use_kalman "<<endl;
-//                        else
-//                            cout << "  cancel_kalman "<<endl;
-//            INFO(bullet_speed_);
-            }
+            //                        if(mode_ == 0)
+            //                            cout << " mode=auto_aim  ";
+            //                        else
+            //                            cout << " mode=buff_aim  ";
+            //                        if(color_ == 0)
+            //                            cout << "  BLUE  ";
+            //                        else
+            //                            cout << "  RED  ";
+            //            //            cout << "bullet_speed = " << bullet_speed_;
+            //                        if(cancel_kalman_ == 0)
+            //                            cout << "  use_kalman "<<endl;
+            //                        else
+            //                            cout << "  cancel_kalman "<<endl;
+            //            INFO(bullet_speed_);
+        }
         END_THREAD;
     }
 }
 
 // 图像处理线程
-void ImageProduceProcess::ImageProcess()
+void ThreadControl::ImageProcess()
 {
     Param_ para_armor, para_buff;
     namedWindow("control");
@@ -151,35 +180,46 @@ void ImageProduceProcess::ImageProcess()
     float angle_x_i = 0.0, angle_y_i = 0.0, distance_i = 0.0;
     float dist = 0.0f, r = 0.2f;
     float gimbal_angle_x = 0.0, predict_angle_x = 0.0;
+    // 角度结算类声明
     SolveAngle solve_angle("/home/cz/rm-vision/camera4mm.xml", -20, 42.5, -135, 0);
     SolveAngle solve_angle_long("/home/cz/rm-vision/camera8mm.xml", 20, 42.5, -135, 0);
+    // 预测类声明
     ZeYuPredict zeyu_predict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
-//    ofstream file("test.txt");
+    //    ofstream file("test.txt");
 
     while(1)
     {
+        // 等待图像生成后进行处理
+        while(produce_index - consumption_index == 0);
+        data[consumption_index % BUFFER_SIZE].img.copyTo(image);
 
-        while(prdIdx - csmIdx == 0);
-        data[csmIdx % BUFFER_SIZE].img.copyTo(image);
-        dist = (1-r)*dist + r * distance;
-        //            cout << dist << endl;
-        if(dist > 2000)
+//                dist = (1-r)*dist + r * distance;
+//                //            cout << dist << endl;
+//                if(dist > 2000)
+//                {
+//                    cap_mode_ = true;
+//                }
+//                else if(dist < 1500)
+//                {
+//                    cap_mode_ = false;
+//                }
+        uchar key = waitKey(1);
+        if(key == 'q')
+            end_thread_flag = true;
+        else if(key == 'c')
         {
-            cap_mode_ = true;
+            cap_mode_ = !cap_mode_;
         }
-        else if(dist < 1500)
-        {
-            cap_mode_ = false;
-        }
-        ++csmIdx;
+        cout << cap_mode_ << endl;
+        ++consumption_index;
 
-//        imshow("src", image);
+        //        imshow("src", image);
         double t1 = getTickCount();
         bool find_flag = ArmorDetectTask(image, para_armor);   // 装甲板检测
         if(find_flag)
         {
-//            solve_angle.getAngle(para_armor.points_2d, 14, angle_x, angle_y, distance, theta_y);
-//            solve_angle.getAngle_ICRA(para_armor.points_2d, 14, angle_x_i, angle_y_i, distance_i);
+            //            solve_angle.getAngle(para_armor.points_2d, 14, angle_x, angle_y, distance, theta_y);
+            //            solve_angle.getAngle_ICRA(para_armor.points_2d, 14, angle_x_i, angle_y_i, distance_i);
             if(cap_mode_ == false) // close
             {
                 solve_angle.Generate3DPoints(0, Point2f());
@@ -198,25 +238,17 @@ void ImageProduceProcess::ImageProcess()
             //---predict
             protectDate(km_Qp, km_Qv, km_Rp, km_Rv, km_t, km_pt);
 
-            km_pt = distance/2500*km_pt+20;
-//                    float max_limit_angle_y = 15;
-//                    float min_limit_angle_y = 5;
-//                    if(fabs(theta_y)>max_limit_angle_y)
-//                    {
-//                        km_pt = 0;
-//                    }/*else if(abs(theta_y )< max_limit_angle_y && abs(theta_y) > min_limit_angle_y)
-//                    {
-//                        km_pt = km_pt * (max_limit_angle_y - abs(theta_y))/max_limit_angle_y;
-//                    }*/
-            zeyu_predict.setQRT(km_Qp,km_Qv,km_Rp,km_t,km_pt);
+            float pre_time = distance/2500*static_cast<float>(km_pt)+20.0f;
+
+            zeyu_predict.setQRT(km_Qp,km_Qv,km_Rp,km_t,pre_time);
             if(serial_gimbal_.success_)   // gimbal is successed
             {
                 //            cout << "true" << endl;
                 if(history_index==0)
                     history_index = 1;
                 vector<float> vec_gimbal_yaw_tmp = vec_gimbal_yaw;
-                if(vec_gimbal_yaw_tmp.size()>history_index)
-                    gimbal_angle_x = vec_gimbal_yaw_tmp.at(vec_gimbal_yaw_tmp.size()-history_index);
+                if(vec_gimbal_yaw_tmp.size() > static_cast<size_t>(history_index))
+                    gimbal_angle_x = vec_gimbal_yaw_tmp.at(vec_gimbal_yaw_tmp.size()-static_cast<size_t>(history_index));
                 else if(vec_gimbal_yaw_tmp.size()==0)
                     gimbal_angle_x = 0.0;
                 else
@@ -232,23 +264,22 @@ void ImageProduceProcess::ImageProcess()
 
         //--/predict
         limit_angle(angle_x, 5);
-//        file << csmIdx << " " << angle_x << " " << angle_y << "\n";
+        //        file << csmIdx << " " << angle_x << " " << angle_y << "\n";
 
-        tx_data.get_xy_data(-angle_x*100, -angle_y*100, find_flag);
-        serial_.send_data(tx_data);
+                tx_data.get_xy_data(-angle_x*100, -angle_y*100,find_flag);
+                serial_.send_data(tx_data);
 
 
-                imshow("image",image);
-                if(waitKey(1)>0)
-                    end_thread_flag = true;
-//                usleep(1);
+        imshow("image",image);
+
+        //                usleep(1);
         double t2 = getTickCount();
         double t = (t2 - t1)*1000/getTickFrequency();
         INFO(t);
         END_THREAD;
 
     }
-//    file.close();
+    //    file.close();
 }
 
 void protectDate(int& a, int &b, int &c, int& d, int& e, int& f)

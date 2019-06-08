@@ -16,13 +16,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-    image_produce_process.cpp \
-    capture_video.cpp \
     armor_detect.cpp \
     solve_angle.cpp \
     serial_port.cpp \
     predict.cpp \
-    buff_detect.cpp
+    buff_detect.cpp \
+    thread_control.cpp \
+    camera_device.cpp
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
@@ -100,13 +100,16 @@ LIBS += /usr/local/lib/libopencv_calib3d.so \
         /usr/local/lib/libopencv_objdetect.so.3.4
 
 HEADERS += \
-    image_produce_process.h \
-    capture_video.h \
     armor_detect.h \
     solve_angle.h \
     serial_port.h \
     predict.h \
     buff_detect.h \
-    settings.h
+    settings.h \
+    thread_control.h \
+    camera_device.h
 
-FORMS +=
+LIBS += -lgxiapi -ldximageproc
+
+INCLUDEPATH += /home/cz/dhcam_install_20181107/dh_camera/daheng-sdk-x64/sdk/genicam/library/CPP/include
+INCLUDEPATH += /home/cz/dhcam_install_20181107/dh_camera/daheng-sdk-x64/sdk/include
