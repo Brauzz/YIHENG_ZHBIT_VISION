@@ -1,8 +1,23 @@
+/****************************************************************************
+ *  Copyright (C) 2019 cz.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ ***************************************************************************/
 #include "buff_detect.h"
-
 bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color, Point2f offset_tvec, float &theta_angle)
 {
-    // preprocessing
+    // **预处理** -图像进行相应颜色的二值化
     target_2d_point.clear();
     vector<cv::Mat> bgr;
     split(img, bgr);
@@ -19,7 +34,8 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
     imshow("mask", binary_color_img);
     if(th < 20)
         return 0;
-    // find contours
+    // **寻找击打矩形目标** -通过几何关系
+    //TODO(cz): 建议使用拟合椭圆的方法重新实现
     RotatedRect small_target_rect;
     vector<vector<Point>> contours;
     vector<Vec4i> hierarchy;
@@ -74,7 +90,7 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
                 small_target.rrect.size.width = tmp;
             }
 
-            // find the target
+            // **目标数据转换** -用于计算世界坐标预测，计算绝对四个点，和计算角度
             if(small_target.rrect.size.height/small_target.rrect.size.width < 3.0f
                     && small_target.rrect.size.height/small_target.rrect.size.width > 1.0f)
             {
@@ -97,8 +113,8 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
                     // 上下装甲板边沿  此时装甲板水平和+角度
                     Point2f Lower_edge = (origin_point_tmp[0] + origin_point_tmp[3])/2.0f;
                     Point2f upper_edge = (origin_point_tmp[1] + origin_point_tmp[2])/2.0f;
-//                    circle(img, Lower_edge, 10, Scalar(0,0,255),-1);
-//                    circle(img, upper_edge, 10, Scalar(255,0,0),-1);
+                    //                    circle(img, Lower_edge, 10, Scalar(0,0,255),-1);
+                    //                    circle(img, upper_edge, 10, Scalar(255,0,0),-1);
                     // 通过父轮廓中心判断中心靠近哪个边缘
                     float lower_edge_dist = calcDistanceFor2Point(Lower_edge, big_target_center);
                     float upper_edge_dist = calcDistanceFor2Point(upper_edge, big_target_center);
@@ -127,7 +143,7 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
                     {
                         // 流水灯靠近左边沿
                         conversionAbsolutePoint(origin_point_tmp, target_2d_point, point_offset, 2, 3, 0, 1);
-                         theta_angle =  - small_target.origin_rrect.angle;
+                        theta_angle =  - small_target.origin_rrect.angle;
                     }
                     else
                     {
@@ -160,6 +176,17 @@ double calcDistanceFor2Point(Point2f p1, Point2f p2)
 {
     return pow(pow((p1.x-p2.x), 2) + pow((p1.y - p2.y), 2), 0.5);
 }
+
+/**
+ * @brief conversionAbsolutePoint 对不同情况的点进行补偿
+ * @param point_tmp 原始点
+ * @param dst 最终处理
+ * @param offset 补偿值
+ * @param i1 转换序号
+ * @param i2
+ * @param i3
+ * @param i4
+ */
 void conversionAbsolutePoint(Point2f *point_tmp, vector<Point2f>& dst
                              ,Point2f offset
                              ,int8_t i1, int8_t i2, int8_t i3, int8_t i4)

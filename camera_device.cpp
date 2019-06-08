@@ -1,9 +1,133 @@
-#include "capture_video.h"
+/****************************************************************************
+ *  Copyright (C) 2019 cz.
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/>.
+ ***************************************************************************/
+#include "camera_device.h"
 #include <fcntl.h>
 #include <unistd.h>
 #include <linux/videodev2.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+
+
+CameraDevice::CameraDevice()
+{
+    status = GX_STATUS_SUCCESS;
+//    GX_DEV_HANDLE hDevice = nullptr;
+//    uint32_t nDeviceNum = 0;
+    src.create(480,640,CV_8UC3);
+    stOpenParam.accessMode = GX_ACCESS_EXCLUSIVE;
+    stOpenParam.openMode   = GX_OPEN_INDEX;
+    stOpenParam.pszContent = "1";
+    nFrameNum = 0;
+
+}
+
+CameraDevice::~CameraDevice()
+{
+    status = GXSendCommand(hDevice, GX_COMMAND_ACQUISITION_STOP);
+
+    //释放图像缓冲区buffer
+    free(stFrameData.pImgBuf);
+
+    status = GXCloseDevice(hDevice);
+    status = GXCloseLib();
+}
+
+int CameraDevice::init()
+{
+    // 初始化库
+    status = GXInitLib();
+
+    if (status != GX_STATUS_SUCCESS)
+    {
+        return 0;
+    }
+    status = GXUpdateDeviceList(&nDeviceNum, 1000);
+
+    if ((status != GX_STATUS_SUCCESS) || (nDeviceNum <= 0))
+    {
+        return 0;
+    }
+    status = GXOpenDevice(&stOpenParam, &hDevice);
+            std::cout << status << std::endl;
+    if (status == GX_STATUS_SUCCESS)
+    {
+        int64_t nPayLoadSize = 0;
+        //获取图像buffer大小，下面动态申请内存
+        status = GXGetInt(hDevice, GX_INT_PAYLOAD_SIZE, &nPayLoadSize);
+
+        if (status == GX_STATUS_SUCCESS && nPayLoadSize > 0)
+        {
+            //定义GXGetImage的传入参数
+
+            //根据获取的图像buffer大小m_nPayLoadSize申请buffer
+            stFrameData.pImgBuf = malloc((size_t)nPayLoadSize);
+
+            // 设置曝光值
+            status = GXSetFloat(hDevice, GX_FLOAT_EXPOSURE_TIME, 1000);
+
+            //设置采集模式连续采集
+            //            status = GXSetEnum(hDevice, GX_ENUM_ACQUISITION_MODE, GX_ACQ_MODE_CONTINUOUS);
+            //            status = GXSetInt(hDevice, GX_INT_ACQUISITION_SPEED_LEVEL, 1);
+            //            status = GXSetEnum(hDevice, GX_ENUM_BALANCE_WHITE_AUTO, GX_BALANCE_WHITE_AUTO_CONTINUOUS);
+
+            //发送开始采集命令
+            status = GXSendCommand(hDevice, GX_COMMAND_ACQUISITION_START);
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void CameraDevice::getImage(Mat &img)
+{
+    GXGetImage(hDevice, &stFrameData, 100);
+    //usleep(1);
+
+    if (stFrameData.nStatus == GX_FRAME_STATUS_SUCCESS)
+    {
+        //图像获取成功
+
+        double t1 = getTickCount();
+        char* m_rgb_image=nullptr; //增加的内容
+        m_rgb_image=new char[stFrameData.nWidth*stFrameData.nHeight*3];
+
+        //                        memcpy(src.data,stFrameData.pImgBuf,stFrameData.nWidth*stFrameData.nHeight);
+
+        DxRaw8toRGB24(stFrameData.pImgBuf,m_rgb_image,stFrameData.nWidth, stFrameData.nHeight,RAW2RGB_NEIGHBOUR3,DX_PIXEL_COLOR_FILTER(BAYERBG),false);
+
+        memcpy(src.data,m_rgb_image,stFrameData.nWidth*stFrameData.nHeight*3);
+
+        src.copyTo(img);
+        nFrameNum++;
+//                        imshow("test",src);
+
+        //对图像进行处理...
+        delete []m_rgb_image;
+        //                        }
+    }
+}
+
+uint64_t CameraDevice::getFrameNumber()
+{
+    return nFrameNum;
+}
+
+
+//---------------------- v4l2 -----------------------
 CaptureVideo::CaptureVideo(const char* device, unsigned int in_size_buffer):video_path(device)
 {
     fd = open(device, O_RDWR);
