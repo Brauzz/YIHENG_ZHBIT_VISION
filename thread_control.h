@@ -20,23 +20,16 @@
 #include "thread"
 #include "unistd.h"
 #include "chrono"
+#include "fstream"
+#include "boost/timer.hpp"
+
 #include "camera_device.h"
 #include "armor_detect.h"
 #include "buff_detect.h"
 #include "serial_port.h"
 #include "solve_angle.h"
 #include "predict.h"
-#include "settings.h"
-#include "fstream"
-
-#define END_THREAD if(end_thread_flag) return;
-#define INFO(a) cout<<#a<<"="<<a<<endl;
-#define TIME_START(a) double a=getTickCount();
-#define TIME_END(a) cout<<#a<<" "<<(getTickCount()-a)*1000/getTickFrequency()<<endl;
-
-#define VIDEO_WIDTH 640
-#define VIDEO_HEIGHT 360
-#define BUFFER_SIZE 1
+#include "common.h"
 
 using namespace cv;
 using namespace std;
@@ -57,13 +50,16 @@ public:
     void GetSTM32();          // 用于接收电控发来的数据
 public:
 
-    int8_t mode_;           // 视觉模式，0是自瞄模式，1是能量机关模式
-//    bool cap_mode_;       // 摄像头类型，0是短焦摄像头，1是长焦摄像头
-    int8_t color_;          // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
+    bool short_camera_flag;
+    bool long_camera_flag;
+
+//    int8_t mode_;           // 视觉模式，0是自瞄模式，1是能量机关模式
+    //    bool cap_mode_;       // 摄像头类型，0是短焦摄像头，1是长焦摄像头
+//    int8_t color_;          // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
     float bullet_speed_;    // 子弹发射速度(m/s)
     int8_t cancel_kalman_;  // 取消预测标志位，当预测不稳定时，操作手可以取消预测
     // kalman滤波的参数
-    int km_Qp = 300, km_Qv = 1, km_Rp = 1, km_Rv = 1;
+    int km_Qp = 500, km_Qv = 1, km_Rp = 1, km_Rv = 1;
     int km_t = 1, km_pt = 70;  // (ms)
     int history_index = 1;  // 陀螺仪的历史数据的序号
 private:
@@ -80,7 +76,7 @@ private:
 struct ImageData
 {
     Mat img;
-//    unsigned int frame;
+    //    unsigned int frame;
 };
 
 void protectDate(int& a, int &b, int &c, int& d, int& e, int& f);

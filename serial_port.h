@@ -61,8 +61,11 @@ public:
     bool read_data(const struct serial_receive_data *data, int8_t &mode, int8_t &my_car_color, float &bullet_speed, int8_t& cancel_kalman);
     bool read_gimbal(const struct serial_gimbal_data* data, float &gimbal_yaw);
     int fd;
+    int last_fd;
     bool success_;
+
 private:
+
     const char* file_name_;
     int buadrate_;
     float last_bullet_speed;

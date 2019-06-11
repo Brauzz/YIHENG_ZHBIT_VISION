@@ -27,7 +27,7 @@ CameraDevice::CameraDevice()
     status = GX_STATUS_SUCCESS;
 //    GX_DEV_HANDLE hDevice = nullptr;
 //    uint32_t nDeviceNum = 0;
-    src.create(480,640,CV_8UC3);
+    src.create(420,640,CV_8UC3);
     stOpenParam.accessMode = GX_ACCESS_EXCLUSIVE;
     stOpenParam.openMode   = GX_OPEN_INDEX;
     stOpenParam.pszContent = "1";
@@ -83,6 +83,15 @@ int CameraDevice::init()
             //            status = GXSetEnum(hDevice, GX_ENUM_ACQUISITION_MODE, GX_ACQ_MODE_CONTINUOUS);
             //            status = GXSetInt(hDevice, GX_INT_ACQUISITION_SPEED_LEVEL, 1);
             //            status = GXSetEnum(hDevice, GX_ENUM_BALANCE_WHITE_AUTO, GX_BALANCE_WHITE_AUTO_CONTINUOUS);
+            int64_t nWidth   = 640;
+            int64_t nHeight  = 420;
+            int64_t nOffsetX = 0;
+            int64_t nOffsetY = 0;
+            status = GXSetInt(hDevice, GX_INT_WIDTH, nWidth);
+            status = GXSetInt(hDevice, GX_INT_HEIGHT, nHeight);
+            status = GXSetInt(hDevice, GX_INT_OFFSET_X, nOffsetX);
+            status = GXSetInt(hDevice, GX_INT_OFFSET_Y, nOffsetY);
+
 
             //发送开始采集命令
             status = GXSendCommand(hDevice, GX_COMMAND_ACQUISITION_START);
@@ -94,26 +103,22 @@ int CameraDevice::init()
 
 void CameraDevice::getImage(Mat &img)
 {
+
     GXGetImage(hDevice, &stFrameData, 100);
     //usleep(1);
 
     if (stFrameData.nStatus == GX_FRAME_STATUS_SUCCESS)
     {
         //图像获取成功
-
-        double t1 = getTickCount();
         char* m_rgb_image=nullptr; //增加的内容
         m_rgb_image=new char[stFrameData.nWidth*stFrameData.nHeight*3];
-
-        //                        memcpy(src.data,stFrameData.pImgBuf,stFrameData.nWidth*stFrameData.nHeight);
-
         DxRaw8toRGB24(stFrameData.pImgBuf,m_rgb_image,stFrameData.nWidth, stFrameData.nHeight,RAW2RGB_NEIGHBOUR3,DX_PIXEL_COLOR_FILTER(BAYERBG),false);
 
         memcpy(src.data,m_rgb_image,stFrameData.nWidth*stFrameData.nHeight*3);
 
         src.copyTo(img);
+//        img = src;
         nFrameNum++;
-//                        imshow("test",src);
 
         //对图像进行处理...
         delete []m_rgb_image;
@@ -350,7 +355,9 @@ bool CaptureVideo::changeVideoFormat(int in_width, int in_height, bool in_mjpg)
 void CaptureVideo::restartCapture()
 {
     close(fd);
+//    cout << video_path << endl;
     fd = open(video_path, O_RDWR);
+    cout << fd <<endl;
     buffer_index = 0;
     current_frame = 0;
 }
@@ -367,6 +374,45 @@ bool CaptureVideo::getVideoSize(int &width, int &height)
     width = capture_width;
     height = capture_height;
     return true;
+}
+
+void CaptureVideo::imread(Mat &image)
+{
+    struct v4l2_buffer bufferinfo = {0};
+    bufferinfo.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    bufferinfo.memory = V4L2_MEMORY_MMAP;
+    bufferinfo.index = buffer_index;
+    if(ioctl(fd, VIDIOC_DQBUF, &bufferinfo) < 0)
+    {
+        perror("VIDIOC_DQBUF ERROR");
+            closeStream();
+            restartCapture();
+            startStream();
+        return;
+    }
+
+    //std::cout << "raw data size: " << bufferinfo.bytesused << std::endl;
+    cvtRaw2Mat(mb[buffer_index].ptr, image);
+
+    //memset(&bufferinfo, 0, sizeof(bufferinfo));
+    bufferinfo.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    bufferinfo.memory = V4L2_MEMORY_MMAP;
+    bufferinfo.index = buffer_index;
+
+    //Queue the next one
+    if(ioctl(fd, VIDIOC_QBUF, &bufferinfo) < 0)
+    {
+        perror("VIDIOC_DQBUF ERROR");
+        closeStream();
+        restartCapture();
+        startStream();
+        return;
+    }
+    ++buffer_index;
+    buffer_index = buffer_index >= buffer_size ? buffer_index - buffer_size:buffer_index;
+    ++current_frame;
+    return;
+//    return *this;
 }
 
 CaptureVideo & CaptureVideo::operator>>(Mat &image)
@@ -492,6 +538,7 @@ int CaptureVideo::xioctl(int in_fd, int in_request, void *arg)
     while (-1 == r && EINTR == errno);
     return r;
 }
+
 char* CaptureVideo::video_name(char* format)
 {
     struct tm *newtime;
@@ -505,8 +552,4 @@ char* CaptureVideo::video_name(char* format)
     char *name = (char *) malloc(strlen(firstName)+ strlen(format));
     sprintf(name,"%s%s",firstName,format);
     return name;
-
-
-
-
 }

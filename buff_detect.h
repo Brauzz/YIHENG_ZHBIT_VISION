@@ -17,6 +17,8 @@
 #pragma once
 
 #include "opencv2/opencv.hpp"
+#include "common.h"
+
 using namespace cv;
 using namespace std;
 
@@ -85,14 +87,10 @@ private:
 /**
  * @brief BuffDetectTask 能量机关识别总任务，每帧调用
  * @param img 摄像头获取的RGB图像
- * @param target_2d_point 图像上目标的4个顶点
- * @param our_color 自身车辆颜色
- * @param offset_tvec 图像左边点平移补偿量
- * @param theta_angle 得到的目标角度
  * @return 1是发现目标，0是未发现目标
  */
-bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color, Point2f offset_tvec, float &theta_angle);
-
+//bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color, Point2f offset_tvec, float &theta_angle);
+bool BuffDetectTask(Mat &img, Parameter &param);
 double calcDistanceFor2Point(Point2f p1, Point2f p2);
 
 /**

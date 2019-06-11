@@ -15,10 +15,10 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  ***************************************************************************/
 #include "armor_detect.h"
-
+#include "omp.h"
 //#define DEBUG_DETECT
-#define show_rect_angle
-#define show_rect_bound
+//#define show_rect_angle
+//#define show_rect_bound
 #define USE_FIT
 
 // 计算两个点之间的距离
@@ -28,7 +28,7 @@ double calc_distance(Point2f p1, Point2f p2)
 }
 
 
-bool ArmorDetectTask(Mat &img, Param_ &param)
+bool ArmorDetectTask(Mat &img, Parameter &param)
 {
     // **预处理** -图像进行相应颜色的二值化
     vector<LED_Stick> LED_Stick_v;  // 声明所有可能的灯条容器
@@ -36,7 +36,6 @@ bool ArmorDetectTask(Mat &img, Param_ &param)
     cvtColor(img,gray,COLOR_BGR2GRAY);
     //    Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
     //    dilate(img, img, element);
-
     vector<cv::Mat> bgr;
     split(img, bgr);
     Mat result_img;
@@ -61,20 +60,25 @@ bool ArmorDetectTask(Mat &img, Param_ &param)
     vector<vector<Point>> contours_brightness;
     findContours(binary_color_img, contours_light, RETR_EXTERNAL, CHAIN_APPROX_NONE);
     findContours(binary_brightness_img, contours_brightness, RETR_EXTERNAL, CHAIN_APPROX_NONE);
+//    int test_cnt = 0;
+#pragma omp for
     for(size_t i = 0; i < contours_brightness.size(); i++)
     {
-        double area = contourArea(contours_brightness[i]);
-        if (area < 20.0 || 1e5 < area) continue;
+
+//        double area = contourArea(contours_brightness[i]);
+//        if (area < 20.0 || 1e5 < area) continue;
+        #pragma omp for
         for(size_t ii = 0; ii < contours_light.size(); ii++)
         {
+//            test_cnt ++;
             if(pointPolygonTest(contours_light[ii], contours_brightness[i][0], false) >= 0.0 )
             {
-                double length = arcLength( Mat(contours_brightness[i]), true); // 灯条周长
+                double length = arcLength(contours_brightness[i], true); // 灯条周长
                 if (length > 30 && length <400)
                 {
 #ifdef USE_FIT
                     // 使用拟合椭圆的方法要比拟合最小矩形提取出来的角度更精确
-                    RotatedRect RRect = fitEllipse( Mat(contours_brightness[i]));
+                    RotatedRect RRect = fitEllipse(contours_brightness[i]);
 #ifdef show_rect_bound
                     // 旋转矩形提取四个点
                     Point2f rect_point[4];
@@ -122,6 +126,7 @@ bool ArmorDetectTask(Mat &img, Param_ &param)
             }
         }
     }
+
 
     // **寻找可能的装甲板** -遍历每个可能的灯条, 两两灯条拟合成装甲板进行逻辑判断
     for(size_t i = 0; i < LED_Stick_v.size() ; i++)
@@ -180,24 +185,53 @@ bool ArmorDetectTask(Mat &img, Param_ &param)
         target.draw_spot(img);
         Point2f point_tmp[4];
         Point2f point_2d[4];
-        param.offset_image = Point2i(param.offset_x, param.offset_y);
+        RotatedRect R, L;
+        if(target.Led_stick[0].rect.center.x > target.Led_stick[1].rect.center.x)
+        {
+            R = target.Led_stick[0].rect;
+            L = target.Led_stick[1].rect;
+        }else
+        {
+            R = target.Led_stick[1].rect;
+            L = target.Led_stick[0].rect;
+        }
+        if(param.cap_mode_ == 0)
+        {
+            param.offset_image = Point2i(param.short_offset_x, param.short_offset_y);
+        }
+        else
+        {
+            param.offset_image = Point2i(param.long_offset_x, param.long_offset_y);
+        }
+
         Point2f offset_point = Point2f(100, 100) - static_cast<Point2f>(param.offset_image);
-        target.Led_stick[0].rect.points(point_tmp);
+
+        if(param.cap_mode_==1)
+            offset_point += Point2f(0,120);
+        L.points(point_tmp);
 
         point_2d[0] = point_tmp[1] + offset_point;
         point_2d[3] = point_tmp[0] + offset_point;
-        target.Led_stick[1].rect.points(point_tmp);
+        R.points(point_tmp);
         point_2d[1] = point_tmp[2] + offset_point;
         point_2d[2] = point_tmp[3] + offset_point;
-        circle(img, point_2d[0],3,Scalar(255,255,255),1);
-        circle(img, point_2d[1],3,Scalar(0,0,255),1);
-        circle(img, point_2d[2],3,Scalar(0,255,0),1);
-        circle(img, point_2d[3],3,Scalar(255,0,0),1);
+//        circle(img, point_2d[0],3,Scalar(255,255,255),1);
+//        circle(img, point_2d[1],3,Scalar(0,0,255),1);
+//        circle(img, point_2d[2],3,Scalar(0,255,0),1);
+//        circle(img, point_2d[3],3,Scalar(255,0,0),1);
         param.points_2d.clear();
         for(int i=0;i<4;i++)
         {
             param.points_2d.push_back(point_2d[i]);
         }
+        float armor_h = (target.Led_stick[0].rect.size.height+target.Led_stick[1].rect.size.height)/2;
+        float armor_w = pow(pow(target.Led_stick[0].rect.center.x, 2)+pow(target.Led_stick[1].rect.center.y, 2), 0.5);
+//        cout << armor_w / armor_h <<endl;
+        if(armor_w / armor_h < 35.0f)
+            param.is_small = 0;
+        else
+            param.is_small = 1;
+
         return 1;
     }else
     {
@@ -272,8 +306,7 @@ void armor::max_match(vector<LED_Stick>& LED,size_t i,size_t j){
         R = Led_stick[1].rect;
         L = Led_stick[0].rect;
     }
-    Led_stick[0].rect = L;
-    Led_stick[1].rect = R;
+
     float angle_8 = L.angle - R.angle;
     //    cout << L.angle << " "<< R.angle << endl;
     if(angle_8 < 1e-3f)
@@ -334,14 +367,19 @@ bool armor::is_suitable_size(void) const
     if(Led_stick[0].rect.size.height*0.7f < Led_stick[1].rect.size.height
             && Led_stick[0].rect.size.height*1.3f > Led_stick[1].rect.size.height)
     {
-        float h_max = (Led_stick[0].rect.size.height + Led_stick[1].rect.size.height)/2.0f;
-        // 两个灯条高度差不大
-        if(fabs(Led_stick[0].rect.center.y - Led_stick[1].rect.center.y) < 0.8f* h_max )
+        float armor_width = fabs(Led_stick[0].rect.center.x - Led_stick[1].rect.center.x);
+        if(armor_width > Led_stick[0].rect.size.width
+                && armor_width > Led_stick[1].rect.size.width)
         {
-            // 长宽比判断
-            if(h_max*2.7f > rect.width && h_max < 2.0f* rect.width)
+            float h_max = (Led_stick[0].rect.size.height + Led_stick[1].rect.size.height)/2.0f;
+            // 两个灯条高度差不大
+            if(fabs(Led_stick[0].rect.center.y - Led_stick[1].rect.center.y) < 0.8f* h_max )
             {
-                return true;
+                // 长宽比判断
+                if(h_max*2.7f > rect.width && h_max < 2.0f* rect.width)
+                {
+                    return true;
+                }
             }
         }
     }
