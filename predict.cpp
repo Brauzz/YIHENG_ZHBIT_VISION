@@ -44,16 +44,18 @@ float ZeYuPredict::run_position(float gim_angle)
     kg = po_pre * H.t() * (H * po_pre * H.t() + Rvar).inv();
     xkf = x_pre + kg* (static_cast<double>(gim_angle) - H * x_pre);
     v = xkf.at<float>(1,0);
-    float error = v - last_v;
-    last_v = v;
-    if(abs(error)>0.5f)
-    {
-        v = 0;
-    }
+//    float error = v - last_v;
+//    last_v = v;
+//    if(abs(error)>0.5f)
+//    {
+//        v = 0;
+//    }
+//    std::cout << v << std::endl;
     predict = xkf.at<float>(0,0) + v * pre_delta;
     po = (I - kg * H) * po_pre;
     return predict;
 }
+
 
 void ZeYuPredict::setQRT(int Qp, int Qv, int Rp ,int dta, float pre_dta)
 {

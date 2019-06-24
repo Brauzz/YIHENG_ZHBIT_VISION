@@ -99,7 +99,6 @@ void ThreadControl::GetGimbal()
     while(1)
     {
         serial_gimbal_.success_ = serial_gimbal_.read_gimbal(&gim_rx_data_, curr_gimbal_yaw);
-
         if(serial_gimbal_.success_)
         {
             // 陀螺仪角度(-180~180)数据处理 ->(-99999~99999)
@@ -111,7 +110,7 @@ void ThreadControl::GetGimbal()
                 gim_count++;
             }
             gimbal_yaw= gim_count*360+curr_gimbal_yaw;
-            //            INFO(gimbal_yaw);
+//                        INFO(gimbal_yaw);
             if(vec_gimbal_yaw.size() < 120)    // 缓存120组历史陀螺仪数据zz
             {
                 vec_gimbal_yaw.push_back(gimbal_yaw);
@@ -235,13 +234,79 @@ void ThreadControl::ImageProcess()
             putText(image, "orICRA z :" + to_string(distance_i) + " x: " + to_string(angle_x_i) + " y :" + to_string(angle_y_i)
                     , Point(0,40), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 
-            //---predict
-            protectDate(km_Qp, km_Qv, km_Rp, km_Rv, km_t, km_pt);
+            ++consumption_index;
+            double t1 = getTickCount();
+            find_flag = ArmorDetectTask(image, para_armor);   // 装甲板检测
+            double t2 = getTickCount();
+            double t = (t2 - t1)*1000/getTickFrequency();
+//                                INFO(t);
+            //            INFO(cap_mode_);
+            bool final_armor_type = 0;
+            if(find_flag)
+            {
+                //            solve_angle.getAngle(para_armor.points_2d, 14, angle_x, angle_y, distance, theta_y);
+                //            solve_angle.getAngle_ICRA(para_armor.points_2d, 14, angle_x_i, angle_y_i, distance_i);
+                if(cap_mode_ == false) // close
+                {
+                    solve_angle.Generate3DPoints((uint8_t)final_armor_type, Point2f());
+                    solve_angle.getAngle(para_armor.points_2d, 15,angle_x,angle_y,distance,theta_y);   // pnp姿态结算
+                }
+                else                    // far
+                {
+                    solve_angle_long.Generate3DPoints((uint8_t)final_armor_type, Point2f());
+                    solve_angle_long.getAngle(para_armor.points_2d, 15,angle_x,angle_y,distance,theta_y);   // pnp姿态结算
+                }
+                //                printf("debug test: armor_type = %d, bullet_speed = %f", final_armor_type, bullet_speed_);
+                //                putText(image, "origin z :" + to_string(distance) + " x: " + to_string(angle_x) + " y :" + to_string(angle_y) + "theta_y :" + to_string(theta_y)
+                //                        , Point(0,20), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+                //                putText(image, "orICRA z :" + to_string(distance_i) + " x: " + to_string(angle_x_i) + " y :" + to_string(angle_y_i)
+                //                        , Point(0,40), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 
-            float pre_time = distance/2500*static_cast<float>(km_pt)+20.0f;
+                //---predict
+                protectDate(km_Qp, km_Qv, km_Rp, km_Rv, km_t, km_pt);
 
-            zeyu_predict.setQRT(km_Qp,km_Qv,km_Rp,km_t,pre_time);
-            if(serial_gimbal_.success_)   // gimbal is successed
+                float pre_time = distance/10000*static_cast<float>(km_pt)+10.0f;
+
+                zeyu_predict.setQRT(km_Qp,km_Qv,km_Rp,km_t,pre_time);
+                if(serial_gimbal_.success_)   // gimbal is successed
+                {
+                    //            cout << "true" << endl;
+                    //                    while(t<2)
+                    //                    {
+                    //                        usleep(1);
+                    //                        t2 = getTickCount();
+                    //                        t = (t2 - t1)*1000/getTickFrequency();
+                    //                    }
+
+//                    INFO(history_index);
+                    if(history_index==0)
+                        history_index = 1;
+                    vector<float> vec_gimbal_yaw_tmp = vec_gimbal_yaw;
+                    if(vec_gimbal_yaw_tmp.size() > static_cast<size_t>(history_index))
+                        gimbal_angle_x = vec_gimbal_yaw_tmp.at(vec_gimbal_yaw_tmp.size()-static_cast<size_t>(history_index));
+                    else if(vec_gimbal_yaw_tmp.size()==0)
+                        gimbal_angle_x = 0.0;
+                    else
+                        gimbal_angle_x = vec_gimbal_yaw_tmp.at(0);
+                    //                    printf("gimbla_angle%f\r\n", gimbal_angle_x);
+                    float gim_and_pnp_angle_x = -gimbal_angle_x + angle_x;  // 陀螺仪角度+pnp解析角度，从而获得敌人绝对角度
+
+                    predict_angle_x = zeyu_predict.run_position(gim_and_pnp_angle_x);   // kalman滤波预测
+                    predict_angle_x += gimbal_angle_x;
+//                    angle_x = predict_angle_x;
+                }
+            }
+
+        }
+        else
+        {
+            //***************************buff_mode***********************************
+            //***************************buff_mode***********************************
+
+            ++consumption_index;
+            para_armor.cap_mode_ = true;
+            find_flag = BuffDetectTask(image, para_armor);
+            if(find_flag)
             {
                 //            cout << "true" << endl;
                 if(history_index==0)
@@ -263,10 +328,9 @@ void ThreadControl::ImageProcess()
         }
 
         //--/predict
-        limit_angle(angle_x, 5);
+        limit_angle(angle_x, 3);
         //        file << csmIdx << " " << angle_x << " " << angle_y << "\n";
-
-                tx_data.get_xy_data(-angle_x*100, -angle_y*100,find_flag);
+                tx_data.get_xy_data(-angle_x*200, -angle_y*100,find_flag);
                 serial_.send_data(tx_data);
 
 

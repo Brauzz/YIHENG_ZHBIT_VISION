@@ -29,6 +29,10 @@ public:
     void setQRT(int Qp, int Qv, int Rp , int dta, float pre_dta);
     float run_position(float gim_angle);
 
+    float getSpeed()
+    {
+        return v;
+    }
     bool exit_flag;
 private:
     Mat Qvar;
