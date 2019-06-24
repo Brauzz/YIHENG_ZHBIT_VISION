@@ -15,14 +15,14 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  ***************************************************************************/
 #include "buff_detect.h"
-bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color, Point2f offset_tvec, float &theta_angle)
+bool BuffDetectTask(Mat &img, Parameter &param)
 {
     // **预处理** -图像进行相应颜色的二值化
-    target_2d_point.clear();
+    param.points_2d.clear();
     vector<cv::Mat> bgr;
     split(img, bgr);
     Mat result_img;
-    if(our_color != 0)
+    if(param.color != 0)
     {
         subtract(bgr[2], bgr[1], result_img);
     }else
@@ -30,7 +30,7 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
         subtract(bgr[0], bgr[2], result_img);
     }
     Mat binary_color_img;
-    double th = threshold(result_img, binary_color_img, 10, 255, CV_THRESH_BINARY|CV_THRESH_OTSU);
+    double th = threshold(result_img, binary_color_img, 50, 255, CV_THRESH_BINARY|CV_THRESH_OTSU);
     imshow("mask", binary_color_img);
     if(th < 20)
         return 0;
@@ -104,8 +104,8 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
                 float width_ = small_target.origin_rrect.size.width;
                 float height_ = small_target.origin_rrect.size.height;
                 Point2f big_target_center = big_target_rect.center;
-                float offset_x = offset_tvec.x;
-                float offset_y = offset_tvec.y;
+                float offset_x = param.buff_offset_x;
+                float offset_y = param.buff_offset_y;
                 Point2f point_offset = Point2f(offset_x, offset_y);
 
                 if(width_>=height_)
@@ -121,14 +121,14 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
                     if( lower_edge_dist <= upper_edge_dist)
                     {
                         // 流水灯靠近下边沿
-                        conversionAbsolutePoint(origin_point_tmp, target_2d_point, point_offset, 1, 2, 3, 0);
-                        theta_angle = 90 - small_target.origin_rrect.angle;
+                        conversionAbsolutePoint(origin_point_tmp, param.points_2d, point_offset, 1, 2, 3, 0);
+                        param.buff_angle = 90 - small_target.origin_rrect.angle;
                     }
                     else
                     {
                         // 流水灯靠近上边沿
-                        conversionAbsolutePoint(origin_point_tmp, target_2d_point, point_offset, 3, 0, 1, 2);
-                        theta_angle = 270 - small_target.origin_rrect.angle;
+                        conversionAbsolutePoint(origin_point_tmp, param.points_2d, point_offset, 3, 0, 1, 2);
+                        param.buff_angle = 270 - small_target.origin_rrect.angle;
                     }
                 }else
                 {
@@ -142,32 +142,29 @@ bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color
                     if(left_edge_dist <= right_edge_dist)
                     {
                         // 流水灯靠近左边沿
-                        conversionAbsolutePoint(origin_point_tmp, target_2d_point, point_offset, 2, 3, 0, 1);
-                        theta_angle =  - small_target.origin_rrect.angle;
+                        conversionAbsolutePoint(origin_point_tmp, param.points_2d, point_offset, 2, 3, 0, 1);
+                        param.buff_angle =  - small_target.origin_rrect.angle;
                     }
                     else
                     {
                         // 流水灯靠近右边沿
-                        conversionAbsolutePoint(origin_point_tmp, target_2d_point, point_offset, 0, 1, 2, 3);
-                        theta_angle = 180 - small_target.origin_rrect.angle;
+                        conversionAbsolutePoint(origin_point_tmp, param.points_2d, point_offset, 0, 1, 2, 3);
+                        param.buff_angle = 180 - small_target.origin_rrect.angle;
                     }
                 }
 
                 for(int l=0;l<4;l++)
                 {
-                    circle(img, target_2d_point.at(static_cast<size_t>(l)), 3, Scalar(0,255,255));
+                    circle(img, param.points_2d.at(static_cast<size_t>(l)), 3, Scalar(0,255,255));
                     putText(img, to_string(l),
-                            target_2d_point.at(static_cast<size_t>(l)),
+                            param.points_2d.at(static_cast<size_t>(l)),
                             FONT_HERSHEY_COMPLEX, 0.5,Scalar(255,255,255));
                 }
                 //-----------\new alorithm -----------------------------------
                 return 1;
             }
-
-
         }
     }
-
     return 0;
 }
 

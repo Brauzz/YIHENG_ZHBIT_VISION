@@ -23,28 +23,11 @@ using namespace std;
 // ****** settings ******//
 #define GALAXY;
 // for armor
-//#define DEBUG_ARMOR_DETECT
-//#define SHOW_PUT_TEXT
-//#define SHOW_DRAW
+#define DEBUG_ARMOR_DETECT
+#define SHOW_PUT_TEXT
+#define SHOW_DRAW
 #define USE_FIT_ELLIPSE
 // for buff
-/****************************************************************************
- *  Copyright (C) 2019 cz.
- *
- *  This program is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program. If not, see <http://www.gnu.org/licenses/>.
- ***************************************************************************/
-
 #define DEBUG_BUFF_DETECT
 
 // for image
@@ -88,9 +71,9 @@ public:
         short_offset_x = 111;
         short_offset_y = 80;
         long_offset_x = 90;//90
-        long_offset_y = 200;//100
+        long_offset_y = 100;//100
         world_offset_x = 500;
-        world_offset_y = 639;
+        world_offset_y = 500;
         offset_image = Point2i(100,100);
         color_th = 65;
         gray_th = 108;

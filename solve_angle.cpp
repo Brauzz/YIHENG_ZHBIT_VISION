@@ -34,8 +34,8 @@ SolveAngle::SolveAngle(const char* file_path, float c_x, float c_y, float c_z, f
     // 读取相机内参和畸变矩阵
     fs["Camera_Matrix"] >> cameraMatrix;
     fs["Distortion_Coefficients"] >> distCoeffs;
-    cout << cameraMatrix << endl;
-    cout << distCoeffs << endl;
+//    cout << cameraMatrix << endl;
+//    cout << distCoeffs << endl;
     Generate3DPoints(0,Point2f(0,0));
     Mat(objectPoints).convertTo(object_point_mat, CV_32F);
     Mat rvec(3, 1, DataType<double>::type);

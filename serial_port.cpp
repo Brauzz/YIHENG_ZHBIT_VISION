@@ -20,7 +20,7 @@
 #include <errno.h>      // ERROR Number Definitions
 #include <termios.h>    // POSIX Terminal Control Definitions
 #include "opencv.hpp"
-
+#include "thread_control.h"
 //int cccc = 0;
 //double t1 = 0.0, t2 = 0.0;
 SerialPort::SerialPort(){}
@@ -29,16 +29,21 @@ SerialPort::SerialPort(const char* filename, int buadrate)
 {
     file_name_ = filename;
     buadrate_ = buadrate;
-    fd = open(file_name_, O_RDWR | O_NOCTTY | O_SYNC);// Read/Write access to serial port
-    cout << fd << endl;                                                // No terminal will control the process
+    success_ = false;
+//    serial_mode = NO_INIT;
+    fd = open(file_name_, O_RDWR | O_NOCTTY | O_SYNC);// Read/Write access to serial port                                           // No terminal will control the process
+    last_fd = fd;
     if(fd == -1)
     {
-        printf("open_port: Unable to open %s .\n", file_name_);
+        printf("open_port wait to open %s .\n", file_name_);
+//        NOTICE("wait serial " << file_name_,1);
+        return;
     }
-    else
+    else if(fd != -1 )
     {
         fcntl(fd, F_SETFL,0);
-        printf("port is open %s .\n", file_name_);
+//        NOTICE("port is open " << file_name_,1);
+        printf("port is open %s.\n", file_name_);
     }
     struct termios port_settings;               // structure to store the port settings in
     if(buadrate_==0)
@@ -75,6 +80,7 @@ SerialPort::SerialPort(const char* filename, int buadrate)
     port_settings.c_cc[VTIME] = 5;          // 0.5 seconds read timeout
 
     tcsetattr(fd, TCSANOW, &port_settings);             // apply the settings to the port
+
 }
 
 // pc -> stm32
@@ -97,19 +103,22 @@ bool SerialPort::read_data(const struct serial_receive_data *data, int8_t &mode,
     int  bytes_read = 0;    /* Number of bytes read by the read() system call */
 
     bytes_read = read(fd,&read_buffer,7); /* Read the data                   */
-    if(bytes_read == -1)
+//    cout << "bytes_read: " << bytes_read;
+//    for (int i = 0; i < bytes_read; i++) {
+//        cout << "buf " << i << ": " << read_buffer[i];
+//    }
+//    cout << endl;
+    if(bytes_read == -1 || bytes_read == 0)
     {
-        cout << "can not read!" << endl;
+//        cout << "can not read!" << endl;
+//        NOTICE("can not read!",3);
+        restart_serial();
         success_ = false;
         return 0;
     }
     //        printf("buffer1 = %d\t\buffer1 = %d\t buffer1 = %d\tbuffer1 = %d\t\n", read_buffer[1], read_buffer[2], read_buffer[3], read_buffer[4]);
     if(read_buffer[0] == data->head && read_buffer[6] == data->end)
     {
-//        cccc++;
-//        t1 = cv::getTickCount();
-//        double t = (t1-t2)*1000/cv::getTickFrequency();
-//        cout << t  << endl;
         mode = int8_t(read_buffer[1]);
         my_car_color = int8_t(read_buffer[2]);
         bullet_speed = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
@@ -124,7 +133,6 @@ bool SerialPort::read_data(const struct serial_receive_data *data, int8_t &mode,
             bullet_speed = last_bullet_speed;
         }
         success_ = false;
-//        t2 = cv::getTickCount();
         return 1;
     }
 //    cout << "count "<< cccc << endl;
@@ -144,8 +152,10 @@ bool SerialPort::read_gimbal(const struct serial_gimbal_data* data, float &gimba
     bytes_read = read(fd,&read_buffer,20); /* Read the data                   */
 //        for(int i=0;i<bytes_read;i++)	 /*printing only the received characters*/
 //            printf("%x\t",read_buffer[i]);
-    if(bytes_read == -1)
+    if(bytes_read == -1 || bytes_read == 0)
     {
+        restart_serial();
+        success_ = false;
         //        cout << "can not read!" << endl;
         return 0;
     }
@@ -171,17 +181,27 @@ bool SerialPort::read_gimbal(const struct serial_gimbal_data* data, float &gimba
 
 void SerialPort::restart_serial(void)
 {
+//    cout << "test restart !!" << fd << " " << last_fd << endl;
     close(fd);
     fd = open(file_name_, O_RDWR | O_NOCTTY | O_SYNC);// Read/Write access to serial port
-    cout << fd << endl;                                                // No terminal will control the process
-    if(fd == -1)
+//    cout << serial_mode << endl;
+    if(fd == -1 && last_fd != -1)
     {
-        printf("open_port: Unable to open %s .\n", file_name_);
+        printf("open_port wait to open %s .\n", file_name_);
+//        NOTICE("wait serial",1);
+        last_fd = fd;
+        return;
     }
-    else
+    else if(fd != -1 && last_fd == -1)
     {
         fcntl(fd, F_SETFL,0);
-        printf("port is open.\n");
+//        NOTICE("port is open",1);
+        printf("port is open %s.\n", file_name_);
+        last_fd = fd;
+    }else
+    {
+        last_fd = fd;
+        return;
     }
     struct termios port_settings;               // structure to store the port settings in
     if(buadrate_==0)
@@ -218,6 +238,7 @@ void SerialPort::restart_serial(void)
     port_settings.c_cc[VTIME] = 5;          // 0.5 seconds read timeout
 
     tcsetattr(fd, TCSANOW, &port_settings);             // apply the settings to the port
+
 }
 
 void serial_transmit_data::get_xy_data(int16_t x, int16_t y, int8_t found)

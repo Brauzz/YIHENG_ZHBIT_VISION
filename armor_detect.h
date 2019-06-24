@@ -16,7 +16,7 @@
  ***************************************************************************/
 #pragma once
 #include <opencv2/opencv.hpp>
-#include "settings.h"
+#include "common.h"
 
 using namespace std;
 using namespace cv;
@@ -106,5 +106,5 @@ private:
  * @param param 自瞄相关参数
  * @return 发现目标为1，未发现为0
  */
-bool ArmorDetectTask(Mat &img, Param_ &param);
+bool ArmorDetectTask(Mat &img, Parameter &param);
 

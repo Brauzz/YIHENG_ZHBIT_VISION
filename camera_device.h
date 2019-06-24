@@ -63,9 +63,13 @@ public:
     void restartCapture();
 
     // getting
+    void imread(Mat &image);
     bool getVideoSize(int &width, int &height);
     int getFrameCount(){
         return current_frame;
+    }
+    int getFD(){
+        return fd;
     }
     void info();
 
