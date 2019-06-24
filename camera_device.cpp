@@ -27,7 +27,7 @@ CameraDevice::CameraDevice()
     status = GX_STATUS_SUCCESS;
 //    GX_DEV_HANDLE hDevice = nullptr;
 //    uint32_t nDeviceNum = 0;
-    src.create(420,640,CV_8UC3);
+    src.create(420,640,CV_8UC3);            // 工业相机尺寸
     stOpenParam.accessMode = GX_ACCESS_EXCLUSIVE;
     stOpenParam.openMode   = GX_OPEN_INDEX;
     stOpenParam.pszContent = "1";
@@ -385,9 +385,9 @@ void CaptureVideo::imread(Mat &image)
     if(ioctl(fd, VIDIOC_DQBUF, &bufferinfo) < 0)
     {
         perror("VIDIOC_DQBUF ERROR");
-            closeStream();
-            restartCapture();
-            startStream();
+//            closeStream();
+//            restartCapture();
+//            startStream();
         return;
     }
 
@@ -403,9 +403,9 @@ void CaptureVideo::imread(Mat &image)
     if(ioctl(fd, VIDIOC_QBUF, &bufferinfo) < 0)
     {
         perror("VIDIOC_DQBUF ERROR");
-        closeStream();
-        restartCapture();
-        startStream();
+//        closeStream();
+//        restartCapture();
+//        startStream();
         return;
     }
     ++buffer_index;

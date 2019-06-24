@@ -20,12 +20,19 @@
 using namespace cv;
 using namespace std;
 
+// ****** systems  ******//
+#define SHOT_CAMERA_THREAD
+#define LONG_CAMERA_THREAD
+#define PROCESS_IMAGE_THREAD
+#define GET_STM32_THREAD
+#define GET_GIMBAL_THREAD
+
 // ****** settings ******//
 #define GALAXY;
 // for armor
-#define DEBUG_ARMOR_DETECT
-#define SHOW_PUT_TEXT
-#define SHOW_DRAW
+//#define DEBUG_ARMOR_DETECT
+//#define SHOW_PUT_TEXT
+//#define SHOW_DRAW
 #define USE_FIT_ELLIPSE
 // for buff
 #define DEBUG_BUFF_DETECT
@@ -71,7 +78,7 @@ public:
         short_offset_x = 111;
         short_offset_y = 80;
         long_offset_x = 90;//90
-        long_offset_y = 100;//100
+        long_offset_y = 200;//100
         world_offset_x = 500;
         world_offset_y = 500;
         offset_image = Point2i(100,100);

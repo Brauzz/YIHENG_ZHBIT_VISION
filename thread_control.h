@@ -61,13 +61,8 @@ public:
     // kalman滤波的参数
     int km_Qp = 500, km_Qv = 1, km_Rp = 1, km_Rv = 1;
     int km_t = 1, km_pt = 70;  // (ms)
-    int history_index = 1;  // 陀螺仪的历史数据的序号
 private:
-    serial_gimbal_data gim_rx_data_;    // 陀螺仪接受数据格式
-    serial_transmit_data tx_data;       // 串口发送stm32数据结构
-    serial_receive_data rx_data;        // 串口接收stm32数据结构
-    SerialPort serial_;                 // pc与stm32之间的串口通信
-    SerialPort serial_gimbal_;          // pc与陀螺仪之间的串口通信
+
 };
 
 /**
@@ -76,8 +71,42 @@ private:
 struct ImageData
 {
     Mat img;
+    float gimbal_data;
     //    unsigned int frame;
+};
+
+struct OtherParam
+{
+    int8_t color;
+    int8_t mode;
+    int8_t cap_mode;
 };
 
 void protectDate(int& a, int &b, int &c, int& d, int& e, int& f);
 void limit_angle(float &a, float max);
+
+class GimbalDataProcess
+{
+public:
+    GimbalDataProcess():
+        last_gimbal_yaw(0.0f),
+        count (0){}
+
+    // 陀螺仪角度(-180~180)数据处理 ->(-99999~99999)
+    void ProcessGimbalData(float raw_yaw, float &dst_yaw)
+    {
+        if(raw_yaw - last_gimbal_yaw > 270)
+        {
+            count --;
+        }else if(raw_yaw - last_gimbal_yaw < -270)
+        {
+            count++;
+        }
+        dst_yaw= count*360+raw_yaw;
+        last_gimbal_yaw = raw_yaw;
+    }
+
+private:
+    int count;
+    float last_gimbal_yaw;
+};

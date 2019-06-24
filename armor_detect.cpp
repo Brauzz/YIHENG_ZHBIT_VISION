@@ -52,7 +52,7 @@ bool ArmorDetectTask(Mat &img, Parameter &param)
 
     // **提取可能的灯条** -利用灯条（灰度）周围有相应颜色的光圈包围
     //    printf("bin_th = %d, color_th = %d\r\n", show_bin_th, show_color_th);
-#ifdef DEBUG_DETECT
+#ifdef DEBUG_ARMOR_DETECT
     imshow("binary_brightness_img", binary_brightness_img);
     imshow("binary_color_img", binary_color_img);
 #endif
@@ -60,19 +60,18 @@ bool ArmorDetectTask(Mat &img, Parameter &param)
     vector<vector<Point>> contours_brightness;
     findContours(binary_color_img, contours_light, RETR_EXTERNAL, CHAIN_APPROX_NONE);
     findContours(binary_brightness_img, contours_brightness, RETR_EXTERNAL, CHAIN_APPROX_NONE);
-//    int test_cnt = 0;
-#pragma omp for
+//#pragma omp for
     for(size_t i = 0; i < contours_brightness.size(); i++)
     {
 
 //        double area = contourArea(contours_brightness[i]);
 //        if (area < 20.0 || 1e5 < area) continue;
-        #pragma omp for
-        for(size_t ii = 0; ii < contours_light.size(); ii++)
-        {
-//            test_cnt ++;
-            if(pointPolygonTest(contours_light[ii], contours_brightness[i][0], false) >= 0.0 )
-            {
+//        #pragma omp for
+//        for(size_t ii = 0; ii < contours_light.size(); ii++)
+//        {
+////            test_cnt ++;
+//            if(pointPolygonTest(contours_light[ii], contours_brightness[i][0], false) >= 0.0 )
+//            {
                 double length = arcLength(contours_brightness[i], true); // 灯条周长
                 if (length > 30 && length <400)
                 {
@@ -122,9 +121,9 @@ bool ArmorDetectTask(Mat &img, Parameter &param)
                         LED_Stick_v.push_back(r);
                     }
                 }
-                break;
-            }
-        }
+//                break;
+//            }
+//        }
     }
 
 
@@ -260,7 +259,6 @@ armor::armor(const LED_Stick& L1, const LED_Stick& L2){
 
 void armor::draw_rect( Mat& img) const
 {
-    //        cout << " rect " << rect.width << "  " << rect.height << "　"<< rect.x << endl;
     rectangle(img, rect, Scalar(255,255,255), -1);
 }
 
