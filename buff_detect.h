@@ -15,9 +15,8 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  ***************************************************************************/
 #pragma once
-
-#include "opencv2/opencv.hpp"
-#include "common.h"
+#include "thread_control.h"
+#include "solve_angle.h"
 
 using namespace cv;
 using namespace std;
@@ -34,64 +33,67 @@ public:
     RotatedRect origin_rrect;
 };
 
-
-/**
- * @brief 辨别能量机关旋转方向
- * 根据每次识别得到的角度进行滤波，判断能量机关旋转方向
- */
-class DirectionFilter
-{
-public:
-    DirectionFilter(size_t buff_size = 10, float filter_angle_threshold = 15)
-
-    {
-        history_size=buff_size;
-        max_filter_value=filter_angle_threshold;
-    }
-    bool getDirection(float angle)
-    {
-        float error_angle = last_angle - angle;
-//        cout << "error_angle" << error_angle << endl;
-        last_angle = angle;
-        if(fabs(error_angle) < max_filter_value && fabs(error_angle) < 1e-6f)
-        {
-            if(history.size() < history_size)
-            {
-                history.push_back(error_angle);
-            }else {
-                history.push_back(error_angle);
-                history.erase(history.begin());
-            }
-        }
-        std::vector<float>::iterator iter;
-        float sum = 0.0;
-        for (iter=history.begin();iter!=history.end();iter++){
-            sum += *iter;
-        }
-        sum /= history.size();
-//        cout << "sum " << sum << endl;
-
-        if(sum >= 0)
-            return 0;   // shun
-        else
-            return 1;   // ni
-
-    }
-private:
-    vector<float> history;
-    size_t history_size;
-    float last_angle;
-    float max_filter_value;
-};
-
 /**
  * @brief BuffDetectTask 能量机关识别总任务，每帧调用
  * @param img 摄像头获取的RGB图像
  * @return 1是发现目标，0是未发现目标
  */
-//bool BuffDetectTask(Mat &img, vector<Point2f> &target_2d_point, int8_t our_color, Point2f offset_tvec, float &theta_angle);
-bool BuffDetectTask(Mat &img, Parameter &param);
+
+class BuffExternParam
+{
+public:
+    int8_t color_;
+};
+
 double calcDistanceFor2Point(Point2f p1, Point2f p2);
+
+class BuffDetector
+{
+public:
+    BuffDetector();
+    BuffDetector(SolveAngle solve_angle);
+    ~BuffDetector();
+    bool DetectBuff(Mat& img, BuffExternParam param);
+    int8_t BuffDetectTask(Mat& img, BuffExternParam param);
+    void getAngle(float &yaw, float &pitch){
+        yaw = angle_x_;
+        pitch = angle_y_;
+    }
+
+    /**
+     * @brief 辨别能量机关旋转方向
+     * 根据每次识别得到的角度进行滤波，判断能量机关旋转方向
+     */
+    void setFilter(size_t buff_size, float filter_angle_threshold){
+        history_size_=buff_size;
+        max_filter_value_=filter_angle_threshold;
+    }
+    int8_t getDirection(float angle);
+public:
+    int buff_offset_x_ = 115;
+    int buff_offset_y_ = 92;
+    int world_offset_x_ = 500;
+    int world_offset_y_ = 500;
+    int color_th_ = 50;
+    int gray_th_ = 50;
+    float buff_angle_ = 0;
+
+private:
+    SolveAngle solve_angle_long_;
+private:
+    float angle_x_ = 0;
+    float angle_y_ = 0;
+    float distance_ = 0;
+    vector<Point2f> points_2d;
+
+private:
+    vector<float> history_;
+    size_t history_size_ = 10;
+    float last_angle_ = 0;
+    float max_filter_value_ = 15;
+
+};
+
 
 /**
  * @brief conversionAbsolutePoint

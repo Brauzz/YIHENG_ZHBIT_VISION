@@ -106,8 +106,7 @@ HEADERS += \
     predict.h \
     buff_detect.h \
     thread_control.h \
-    camera_device.h \
-    common.h
+    camera_device.h
 
 LIBS += -lgxiapi -ldximageproc
 

@@ -16,13 +16,15 @@
  ***************************************************************************/
 #pragma once
 #include <opencv2/opencv.hpp>
-#include "common.h"
-
+#include "thread_control.h"
+#include "solve_angle.h"
+#include "predict.h"
 using namespace std;
 using namespace cv;
 /**
  * @brief 装甲板灯条相关数据信息
  */
+
 class LED_Stick{
 public:
 
@@ -63,48 +65,98 @@ public:
     int average_intensity;   // 装甲板roi的平均色彩强度
 };
 
-/**
- * @brief 装甲板类型确定
- * 通过检测历史数据判断装甲板类型，大装甲板和小装甲板
- */
-class ArmorFilter {
+
+class ArmorExternParam
+{
 public:
-    ArmorFilter(int _filter_size = 5)
-        : filter_size(_filter_size) {}
-
-    void clear(){
-        history.clear();
-    }
-
-    bool getResult(bool is_small){
-        if (history.size() < filter_size){
-            history.push_back(is_small);
-        }
-        else {
-            history.push_back(is_small);
-            history.pop_front();
-        }
-
-        int vote_cnt[2] = {0};
-        for (std::list<bool>::const_iterator it = history.begin(); it != history.end(); ++it){
-            *it == 0 ? ++vote_cnt[0] : ++vote_cnt[1];
-        }
-
-        if (vote_cnt[0] == vote_cnt[1])
-            return is_small;
-        return vote_cnt[0] > vote_cnt[1] ? 0 : 1;
-    }
-
-private:
-    std::list<bool> history;
-    int filter_size;
+    float gimbal_data_;
+    int8_t color_;
+    int8_t cap_mode_;
+    bool serial_success_;
 };
 
-/**
- * @brief 装甲板检测任务函数，每帧调用
- * @param img 输入相机采集RGB图像
- * @param param 自瞄相关参数
- * @return 发现目标为1，未发现为0
- */
-bool ArmorDetectTask(Mat &img, Parameter &param);
+
+class ArmorDetector
+{
+public:
+    ArmorDetector();
+    ArmorDetector(SolveAngle solve_short, SolveAngle solve_long, ZeYuPredict zeyu_predict);
+    ~ArmorDetector();
+
+    bool chooseCamera(int short_distance, int long_distance, bool last_mode)
+    {
+        dist_ = (1-r_)*dist_ + r_*distance_ + 1;
+        if(dist_ > long_distance && last_mode == 0)
+            return 1;
+        else if(dist_ < short_distance && last_mode == 1)
+            return 0;
+        else
+            return last_mode;
+    }
+
+    /**
+     * @brief 装甲板检测任务函数，每帧调用
+     * @param img 输入相机采集RGB图像
+     * @param param 自瞄相关参数
+     * @return 发现目标为1，未发现为0
+     */
+    bool DetectArmor(Mat img, ArmorExternParam extern_param);
+    int8_t ArmorDetectTask(Mat &img, ArmorExternParam extern_param);
+    void getAngle(float &yaw, float &pitch)
+    {
+        yaw = angle_x_;
+        pitch = angle_y_;
+    }
+
+public:
+    void setFilter(int filter_size){
+        filter_size_ = filter_size;
+    }
+
+    void clear(){
+        history_.clear();
+    }
+
+    /**
+     * @brief 装甲板类型确定
+     * 通过检测历史数据判断装甲板类型，大装甲板和小装甲板
+     */
+    bool getTypeResult(bool is_small);
+public:
+    int km_Qp_ = 300;
+    int km_Qv_ = 1;
+    int km_Rp_ = 1;
+    int km_Rv_ = 1;
+    int km_t_ = 1;
+    int km_pt_ = 40;
+public:
+    int short_offset_x_ = 120;
+    int short_offset_y_ = 100;
+    int long_offset_x_ = 85;
+    int long_offset_y_ = 100;
+    int color_th_ = 100;
+    int gray_th_ = 120;
+
+private:
+    SolveAngle solve_angle_;
+    SolveAngle solve_angle_long_;
+    ZeYuPredict zeyu_predict_;
+
+private:
+    float dist_ = 3000;
+    float r_ = 0.5;
+    float distance_ = 0;
+    float angle_x_ = 0;
+    float angle_y_ = 0;
+    bool is_small_;
+    vector<Point2f> points_2d_;
+
+private:
+    std::list<bool> history_;
+    int filter_size_ = 5;
+
+};
+
+
+
 

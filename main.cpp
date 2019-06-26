@@ -18,7 +18,7 @@
 #include "thread_control.h"
 #include <thread>
 #include <unistd.h>
-#include "common.h"
+
 using namespace std;
 using namespace cv;
 

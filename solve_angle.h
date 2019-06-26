@@ -46,7 +46,7 @@ public:
     float ptz_camera_x = 0;       // +left
     float ptz_camera_y = 52.5;       // + camera is  ptz
     float ptz_camera_z = -135;//-225;     // - camera is front ptz
-    float scale = 1.3;              // is calc distance scale not use pnp ,test
+    float scale = 0.99f;              // is calc distance scale not use pnp ,test
 };
 
 void CodeRotateByZ(double x, double y, double thetaz, double& outx, double& outy);

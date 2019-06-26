@@ -46,8 +46,9 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
 {
     // 姿态结算
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
-
-    // 估计装甲板y轴坐标旋转量
+    tvec.at<double>(2,0)*=scale;
+    cout << tvec << endl;
+    // 估计装甲板y轴坐标旋转量2
     double rm[3][3];
     Mat rotMat(3, 3, CV_64FC1, rm);
     Rodrigues(rvec, rotMat);
@@ -145,11 +146,11 @@ void SolveAngle::Generate3DPoints(uint8_t mode, Point2f offset_point)
     objectPoints.clear();
     float x, y, z, width = 0.0, height = 0.0;
     switch (mode) {
-    case 0:     // small_armor
+    case 1:     // small_armor
         width = 140;//230;//140;      // mm the armor two led width
         height = 60;      // mm the armor led height
         break;
-    case 1:     // big_armor
+    case 0:     // big_armor
         width = 230;//230;//140;      // mm the armor two led width
         height = 60;      // mm the armor led height
         break;

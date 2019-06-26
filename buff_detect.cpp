@@ -15,14 +15,57 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  ***************************************************************************/
 #include "buff_detect.h"
-bool BuffDetectTask(Mat &img, Parameter &param)
+
+double calcDistanceFor2Point(Point2f p1, Point2f p2)
+{
+    return pow(pow((p1.x-p2.x), 2) + pow((p1.y - p2.y), 2), 0.5);
+}
+
+/**
+ * @brief conversionAbsolutePoint 对不同情况的点进行补偿
+ * @param point_tmp 原始点
+ * @param dst 最终处理
+ * @param offset 补偿值
+ * @param i1 转换序号
+ * @param i2
+ * @param i3
+ * @param i4
+ */
+void conversionAbsolutePoint(Point2f *point_tmp, vector<Point2f>& dst
+                             ,Point2f offset
+                             ,int8_t i1, int8_t i2, int8_t i3, int8_t i4)
+{
+    dst.push_back(point_tmp[i1] + offset);
+    dst.push_back(point_tmp[i2] + offset);
+    dst.push_back(point_tmp[i3] + offset);
+    dst.push_back(point_tmp[i4] + offset);
+}
+
+
+
+BuffDetector::BuffDetector()
+{
+
+}
+
+BuffDetector::BuffDetector(SolveAngle solve_angle)
+{
+    solve_angle_long_ = solve_angle;
+}
+
+BuffDetector::~BuffDetector()
+{
+
+}
+
+bool BuffDetector::DetectBuff(Mat& img, BuffExternParam param)
 {
     // **预处理** -图像进行相应颜色的二值化
-    param.points_2d.clear();
+    points_2d.clear();
     vector<cv::Mat> bgr;
     split(img, bgr);
     Mat result_img;
-    if(param.color != 0)
+    if(param.color_ != 0)
     {
         subtract(bgr[2], bgr[1], result_img);
     }else
@@ -31,7 +74,14 @@ bool BuffDetectTask(Mat &img, Parameter &param)
     }
     Mat binary_color_img;
     double th = threshold(result_img, binary_color_img, 50, 255, CV_THRESH_BINARY|CV_THRESH_OTSU);
+    if(th-25>0)
+    threshold(result_img, binary_color_img, th-25, 255, CV_THRESH_BINARY);
+//        Mat element = getStructuringElement(MORPH_RECT, Size(5,5));
+//        morphologyEx(binary_color_img,binary_color_img,MORPH_CLOSE,element);
+//        dilate(img, img, element);
+#ifdef DEBUG_BUFF_DETECT
     imshow("mask", binary_color_img);
+#endif
     if(th < 20)
         return 0;
     // **寻找击打矩形目标** -通过几何关系
@@ -59,10 +109,10 @@ bool BuffDetectTask(Mat &img, Parameter &param)
         if(big_contour_length < 5)
             continue;
 
-        if(small_contour_area * 8       > big_contour_area
-                && small_contour_area * 1 < big_contour_area
-                && small_contour_length * 8 > big_contour_length
-                && small_contour_length * 1 < big_contour_length)
+        if(small_contour_area * 4       > big_contour_area
+                && small_contour_area * 1.5 < big_contour_area
+                && small_contour_length * 7 > big_contour_length
+                && small_contour_length * 1.5 < big_contour_length)
         {
             // --debug--
             RotatedRect big_target_rect = minAreaRect(contours[static_cast<size_t>(hierarchy[i][3])]);
@@ -104,9 +154,9 @@ bool BuffDetectTask(Mat &img, Parameter &param)
                 float width_ = small_target.origin_rrect.size.width;
                 float height_ = small_target.origin_rrect.size.height;
                 Point2f big_target_center = big_target_rect.center;
-                float offset_x = param.buff_offset_x;
-                float offset_y = param.buff_offset_y;
-                Point2f point_offset = Point2f(offset_x, offset_y);
+                float offset_x = buff_offset_x_;
+                float offset_y = buff_offset_y_;
+                Point2f point_offset = Point2f(offset_x-100, offset_y-100);
 
                 if(width_>=height_)
                 {
@@ -121,14 +171,14 @@ bool BuffDetectTask(Mat &img, Parameter &param)
                     if( lower_edge_dist <= upper_edge_dist)
                     {
                         // 流水灯靠近下边沿
-                        conversionAbsolutePoint(origin_point_tmp, param.points_2d, point_offset, 1, 2, 3, 0);
-                        param.buff_angle = 90 - small_target.origin_rrect.angle;
+                        conversionAbsolutePoint(origin_point_tmp, points_2d, point_offset, 1, 2, 3, 0);
+                        buff_angle_ = 90 - small_target.origin_rrect.angle;
                     }
                     else
                     {
                         // 流水灯靠近上边沿
-                        conversionAbsolutePoint(origin_point_tmp, param.points_2d, point_offset, 3, 0, 1, 2);
-                        param.buff_angle = 270 - small_target.origin_rrect.angle;
+                        conversionAbsolutePoint(origin_point_tmp, points_2d, point_offset, 3, 0, 1, 2);
+                        buff_angle_ = 270 - small_target.origin_rrect.angle;
                     }
                 }else
                 {
@@ -142,22 +192,22 @@ bool BuffDetectTask(Mat &img, Parameter &param)
                     if(left_edge_dist <= right_edge_dist)
                     {
                         // 流水灯靠近左边沿
-                        conversionAbsolutePoint(origin_point_tmp, param.points_2d, point_offset, 2, 3, 0, 1);
-                        param.buff_angle =  - small_target.origin_rrect.angle;
+                        conversionAbsolutePoint(origin_point_tmp, points_2d, point_offset, 2, 3, 0, 1);
+                        buff_angle_ =  - small_target.origin_rrect.angle;
                     }
                     else
                     {
                         // 流水灯靠近右边沿
-                        conversionAbsolutePoint(origin_point_tmp, param.points_2d, point_offset, 0, 1, 2, 3);
-                        param.buff_angle = 180 - small_target.origin_rrect.angle;
+                        conversionAbsolutePoint(origin_point_tmp, points_2d, point_offset, 0, 1, 2, 3);
+                        buff_angle_ = 180 - small_target.origin_rrect.angle;
                     }
                 }
 
                 for(int l=0;l<4;l++)
                 {
-                    circle(img, param.points_2d.at(static_cast<size_t>(l)), 3, Scalar(0,255,255));
+                    circle(img, points_2d.at(static_cast<size_t>(l)), 3, Scalar(0,255,255));
                     putText(img, to_string(l),
-                            param.points_2d.at(static_cast<size_t>(l)),
+                            points_2d.at(static_cast<size_t>(l)),
                             FONT_HERSHEY_COMPLEX, 0.5,Scalar(255,255,255));
                 }
                 //-----------\new alorithm -----------------------------------
@@ -168,30 +218,59 @@ bool BuffDetectTask(Mat &img, Parameter &param)
     return 0;
 }
 
-
-double calcDistanceFor2Point(Point2f p1, Point2f p2)
+int8_t BuffDetector::BuffDetectTask(Mat& img, BuffExternParam param)
 {
-    return pow(pow((p1.x-p2.x), 2) + pow((p1.y - p2.y), 2), 0.5);
+    bool find_flag = DetectBuff(img, param);
+    float theta_y = 0;
+    if(find_flag)
+    {
+        bool direction_tmp = getDirection(buff_angle_);
+        Point2f world_offset;
+        //#define DIRECTION_FILTER
+#ifdef DIRECTION_FILTER
+        if(direction_tmp == 1)  // shun
+            world_offset = Point2f(param_.world_offset_x  - 500, param_.world_offset_y - 500);
+        else // ni
+            world_offset = Point2f(-(param_.world_offset_x  - 500), -(param_.world_offset_y - 500));
+        cout << "direction " << direction_tmp << endl;
+#else
+        world_offset = Point2f(world_offset_x_ - 500, world_offset_y_  - 500);
+#endif
+
+        solve_angle_long_.Generate3DPoints(2, world_offset);
+        solve_angle_long_.getAngle(points_2d, 28.5, angle_x_, angle_y_, distance_, theta_y);
+        angle_y_*=0.8;
+        INFO(distance_);
+        return 1;
+    }
+    return 0;
 }
 
-/**
- * @brief conversionAbsolutePoint 对不同情况的点进行补偿
- * @param point_tmp 原始点
- * @param dst 最终处理
- * @param offset 补偿值
- * @param i1 转换序号
- * @param i2
- * @param i3
- * @param i4
- */
-void conversionAbsolutePoint(Point2f *point_tmp, vector<Point2f>& dst
-                             ,Point2f offset
-                             ,int8_t i1, int8_t i2, int8_t i3, int8_t i4)
+int8_t BuffDetector::getDirection(float angle)
 {
-    dst.push_back(point_tmp[i1] + offset);
-    dst.push_back(point_tmp[i2] + offset);
-    dst.push_back(point_tmp[i3] + offset);
-    dst.push_back(point_tmp[i4] + offset);
+    float error_angle = last_angle_ - angle;
+    //        cout << "error_angle" << error_angle << endl;
+    last_angle_ = angle;
+    if(fabs(error_angle) < max_filter_value_ && fabs(error_angle) < 1e-6f)
+    {
+        if(history_.size() < history_size_)
+        {
+            history_.push_back(error_angle);
+        }else {
+            history_.push_back(error_angle);
+            history_.erase(history_.begin());
+        }
+    }
+    std::vector<float>::iterator iter;
+    float sum = 0.0;
+    for (iter=history_.begin();iter!=history_.end();iter++){
+        sum += *iter;
+    }
+    sum /= history_.size();
+    //        cout << "sum " << sum << endl;
+
+    if(sum >= 0)
+        return 0;   // shun
+    else
+        return 1;   // ni
 }
-
-

@@ -21,7 +21,6 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 
-
 CameraDevice::CameraDevice()
 {
     status = GX_STATUS_SUCCESS;

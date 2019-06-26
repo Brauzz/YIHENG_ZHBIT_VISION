@@ -15,6 +15,8 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  ***************************************************************************/
 #include "predict.h"
+ZeYuPredict::ZeYuPredict(){}
+
 ZeYuPredict::ZeYuPredict(float Qp, float Qv, float Rp,float Rv,float dta, float pre_dta)
 {
     Qvar = (Mat_<float>(2,2)<< Qp, 0, 0, Qv);
