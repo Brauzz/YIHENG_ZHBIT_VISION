@@ -47,7 +47,7 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
     // 姿态结算
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
     tvec.at<double>(2,0)*=scale;
-    cout << tvec << endl;
+//    cout << tvec << endl;
     // 估计装甲板y轴坐标旋转量2
     double rm[3][3];
     Mat rotMat(3, 3, CV_64FC1, rm);

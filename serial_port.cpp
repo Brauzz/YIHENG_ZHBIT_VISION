@@ -94,7 +94,7 @@ void SerialPort::send_data(const struct serial_transmit_data &data)
 }
 
 // stm32 -> pc
-bool SerialPort::read_data(const struct serial_receive_data *data, int8_t &mode, int8_t &my_car_color, float &bullet_speed, int8_t &cancel_kalman)
+bool SerialPort::read_data(const struct serial_receive_data *data, int8_t &mode, int8_t &my_car_color, float &gimbal_data)
 {
 
     tcflush(fd, TCIFLUSH);   /* Discards old data in the rx buffer            */
@@ -118,21 +118,10 @@ bool SerialPort::read_data(const struct serial_receive_data *data, int8_t &mode,
 //    printf("buffer1 = %d\t\buffer1 = %d\t buffer1 = %d\tbuffer1 = %d\t\n", read_buffer[1], read_buffer[2], read_buffer[3], read_buffer[4]);
     if(read_buffer[0] == data->head && read_buffer[6] == data->end)
     {
-
         mode = int8_t(read_buffer[1]);
 //        printf("buffer1 = %d\r\n", read_buffer[1]);
         my_car_color = int8_t(read_buffer[2]);
-        bullet_speed = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
-        float bullet_speed_tmp = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
-        cancel_kalman = int8_t(read_buffer[5]);
-        if(bullet_speed_tmp < 10){
-            bullet_speed = last_bullet_speed;
-        }
-        else
-        {
-            last_bullet_speed = bullet_speed_tmp;
-            bullet_speed = last_bullet_speed;
-        }
+        gimbal_data = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
         success_ = true;
         return 1;
     }

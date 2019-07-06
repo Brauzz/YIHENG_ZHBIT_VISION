@@ -28,15 +28,15 @@ int main()
     ThreadControl ImageControl;
     // 图像生成线程（短焦和长焦）
 #ifdef SHOT_CAMERA_THREAD
-    std::thread produce_task(&ThreadControl::ImageProduce, ImageControl);
+    std::thread produce_task(&ThreadControl::ImageProduce, &ImageControl);  // & == std::ref()
 #endif
 #ifdef LONG_CAMERA_THREAD
-    std::thread produce_long_task(&ThreadControl::ImageProduceLong, ImageControl);
+    std::thread produce_long_task(&ThreadControl::ImageProduceLong, &ImageControl);
 #endif
 
     // 图像处理线程（自瞄、打符、串口）
 #ifdef PROCESS_IMAGE_THREAD
-    std::thread process_task(&ThreadControl::ImageProcess, ImageControl);
+    std::thread process_task(&ThreadControl::ImageProcess, &ImageControl);
 #endif
 
     // 串口数据接受线程
@@ -44,7 +44,7 @@ int main()
     std::thread gimbal_task(&ThreadControl::GetGimbal, ImageControl);
 #endif
 #ifdef GET_STM32_THREAD
-    std::thread stm32_task(&ThreadControl::GetSTM32, ImageControl);
+    std::thread stm32_task(&ThreadControl::GetSTM32, &ImageControl);
 #endif
 
 #ifdef SHOT_CAMERA_THREAD

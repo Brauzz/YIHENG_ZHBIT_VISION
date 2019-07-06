@@ -73,6 +73,7 @@ public:
     int8_t color_;
     int8_t cap_mode_;
     bool serial_success_;
+    void updata();
 };
 
 
@@ -123,19 +124,19 @@ public:
      */
     bool getTypeResult(bool is_small);
 public:
-    int km_Qp_ = 300;
+    int km_Qp_ = 1000;
     int km_Qv_ = 1;
     int km_Rp_ = 1;
     int km_Rv_ = 1;
     int km_t_ = 1;
-    int km_pt_ = 40;
+    int km_pt_ = 60;
 public:
     int short_offset_x_ = 120;
     int short_offset_y_ = 100;
     int long_offset_x_ = 85;
     int long_offset_y_ = 100;
     int color_th_ = 100;
-    int gray_th_ = 120;
+    int gray_th_ = 100;
 
 private:
     SolveAngle solve_angle_;

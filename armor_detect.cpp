@@ -68,7 +68,8 @@ void armor::classification_lights()
 }
 
 int armor::get_average_intensity(const Mat& img) {
-    if(rect.width < 1 || rect.height < 1 || rect.x < 1 || rect.y < 1 )
+    if(rect.width < 1 || rect.height < 1 || rect.x < 1 || rect.y < 1
+            || rect.width + rect.x > img.cols || rect.height + rect.y > img.rows)
         return 255;
     Mat roi = img(Range(rect.y, rect.y + rect.height), Range(rect.x, rect.x + rect.width) );
     //        imshow("roi ", roi);
@@ -222,14 +223,14 @@ bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
     for(size_t i = 0; i < contours_brightness.size(); i++)
     {
 
-//        double area = contourArea(contours_brightness[i]);
-//        if (area < 20.0 || 1e5 < area) continue;
-//        #pragma omp for
-//        for(size_t ii = 0; ii < contours_light.size(); ii++)
-//        {
-////            test_cnt ++;
-//            if(pointPolygonTest(contours_light[ii], contours_brightness[i][0], false) >= 0.0 )
-//            {
+        double area = contourArea(contours_brightness[i]);
+        if (area < 20.0 || 1e5 < area) continue;
+        #pragma omp for
+        for(size_t ii = 0; ii < contours_light.size(); ii++)
+        {
+//            test_cnt ++;
+            if(pointPolygonTest(contours_light[ii], contours_brightness[i][0], false) >= 0.0 )
+            {
                 double length = arcLength(contours_brightness[i], true); // 灯条周长
                 if (length > 15 && length <400)
                 {
@@ -279,9 +280,9 @@ bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
                         LED_Stick_v.push_back(r);
                     }
                 }
-//                break;
-//            }
-//        }
+                break;
+            }
+        }
     }
 
 
@@ -379,6 +380,7 @@ bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
         {
             points_2d_.push_back(point_2d[i]);
         }
+
 //        float armor_h = (target.Led_stick[0].rect.size.height+target.Led_stick[1].rect.size.height)/2;
 //        float armor_w = pow(pow(target.Led_stick[0].rect.center.x, 2)+pow(target.Led_stick[1].rect.center.y, 2), 0.5);
         float armor_h = target.rect.height;
@@ -400,7 +402,7 @@ int8_t ArmorDetector::ArmorDetectTask(Mat &img,ArmorExternParam extern_param)
     if(DetectArmor(img, extern_param))
     {
         bool final_armor_type = getTypeResult(is_small_);
-        INFO(final_armor_type);
+//        INFO(final_armor_type);
         if(extern_param.cap_mode_ == 0) // close
         {
             solve_angle_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
@@ -411,6 +413,7 @@ int8_t ArmorDetector::ArmorDetectTask(Mat &img,ArmorExternParam extern_param)
             solve_angle_long_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
             solve_angle_long_.getAngle(points_2d_, 15,angle_x_,angle_y_,distance_,theta_y);   // pnp姿态结算
         }
+
 #ifdef PREDICT
         protectDate(km_Qp_, km_Qv_, km_Rp_, km_Rv_, km_t_, km_pt_);
         float pre_time = distance_/10000*static_cast<float>(km_pt_)+10.0f;

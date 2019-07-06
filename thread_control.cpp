@@ -16,19 +16,24 @@
  ***************************************************************************/
 #include "thread_control.h"
 
-static volatile bool end_thread_flag  = false;  // 设置结束线程标志位，负责结束所有线程。
+//static volatile bool end_thread_flag  = false;  // 设置结束线程标志位，负责结束所有线程。
 static volatile unsigned int produce_index;     // 图像生成序号，用于线程之间逻辑
 static volatile unsigned int gimbal_data_index;     // gimbal data 生成序号，用于线程之间逻辑
 static volatile unsigned int consumption_index; // 图像消耗序号
 
-static ImageData data[BUFFER_SIZE];
-static OtherParam other_param;
-SerialPort serial_("/dev/ttyUSB1",0);                 // pc与stm32之间的串口通信
+//static ImageData data[BUFFER_SIZE];
+//static OtherParam other_param;
+//SerialPort serial_("/dev/ttyUSB0",1);                 // pc与stm32之间的串口通信
+
+#ifdef GET_GIMBAL_THREAD
 SerialPort serial_gimbal_("/dev/ttyUSB0",1);          // pc与陀螺仪之间的串口通信
+#endif
 
 ThreadControl::ThreadControl()
 {
     cout << "THREAD TASK ON !!!" << endl;
+    SerialPort serial_tmp("/dev/ttyUSB0", 1);
+    serial_ = serial_tmp;
 }
 
 // 图像生成线程
@@ -36,10 +41,10 @@ void ThreadControl::ImageProduce()
 {
     cout << " ------ SHORT CAMERA PRODUCE TASK ON !!! ------ " << endl;
     CaptureVideo short_camera("/dev/camera", 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
-        short_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
-        short_camera.setExposureTime(0, 100);                         // 手动曝光，设置曝光时间。
-        short_camera.startStream();                                  // 打开视频流
-//        short_camera.info();                                         // 输出摄像头信息
+    short_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
+    short_camera.setExposureTime(0, 100);                         // 手动曝光，设置曝光时间。
+    short_camera.startStream();                                  // 打开视频流
+    //        short_camera.info();                                         // 输出摄像头信息
     while(1)
     {
         // 等待图像进入处理瞬间，再去生成图像
@@ -86,6 +91,7 @@ void ThreadControl::ImageProduceLong()
 #endif
 }
 
+#ifdef GET_GIMBAL_THREAD
 void ThreadControl::GetGimbal()
 {
     cout << " ------GIMBAL DATA RECEVICE TASK ON !!! ------ " << endl;
@@ -97,49 +103,37 @@ void ThreadControl::GetGimbal()
         while(static_cast<int>(gimbal_data_index - consumption_index) >= BUFFER_SIZE)
             END_THREAD;
         serial_gimbal_.read_gimbal(&gim_rx_data_, raw_gimbal_yaw);
+
         data[consumption_index % BUFFER_SIZE].serial_success = serial_gimbal_.success_;
         if(serial_gimbal_.success_)
         {
             GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
+            INFO(dst_gimbal_yaw);
             data[consumption_index % BUFFER_SIZE].gimbal_data = dst_gimbal_yaw;
         }
         gimbal_data_index++;
         END_THREAD;
     }
 }
+#endif
 
 void ThreadControl::GetSTM32()
 {
     cout << " ------ STM32 DATA RECEVICE TASK ON !!! ------" << endl;
     serial_receive_data rx_data;        // 串口接收stm32数据结构
+    GimbalDataProcess GimDataPro;
+    float raw_gimbal_yaw, dst_gimbal_yaw;
+    int8_t mode = 0;
+    int8_t color = 0;
     while(1){
-        //            int8_t modae;
-        float stm_param1 = 0;
-        int8_t stm_param2 = 0;
-        // 每50帧读取一次stm32数据
-        int8_t mode = 0;
-        int8_t color = 0;
-        if(produce_index%50 == 0)
-        {
-            serial_.read_data(&rx_data, mode, color, stm_param1, stm_param2);
-//            other_param.mode = mode;
-//            INFO(other_param.mode);
-//            other_param.color = color;
-//            INFO(serial_.success_);
-            {
-//                                    if(other_param.mode == 0)
-//                                        cout << " mode=auto_aim  ";
-//                                    else
-//                                        cout << " mode=buff_aim  ";
-//                                    if(other_param.color == 0)
-//                                        cout << "  BLUE  ";
-//                                    else
-//                                        cout << "  RED  ";
-//                                    cout << endl;
-                        //            cout << "bullet_speed = " << bullet_speed_;
-}
-        }
-//        waitKey(1);
+        while(static_cast<int>(gimbal_data_index - consumption_index) >= BUFFER_SIZE)
+            END_THREAD;
+
+        serial_.read_data(&rx_data, mode, color, raw_gimbal_yaw);
+        GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
+        data[consumption_index % BUFFER_SIZE].gimbal_data = dst_gimbal_yaw;
+//        INFO(dst_gimbal_yaw);
+        gimbal_data_index++;
         END_THREAD;
     }
 }
@@ -187,7 +181,9 @@ void ThreadControl::ImageProcess()
     while(1)
     {
         // 等待图像生成后进行处理
-        while(produce_index - consumption_index == 0){}
+        while(produce_index - consumption_index == 0){
+            END_THREAD;
+        }
         // 数据初始化
         data[consumption_index % BUFFER_SIZE].img.copyTo(image);
         armor_param.gimbal_data_ = data[consumption_index % BUFFER_SIZE].gimbal_data;
@@ -195,10 +191,10 @@ void ThreadControl::ImageProcess()
         armor_param.color_ = other_param.color;
         armor_param.serial_success_ = data[consumption_index % BUFFER_SIZE].serial_success;
         buff_param.color_ = other_param.color;
-        if(other_param.mode == 1)
+        if(other_param.mode == 0)
         {
-//            ***************************auto_mode***********************************
-//            cout << " auto_mode " << endl;
+            //            ***************************auto_mode***********************************
+            //            cout << " auto_mode " << endl;
             other_param.cap_mode = armor_detector.chooseCamera(1000, 1500, other_param.cap_mode);
             ++consumption_index;
 
@@ -209,14 +205,14 @@ void ThreadControl::ImageProcess()
         else
         {
             //***************************buff_mode***********************************
-//            cout << " buff_mode " << endl;
+            //            cout << " buff_mode " << endl;
             other_param.cap_mode = 1;
             ++consumption_index;
 
             find_flag = buff_detector.BuffDetectTask(image, buff_param);
             if(find_flag)
                 buff_detector.getAngle(angle_x, angle_y);
-            INFO(angle_x);
+            //            INFO(angle_x);
         }
         limit_angle(angle_x, 3);
         tx_data.get_xy_data(-angle_x*100, -angle_y*100,find_flag);

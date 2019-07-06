@@ -34,50 +34,6 @@ using namespace cv;
 using namespace std;
 
 /**
- * @brief 线程管理类
- * 负责图像生成、图像处理、串口数据接收
- */
-class ThreadControl
-{
-public:
-    ThreadControl();          // 线程管理构造函数，用于线程中变量初始化
-    void ImageProduce();      // 短焦摄像头获取图像线程
-    void ImageProduceLong();  // 长焦摄像头获取图像线程
-    void ImageProcess();      // 图像处理线程，用于自瞄，能量机关识别
-    void GetGimbal();         // 用于获取云台陀螺仪数据
-    void GetSTM32();          // 用于接收电控发来的数据
-
-private:
-};
-
-
-// ****** systems  ******//
-#define SHOT_CAMERA_THREAD
-#define LONG_CAMERA_THREAD
-#define PROCESS_IMAGE_THREAD
-#define GET_STM32_THREAD
-#define GET_GIMBAL_THREAD
-#define WAITKEY
-//#define IMAGESHOW
-// ****** settings ******//
-#define GALAXY;
-// for armor --------------
-#define DEBUG_ARMOR_DETECT
-//#define DEBUG_BUFF_DETECT
-//#define SHOW_PUT_TEXT
-#define SHOW_DRAW
-#define USE_FIT_ELLIPSE
-#define PREDICT
-// for buff --------------
-//#define DEBUG_BUFF_DETECT
-
-// for image
-#define VIDEO_WIDTH 640
-#define VIDEO_HEIGHT 360
-#define BUFFER_SIZE 1
-
-
-/**
  * @brief 图像信息，用于线程之间的图像传输
  */
 struct ImageData
@@ -96,8 +52,60 @@ struct OtherParam
     int8_t cap_mode = 1;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
 };
 
+// ****** systems  ******//
+#define SHOT_CAMERA_THREAD
+#define LONG_CAMERA_THREAD
+#define PROCESS_IMAGE_THREAD
+#define GET_STM32_THREAD
+//#define GET_GIMBAL_THREAD
+#define WAITKEY
+#define IMAGESHOW
+// ****** settings ******//
+#define GALAXY;
+// for armor --------------
+#define DEBUG_ARMOR_DETECT
+//#define DEBUG_BUFF_DETECT
+//#define SHOW_PUT_TEXT
+#define SHOW_DRAW
+#define USE_FIT_ELLIPSE
+#define PREDICT
+// for buff --------------
+//#define DEBUG_BUFF_DETECT
+
+// for image
+#define VIDEO_WIDTH 640
+#define VIDEO_HEIGHT 360
+#define BUFFER_SIZE 1
+
+
+
+
 void protectDate(int& a, int &b, int &c, int& d, int& e, int& f);
 void limit_angle(float &a, float max);
+
+/**
+ * @brief 线程管理类
+ * 负责图像生成、图像处理、串口数据接收
+ */
+class ThreadControl
+{
+public:
+    ThreadControl();          // 线程管理构造函数，用于线程中变量初始化
+    void ImageProduce();      // 短焦摄像头获取图像线程
+    void ImageProduceLong();  // 长焦摄像头获取图像线程
+    void ImageProcess();      // 图像处理线程，用于自瞄，能量机关识别
+    void GetGimbal();         // 用于获取云台陀螺仪数据
+    void GetSTM32();          // 用于接收电控发来的数据
+
+private:
+    SerialPort serial_;
+    ImageData data[BUFFER_SIZE];
+    OtherParam other_param;
+    bool end_thread_flag = false;
+//    unsigned int produce_index;
+//    unsigned int consumption_index;
+//    unsigned int gimbal_data_index;
+};
 
 class GimbalDataProcess
 {
