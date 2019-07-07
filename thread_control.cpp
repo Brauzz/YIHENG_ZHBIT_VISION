@@ -23,7 +23,7 @@ static volatile unsigned int consumption_index; // 图像消耗序号
 
 //static ImageData data[BUFFER_SIZE];
 //static OtherParam other_param;
-//SerialPort serial_("/dev/ttyUSB0",1);                 // pc与stm32之间的串口通信
+SerialPort serial_("/dev/ttyUSB0",0);                 // pc与stm32之间的串口通信
 
 #ifdef GET_GIMBAL_THREAD
 SerialPort serial_gimbal_("/dev/ttyUSB0",1);          // pc与陀螺仪之间的串口通信
@@ -32,8 +32,8 @@ SerialPort serial_gimbal_("/dev/ttyUSB0",1);          // pc与陀螺仪之间的
 ThreadControl::ThreadControl()
 {
     cout << "THREAD TASK ON !!!" << endl;
-    SerialPort serial_tmp("/dev/ttyUSB0", 1);
-    serial_ = serial_tmp;
+//    SerialPort serial_tmp("/dev/ttyUSB0", 0);
+//    serial_ = serial_tmp;
 }
 
 // 图像生成线程
@@ -132,7 +132,7 @@ void ThreadControl::GetSTM32()
         serial_.read_data(&rx_data, mode, color, raw_gimbal_yaw);
         GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
         data[consumption_index % BUFFER_SIZE].gimbal_data = dst_gimbal_yaw;
-//        INFO(dst_gimbal_yaw);
+        INFO(dst_gimbal_yaw);
         gimbal_data_index++;
         END_THREAD;
     }
@@ -144,7 +144,7 @@ void ThreadControl::ImageProcess()
     cout << " ------ IMAGE PROCESS TASK ON !!! ------" << endl;
     // 角度结算类声明
     SolveAngle solve_angle("/home/cz/rm-vision/camera4mm.xml", -20, 80, -135, 0);
-    SolveAngle solve_angle_long("/home/cz/rm-vision/galaxy_0.xml", 0, 40.0, -135, 0);
+    SolveAngle solve_angle_long("/home/cz/rm-vision/galaxy_1.xml", 0, 40.0, -135, 0);
     // 预测类声明
     ZeYuPredict zeyu_predict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
 
@@ -165,7 +165,7 @@ void ThreadControl::ImageProcess()
         createTrackbar("rp","ArmorParam",&armor_detector.km_Rp_,1000);
         createTrackbar("rv","ArmorParam",&armor_detector.km_Rv_,1000);
         createTrackbar("t","ArmorParam",&armor_detector.km_t_,10);
-        createTrackbar("pt","ArmorParam",&armor_detector.km_pt_,500);
+       createTrackbar("pt","ArmorParam",&armor_detector.km_pt_,500);
         createTrackbar("buff_gray_th", "BuffParam", &buff_detector.gray_th_, 255);
         createTrackbar("buff_color_th", "BuffParam", &buff_detector.color_th_, 255);
         createTrackbar("buff_offset_x_","BuffParam",&buff_detector.buff_offset_x_,200);
@@ -195,12 +195,17 @@ void ThreadControl::ImageProcess()
         {
             //            ***************************auto_mode***********************************
             //            cout << " auto_mode " << endl;
+            double t1 = getTickCount();
+            find_flag = armor_detector.ArmorDetectTask(image, armor_param);
+            double t2 = getTickCount();
+            other_param.cap_mode = 1;
             other_param.cap_mode = armor_detector.chooseCamera(1000, 1500, other_param.cap_mode);
+            other_param.cap_mode = 1;
             ++consumption_index;
 
-            find_flag = armor_detector.ArmorDetectTask(image, armor_param);
-            if(find_flag)
-                armor_detector.getAngle(angle_x, angle_y);
+            double t = (t2 - t1)*1000/getTickFrequency();
+                INFO(t);
+            armor_detector.getAngle(angle_x, angle_y);
         }
         else
         {
@@ -214,8 +219,9 @@ void ThreadControl::ImageProcess()
                 buff_detector.getAngle(angle_x, angle_y);
             //            INFO(angle_x);
         }
-        limit_angle(angle_x, 3);
-        tx_data.get_xy_data(-angle_x*100, -angle_y*100,find_flag);
+        limit_angle(angle_x, 5);
+        INFO(angle_x);
+        tx_data.get_xy_data(-angle_x*300, -angle_y*100,find_flag);
         serial_.send_data(tx_data);
 #ifdef WAITKEY
 #ifdef IMAGESHOW

@@ -16,8 +16,6 @@
  ***************************************************************************/
 #include "armor_detect.h"
 
-#define USE_FIT
-
 // 计算两个点之间的距离
 double calc_distance(Point2f p1, Point2f p2)
 {
@@ -51,21 +49,6 @@ void armor::draw_spot(Mat &img) const
     circle(img, center, int(rect.height/4), Scalar(0,0,255), -1);
 }
 
-void armor::classification_lights()
-{
-    RotatedRect R, L;
-    if(Led_stick[0].rect.center.x > Led_stick[1].rect.center.x)
-    {
-        R = Led_stick[0].rect;
-        L = Led_stick[1].rect;
-    }else
-    {
-        R = Led_stick[1].rect;
-        L = Led_stick[0].rect;
-    }
-    Led_stick[0].rect = L;
-    Led_stick[1].rect = R;
-}
 
 int armor::get_average_intensity(const Mat& img) {
     if(rect.width < 1 || rect.height < 1 || rect.x < 1 || rect.y < 1
@@ -169,10 +152,6 @@ bool armor::is_suitable_size(void) const
     return false;
 }
 
-ArmorDetector::ArmorDetector()
-{
-
-}
 
 ArmorDetector::ArmorDetector(SolveAngle solve_short, SolveAngle solve_long, ZeYuPredict zeyu_predict)
 {
@@ -182,14 +161,57 @@ ArmorDetector::ArmorDetector(SolveAngle solve_short, SolveAngle solve_long, ZeYu
 
 }
 
-ArmorDetector::~ArmorDetector()
+Mat ArmorDetector::setImage(const cv::Mat &src)
 {
+    Rect rect_roi;
+    Mat result_mat;
+    const cv::Point2f last_result_center = last_target.center;
+    if(last_result_center.x == 0 || last_result_center.y == 0)
+    {
+        rect_roi = Rect(0, 0, src.cols, src.rows);
+    }
+    else
+    {
+        Rect rect = last_target.boundingRect();
+        int max_half_w = 640;
+        int max_half_h = 480;
+        float scale = 1.2;
+        //        if (lost_cnt < 3)
+        //            scale = 1.2;
+        //        else if(lost_cnt == 6)
+        //            scale = 1.5;
+        //        else if(lost_cnt == 12)
+        //            scale = 2.0;
+        int exp_half_w = min(max_half_w / 2, int(rect.width * scale));
+        int exp_half_h = min(max_half_h / 2, int(rect.height * scale));
 
+        int w = std::min(max_half_w, exp_half_w);
+        int h = std::min(max_half_h, exp_half_h);
+        Point center = last_result_center;
+        int x = std::max(center.x - w, 0);
+        int y = std::max(center.y - h, 0);
+        Point lu = Point(x, y);
+        x = std::min(center.x + w, src.cols);
+        y = std::min(center.y + h, src.rows);
+        Point rd = Point(x, y);
+        //        cout << lu << endl;
+        detect_rect_ = Rect(lu, rd);
+        if(makeRectSafe(detect_rect_, src.size())== false)
+        {
+            last_target = cv::RotatedRect();
+            detect_rect_ = Rect(0, 0, src.cols, src.rows);
+
+        }
+        rect_roi = detect_rect_;
+    }
+    src(rect_roi).copyTo(result_mat);
+    return result_mat;
 }
 
 bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
 {
     // **预处理** -图像进行相应颜色的二值化
+
     vector<LED_Stick> LED_Stick_v;  // 声明所有可能的灯条容器
     Mat binary_brightness_img, binary_color_img, gray;
     cvtColor(img,gray,COLOR_BGR2GRAY);
@@ -219,16 +241,16 @@ bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
     vector<vector<Point>> contours_brightness;
     findContours(binary_color_img, contours_light, RETR_EXTERNAL, CHAIN_APPROX_NONE);
     findContours(binary_brightness_img, contours_brightness, RETR_EXTERNAL, CHAIN_APPROX_NONE);
-//#pragma omp for
+    //#pragma omp for
     for(size_t i = 0; i < contours_brightness.size(); i++)
     {
 
         double area = contourArea(contours_brightness[i]);
         if (area < 20.0 || 1e5 < area) continue;
-        #pragma omp for
+#pragma omp for
         for(size_t ii = 0; ii < contours_light.size(); ii++)
         {
-//            test_cnt ++;
+            //            test_cnt ++;
             if(pointPolygonTest(contours_light[ii], contours_brightness[i][0], false) >= 0.0 )
             {
                 double length = arcLength(contours_brightness[i], true); // 灯条周长
@@ -338,9 +360,10 @@ bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
     }
     // **计算装甲板四个点顶点** -用于pnp姿态结算
     // TODO(cz): 四个点的不同的bug修复
-
+    RotatedRect target_rect;
     if(found_flag)
     {
+
         target.draw_spot(img);
         Point2f point_tmp[4];
         Point2f point_2d[4];
@@ -357,7 +380,7 @@ bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
         Point2f offset_point;
         if(extern_param.cap_mode_ == 0)
         {
-           offset_point = Point2f(100, 100) - Point2f(short_offset_x_,short_offset_y_);
+            offset_point = Point2f(100, 100) - Point2f(short_offset_x_,short_offset_y_);
         }
         else
         {
@@ -366,31 +389,60 @@ bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
 
         L.points(point_tmp);
 
-        point_2d[0] = point_tmp[1] + offset_point;
-        point_2d[3] = point_tmp[0] + offset_point;
+        point_2d[0] = point_tmp[1];
+        point_2d[3] = point_tmp[0];
         R.points(point_tmp);
-        point_2d[1] = point_tmp[2] + offset_point;
-        point_2d[2] = point_tmp[3] + offset_point;
-//        circle(img, point_2d[0],3,Scalar(255,255,255),1);
-//        circle(img, point_2d[1],3,Scalar(0,0,255),1);
-//        circle(img, point_2d[2],3,Scalar(0,255,0),1);
-//        circle(img, point_2d[3],3,Scalar(255,0,0),1);
+        point_2d[1] = point_tmp[2];
+        point_2d[2] = point_tmp[3];
+
+
+
+        //        circle(img, point_2d[0],3,Scalar(255,255,255),1);
+        //        circle(img, point_2d[1],3,Scalar(0,0,255),1);
+        //        circle(img, point_2d[2],3,Scalar(0,255,0),1);
+        //        circle(img, point_2d[3],3,Scalar(255,0,0),1);
         points_2d_.clear();
+        vector<Point2f> points_tmp;
         for(int i=0;i<4;i++)
         {
-            points_2d_.push_back(point_2d[i]);
+            points_tmp.push_back(point_2d[i]);
+            points_2d_.push_back(point_2d[i] + offset_point + Point2f(detect_rect_.x, detect_rect_.y));
         }
+        target_rect = minAreaRect(points_tmp);
 
-//        float armor_h = (target.Led_stick[0].rect.size.height+target.Led_stick[1].rect.size.height)/2;
-//        float armor_w = pow(pow(target.Led_stick[0].rect.center.x, 2)+pow(target.Led_stick[1].rect.center.y, 2), 0.5);
+
+        //        float armor_h = (target.Led_stick[0].rect.size.height+target.Led_stick[1].rect.size.height)/2;
+        //        float armor_w = pow(pow(target.Led_stick[0].rect.center.x, 2)+pow(target.Led_stick[1].rect.center.y, 2), 0.5);
         float armor_h = target.rect.height;
         float armor_w = target.rect.width;
-//        cout << armor_w / armor_h <<endl;
+        //        cout << armor_w / armor_h <<endl;
         if(armor_w / armor_h < 3.0f)
             is_small_ = 1;
         else
             is_small_ = 0;
     }
+    rectangle(img, detect_rect_, Scalar(255, 0, 255), 3);
+    if(found_flag){
+        target_rect.center.x += detect_rect_.x;
+        target_rect.center.y += detect_rect_.y;
+        last_target = target_rect;
+        lost_cnt = 0;
+    }
+    else{
+        ++lost_cnt;
+        if (lost_cnt < 3)
+            last_target.size =Size2f(last_target.size.width * 1.5, last_target.size.height * 1.5);
+        else if(lost_cnt == 6)
+            last_target.size =Size2f(last_target.size.width * 2.0, last_target.size.height * 2.0);
+        else if(lost_cnt == 12)
+            last_target.size =Size2f(last_target.size.width * 2.5, last_target.size.height * 2.5);
+        else if(lost_cnt == 18)
+            last_target.size =Size2f(last_target.size.width * 3.0, last_target.size.height * 3.0);
+        else if (lost_cnt > 60 )
+            last_target = RotatedRect();
+
+    }
+
     return found_flag;
 
 }
@@ -398,11 +450,20 @@ bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
 
 int8_t ArmorDetector::ArmorDetectTask(Mat &img,ArmorExternParam extern_param)
 {
+//    double t1 = getTickCount();
     float theta_y = 0;
-    if(DetectArmor(img, extern_param))
+
+    Mat roi = setImage(img);
+
+#ifdef DEBUG_ARMOR_DETECT
+    namedWindow("result", WINDOW_NORMAL);
+    imshow("result", roi);
+#endif
+    if(DetectArmor(roi, extern_param))
     {
+        DrawTarget(img);
         bool final_armor_type = getTypeResult(is_small_);
-//        INFO(final_armor_type);
+        //        INFO(final_armor_type);
         if(extern_param.cap_mode_ == 0) // close
         {
             solve_angle_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
@@ -426,7 +487,9 @@ int8_t ArmorDetector::ArmorDetectTask(Mat &img,ArmorExternParam extern_param)
             angle_x_ = predict_angle_x;
         }
 #endif
+
         return 1;
+
     }else
     {
         return 0;

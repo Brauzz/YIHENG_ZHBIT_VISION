@@ -122,6 +122,7 @@ bool SerialPort::read_data(const struct serial_receive_data *data, int8_t &mode,
 //        printf("buffer1 = %d\r\n", read_buffer[1]);
         my_car_color = int8_t(read_buffer[2]);
         gimbal_data = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
+        cout << gimbal_data<< endl;
         success_ = true;
         return 1;
     }

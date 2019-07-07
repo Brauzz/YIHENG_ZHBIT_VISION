@@ -47,7 +47,7 @@ struct ImageData
 
 struct OtherParam
 {
-    int8_t color = 1;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
+    int8_t color = 0;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
     int8_t mode = 0;        // 视觉模式，0是自瞄模式，1是能量机关模式
     int8_t cap_mode = 1;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
 };
@@ -58,17 +58,17 @@ struct OtherParam
 #define PROCESS_IMAGE_THREAD
 #define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
-#define WAITKEY
-#define IMAGESHOW
+//#define WAITKEY
+//#define IMAGESHOW
 // ****** settings ******//
 #define GALAXY;
 // for armor --------------
-#define DEBUG_ARMOR_DETECT
+//#define DEBUG_ARMOR_DETECT
 //#define DEBUG_BUFF_DETECT
 //#define SHOW_PUT_TEXT
 #define SHOW_DRAW
 #define USE_FIT_ELLIPSE
-#define PREDICT
+//#define PREDICT
 // for buff --------------
 //#define DEBUG_BUFF_DETECT
 
@@ -98,7 +98,7 @@ public:
     void GetSTM32();          // 用于接收电控发来的数据
 
 private:
-    SerialPort serial_;
+//    SerialPort serial_;
     ImageData data[BUFFER_SIZE];
     OtherParam other_param;
     bool end_thread_flag = false;

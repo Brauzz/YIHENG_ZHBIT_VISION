@@ -55,7 +55,6 @@ public:
     void draw_spot(Mat &img) const;
     int get_average_intensity(const Mat& img) ; // 计算装甲板roi平均色彩强度，用于筛选装甲板中心有灯条
     void max_match(vector<LED_Stick>& LED, size_t i, size_t j); // 灯条匹配算法
-    void classification_lights(void);           // 分类装甲板左右灯条
     bool is_suitable_size(void) const;          // 判断可能的装甲板是否符合尺寸
 
     LED_Stick Led_stick[2];  // 装甲板的两个灯条
@@ -80,9 +79,9 @@ public:
 class ArmorDetector
 {
 public:
-    ArmorDetector();
+    ArmorDetector(){}
     ArmorDetector(SolveAngle solve_short, SolveAngle solve_long, ZeYuPredict zeyu_predict);
-    ~ArmorDetector();
+    ~ArmorDetector(){}
 
     bool chooseCamera(int short_distance, int long_distance, bool last_mode)
     {
@@ -101,8 +100,30 @@ public:
      * @param param 自瞄相关参数
      * @return 发现目标为1，未发现为0
      */
+    Mat setImage(const cv::Mat &src);
+    bool makeRectSafe(cv::Rect & rect, cv::Size size){
+        if (rect.x < 0)
+            rect.x = 0;
+        if (rect.x + rect.width > size.width)
+            rect.width = size.width - rect.x;
+        if (rect.y < 0)
+            rect.y = 0;
+        if (rect.y + rect.height > size.height)
+            rect.height = size.height - rect.y;
+        if (rect.width <= 0 || rect.height <= 0)
+            return false;
+        return true;
+    }
     bool DetectArmor(Mat img, ArmorExternParam extern_param);
     int8_t ArmorDetectTask(Mat &img, ArmorExternParam extern_param);
+    void DrawTarget(Mat &img)
+    {
+        if(!points_2d_.empty())
+        {
+            line(img, points_2d_[0],points_2d_[2],Scalar(255,100,0), 3);
+            line(img, points_2d_[1],points_2d_[3],Scalar(255,100,0), 3);
+        }
+    }
     void getAngle(float &yaw, float &pitch)
     {
         yaw = angle_x_;
@@ -142,7 +163,10 @@ private:
     SolveAngle solve_angle_;
     SolveAngle solve_angle_long_;
     ZeYuPredict zeyu_predict_;
-
+private:
+    RotatedRect last_target;
+    Rect detect_rect_;
+    int lost_cnt = 0;
 private:
     float dist_ = 3000;
     float r_ = 0.5;

@@ -73,7 +73,7 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
     if(bullet_speed > 10e-3)
         down_t = _xyz[2] /1000.0 / bullet_speed;
     double offset_gravity = 0.5 * 9.8 * down_t*down_t * 1000;
-//            offset_gravity = 0;
+            offset_gravity = 0;
     // 计算角度
     double xyz[3] = {_xyz[0], _xyz[1] - offset_gravity, _xyz[2]};
     double alpha = 0.0, thta = 0.0;
