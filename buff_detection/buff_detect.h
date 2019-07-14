@@ -17,7 +17,7 @@
 #pragma once
 #include "../common/thread_control.h"
 #include "../common/solve_angle/solve_angle.h"
-
+#include "../base.h"
 using namespace cv;
 using namespace std;
 
@@ -39,12 +39,6 @@ public:
  * @return 1是发现目标，0是未发现目标
  */
 
-class BuffExternParam
-{
-public:
-    int8_t color_;
-};
-
 double calcDistanceFor2Point(Point2f p1, Point2f p2);
 
 class BuffDetector
@@ -53,8 +47,8 @@ public:
     BuffDetector();
     BuffDetector(SolveAngle solve_angle);
     ~BuffDetector();
-    bool DetectBuff(Mat& img, BuffExternParam param);
-    int8_t BuffDetectTask(Mat& img, BuffExternParam param);
+    bool DetectBuff(Mat& img);
+    int8_t BuffDetectTask(Mat& img, OtherParam param);
     void getAngle(float &yaw, float &pitch){
         yaw = angle_x_;
         pitch = angle_y_;
@@ -69,6 +63,10 @@ public:
         max_filter_value_=filter_angle_threshold;
     }
     int8_t getDirection(float angle);
+
+private:
+    int color_;
+    int cap_mode_;
 public:
     int buff_offset_x_ = 115;
     int buff_offset_y_ = 92;

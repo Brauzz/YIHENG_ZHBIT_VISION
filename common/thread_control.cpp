@@ -152,7 +152,6 @@ void ThreadControl::ImageProcess()
     SolveAngle solve_angle_long("../rm-vision/camera/camera_param/galaxy_0.xml", 0, 40.0, -135, 0);
     // 预测类声明
     ZeYuPredict zeyu_predict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
-
     ArmorDetector armor_detector(solve_angle, solve_angle_long, zeyu_predict);
     BuffDetector buff_detector(solve_angle_long);
     serial_transmit_data tx_data;       // 串口发送stm32数据结构
@@ -178,8 +177,6 @@ void ThreadControl::ImageProcess()
         createTrackbar("world_offset_x","BuffParam",&buff_detector.world_offset_x_,1000);
         createTrackbar("world_offset_y","BuffParam",&buff_detector.world_offset_y_,1000);
     }
-    ArmorExternParam armor_param;
-    BuffExternParam buff_param;
     Mat image;
     float angle_x = 0.0, angle_y = 0.0;
     int8_t find_flag = 0;
@@ -191,9 +188,6 @@ void ThreadControl::ImageProcess()
         }
         // 数据初始化
         image_.copyTo(image);
-        armor_param.cap_mode_ = other_param.cap_mode;
-        armor_param.color_ = other_param.color;
-        buff_param.color_ = other_param.color;
 
         if(other_param.mode == 0)
         {
@@ -204,7 +198,7 @@ void ThreadControl::ImageProcess()
             ++consumption_index;
 
             double t1 = getTickCount();
-            find_flag = armor_detector.ArmorDetectTask(image, armor_param);
+            find_flag = armor_detector.ArmorDetectTask(image, other_param);
             double t2 = getTickCount();
             double t = (t2 - t1)*1000/getTickFrequency();
 //                INFO(t);
@@ -213,17 +207,14 @@ void ThreadControl::ImageProcess()
         else
         {
             //***************************buff_mode***********************************
-            //            cout << " buff_mode " << endl;
             other_param.cap_mode = 1;
             ++consumption_index;
 
-            find_flag = buff_detector.BuffDetectTask(image, buff_param);
+            find_flag = buff_detector.BuffDetectTask(image, other_param);
             if(find_flag)
                 buff_detector.getAngle(angle_x, angle_y);
-            //            INFO(angle_x);
         }
         limit_angle(angle_x, 5);
-//        INFO(angle_x);
 #ifdef GET_STM32_THREAD
         tx_data.get_xy_data(-angle_x*300, -angle_y*100,find_flag);
         serial_.send_data(tx_data);

@@ -58,14 +58,14 @@ BuffDetector::~BuffDetector()
 
 }
 
-bool BuffDetector::DetectBuff(Mat& img, BuffExternParam param)
+bool BuffDetector::DetectBuff(Mat& img)
 {
     // **预处理** -图像进行相应颜色的二值化
     points_2d.clear();
     vector<cv::Mat> bgr;
     split(img, bgr);
     Mat result_img;
-    if(param.color_ != 0)
+    if(color_ != 0)
     {
         subtract(bgr[2], bgr[1], result_img);
     }else
@@ -218,9 +218,9 @@ bool BuffDetector::DetectBuff(Mat& img, BuffExternParam param)
     return 0;
 }
 
-int8_t BuffDetector::BuffDetectTask(Mat& img, BuffExternParam param)
+int8_t BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 {
-    bool find_flag = DetectBuff(img, param);
+    bool find_flag = DetectBuff(img);
     float theta_y = 0;
     if(find_flag)
     {

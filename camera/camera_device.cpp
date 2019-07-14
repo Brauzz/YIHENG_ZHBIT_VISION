@@ -26,7 +26,7 @@ CameraDevice::CameraDevice()
     status = GX_STATUS_SUCCESS;
 //    GX_DEV_HANDLE hDevice = nullptr;
 //    uint32_t nDeviceNum = 0;
-    src.create(480,640,CV_8UC3);            // 工业相机尺寸
+    src.create(420,640,CV_8UC3);            // 工业相机尺寸
     stOpenParam.accessMode = GX_ACCESS_EXCLUSIVE;
     stOpenParam.openMode   = GX_OPEN_INDEX;
     stOpenParam.pszContent = "1";

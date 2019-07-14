@@ -19,6 +19,7 @@
 #include "../common/thread_control.h"
 #include "../common/solve_angle/solve_angle.h"
 #include "../common/filter/predict.h"
+#include "../base.h"
 using namespace std;
 using namespace cv;
 /**
@@ -65,16 +66,6 @@ public:
 };
 
 
-class ArmorExternParam
-{
-public:
-    float gimbal_data_;
-    int8_t color_;
-    int8_t cap_mode_;
-    bool serial_success_;
-    void updata();
-};
-
 
 class ArmorDetector
 {
@@ -114,8 +105,8 @@ public:
             return false;
         return true;
     }
-    bool DetectArmor(Mat img, ArmorExternParam extern_param);
-    int8_t ArmorDetectTask(Mat &img, ArmorExternParam extern_param);
+    bool DetectArmor(Mat &img);
+    int8_t ArmorDetectTask(Mat &img, OtherParam other_param);
     void DrawTarget(Mat &img)
     {
         if(!points_2d_.empty())
@@ -144,6 +135,9 @@ public:
      * 通过检测历史数据判断装甲板类型，大装甲板和小装甲板
      */
     bool getTypeResult(bool is_small);
+private:
+    int color_;
+    int cap_mode_;
 public:
     int km_Qp_ = 1000;
     int km_Qv_ = 1;

@@ -208,7 +208,7 @@ Mat ArmorDetector::setImage(const cv::Mat &src)
     return result_mat;
 }
 
-bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
+bool ArmorDetector::DetectArmor(Mat &img)
 {
     // **预处理** -图像进行相应颜色的二值化
 
@@ -220,7 +220,7 @@ bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
     vector<cv::Mat> bgr;
     split(img, bgr);
     Mat result_img;
-    if(extern_param.color_ == 0)
+    if(color_ == 0)
     {
         subtract(bgr[2], bgr[1], result_img);
     }else
@@ -378,7 +378,7 @@ bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
             L = target.Led_stick[0].rect;
         }
         Point2f offset_point;
-        if(extern_param.cap_mode_ == 0)
+        if(cap_mode_ == 0)
         {
             offset_point = Point2f(100, 100) - Point2f(short_offset_x_,short_offset_y_);
         }
@@ -448,23 +448,24 @@ bool ArmorDetector::DetectArmor(Mat img, ArmorExternParam extern_param)
 }
 
 
-int8_t ArmorDetector::ArmorDetectTask(Mat &img,ArmorExternParam extern_param)
+int8_t ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
 {
 //    double t1 = getTickCount();
     float theta_y = 0;
-
+    color_ = other_param.color;
+    cap_mode_ = other_param.cap_mode;
     Mat roi = setImage(img);
 
 #ifdef DEBUG_ARMOR_DETECT
     namedWindow("result", WINDOW_NORMAL);
     imshow("result", roi);
 #endif
-    if(DetectArmor(roi, extern_param))
+    if(DetectArmor(roi))
     {
         DrawTarget(img);
         bool final_armor_type = getTypeResult(is_small_);
         //        INFO(final_armor_type);
-        if(extern_param.cap_mode_ == 0) // close
+        if(cap_mode_ == 0) // close
         {
             solve_angle_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
             solve_angle_.getAngle(points_2d_, 15,angle_x_,angle_y_,distance_,theta_y);   // pnp姿态结算
