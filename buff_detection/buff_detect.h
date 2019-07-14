@@ -15,8 +15,8 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  ***************************************************************************/
 #pragma once
-#include "thread_control.h"
-#include "solve_angle.h"
+#include "../common/thread_control.h"
+#include "../common/solve_angle/solve_angle.h"
 
 using namespace cv;
 using namespace std;

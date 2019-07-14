@@ -21,14 +21,13 @@
 #include "unistd.h"
 #include "chrono"
 #include "fstream"
-#include "boost/timer.hpp"
 
-#include "camera_device.h"
-#include "armor_detect.h"
-#include "buff_detect.h"
-#include "serial_port.h"
-#include "solve_angle.h"
-#include "predict.h"
+#include "../camera/camera_device.h"
+#include "../armor_detection/armor_detect.h"
+#include "../buff_detection/buff_detect.h"
+#include "./serial/serial_port.h"
+#include "./solve_angle/solve_angle.h"
+#include "./filter/predict.h"
 
 using namespace cv;
 using namespace std;

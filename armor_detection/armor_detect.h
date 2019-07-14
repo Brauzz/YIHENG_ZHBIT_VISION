@@ -16,9 +16,9 @@
  ***************************************************************************/
 #pragma once
 #include <opencv2/opencv.hpp>
-#include "thread_control.h"
-#include "solve_angle.h"
-#include "predict.h"
+#include "../common/thread_control.h"
+#include "../common/solve_angle/solve_angle.h"
+#include "../common/filter/predict.h"
 using namespace std;
 using namespace cv;
 /**
