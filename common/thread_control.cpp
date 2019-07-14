@@ -21,10 +21,9 @@ static volatile unsigned int produce_index;     // 图像生成序号，用于�
 static volatile unsigned int gimbal_data_index;     // gimbal data 生成序号，用于线程之间逻辑
 static volatile unsigned int consumption_index; // 图像消耗序号
 
-//static ImageData data[BUFFER_SIZE];
-//static OtherParam other_param;
+#ifdef GET_STM32_THREAD
 SerialPort serial_("/dev/ttyUSB0",0);                 // pc与stm32之间的串口通信
-
+#endif
 #ifdef GET_GIMBAL_THREAD
 SerialPort serial_gimbal_("/dev/ttyUSB0",1);          // pc与陀螺仪之间的串口通信
 #endif
@@ -32,25 +31,26 @@ SerialPort serial_gimbal_("/dev/ttyUSB0",1);          // pc与陀螺仪之间的
 ThreadControl::ThreadControl()
 {
     cout << "THREAD TASK ON !!!" << endl;
-//    SerialPort serial_tmp("/dev/ttyUSB0", 0);
-//    serial_ = serial_tmp;
 }
 
 // 图像生成线程
 void ThreadControl::ImageProduce()
 {
     cout << " ------ SHORT CAMERA PRODUCE TASK ON !!! ------ " << endl;
-    CaptureVideo short_camera("/dev/camera", 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
+    camera0_enable = true;
+    CaptureVideo short_camera("/dev/video1", 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
     short_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
     short_camera.setExposureTime(0, 100);                         // 手动曝光，设置曝光时间。
     short_camera.startStream();                                  // 打开视频流
     //        short_camera.info();                                         // 输出摄像头信息
+
     while(1)
     {
         // 等待图像进入处理瞬间，再去生成图像
-        while(produce_index - consumption_index >= BUFFER_SIZE || other_param.cap_mode == 1)
+        while(!(produce_index - consumption_index <= 0
+              && (other_param.cap_mode == 0 || (other_param.cap_mode == 1 && camera1_enable == 0))))
             END_THREAD;
-        short_camera >> data[produce_index % BUFFER_SIZE].img;
+        short_camera >> image_;
         if(short_camera.getFD() != -1)
             ++produce_index;
         END_THREAD;
@@ -61,15 +61,18 @@ void ThreadControl::ImageProduce()
 void ThreadControl::ImageProduceLong()
 {
     cout << " ------LONG CAMERA PRODUCE TASK ON !!! ------" << endl;
+    camera1_enable = true;
 #ifdef GALAXY
     // 工业相机类初始化
     CameraDevice galaxy;
     galaxy.init();
+
     while(1)
     {
-        while(produce_index - consumption_index >= BUFFER_SIZE || other_param.cap_mode == 0)
+        while(!(produce_index - consumption_index <= 0
+               &&(other_param.cap_mode == 1 || (other_param.cap_mode == 0 && camera0_enable == 0))))
             END_THREAD;
-        galaxy.getImage(data[produce_index % BUFFER_SIZE].img);
+        galaxy.getImage(image_);
         ++produce_index;
         END_THREAD;
     }
@@ -117,6 +120,7 @@ void ThreadControl::GetGimbal()
 }
 #endif
 
+#ifdef GET_STM32_THREAD
 void ThreadControl::GetSTM32()
 {
     cout << " ------ STM32 DATA RECEVICE TASK ON !!! ------" << endl;
@@ -137,14 +141,15 @@ void ThreadControl::GetSTM32()
         END_THREAD;
     }
 }
+#endif
 
 // 图像处理线程
 void ThreadControl::ImageProcess()
 {
     cout << " ------ IMAGE PROCESS TASK ON !!! ------" << endl;
     // 角度结算类声明
-    SolveAngle solve_angle("/home/cz/rm-vision/camera4mm.xml", -20, 80, -135, 0);
-    SolveAngle solve_angle_long("/home/cz/rm-vision/galaxy_1.xml", 0, 40.0, -135, 0);
+    SolveAngle solve_angle("../rm-vision/camera/camera_param/camera4mm.xml", -20, 80, -135, 0);
+    SolveAngle solve_angle_long("../rm-vision/camera/camera_param/galaxy_0.xml", 0, 40.0, -135, 0);
     // 预测类声明
     ZeYuPredict zeyu_predict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
 
@@ -165,7 +170,7 @@ void ThreadControl::ImageProcess()
         createTrackbar("rp","ArmorParam",&armor_detector.km_Rp_,1000);
         createTrackbar("rv","ArmorParam",&armor_detector.km_Rv_,1000);
         createTrackbar("t","ArmorParam",&armor_detector.km_t_,10);
-       createTrackbar("pt","ArmorParam",&armor_detector.km_pt_,500);
+        createTrackbar("pt","ArmorParam",&armor_detector.km_pt_,500);
         createTrackbar("buff_gray_th", "BuffParam", &buff_detector.gray_th_, 255);
         createTrackbar("buff_color_th", "BuffParam", &buff_detector.color_th_, 255);
         createTrackbar("buff_offset_x_","BuffParam",&buff_detector.buff_offset_x_,200);
@@ -181,30 +186,28 @@ void ThreadControl::ImageProcess()
     while(1)
     {
         // 等待图像生成后进行处理
-        while(produce_index - consumption_index == 0){
+        while(produce_index - consumption_index <= 0){
             END_THREAD;
         }
         // 数据初始化
-        data[consumption_index % BUFFER_SIZE].img.copyTo(image);
-        armor_param.gimbal_data_ = data[consumption_index % BUFFER_SIZE].gimbal_data;
+        image_.copyTo(image);
         armor_param.cap_mode_ = other_param.cap_mode;
         armor_param.color_ = other_param.color;
-        armor_param.serial_success_ = data[consumption_index % BUFFER_SIZE].serial_success;
         buff_param.color_ = other_param.color;
+
         if(other_param.mode == 0)
         {
             //            ***************************auto_mode***********************************
-            //            cout << " auto_mode " << endl;
+#ifndef FORCE_CHANGE_CAMERA
+            other_param.cap_mode = armor_detector.chooseCamera(1000, 1500, other_param.cap_mode);
+#endif
+            ++consumption_index;
+
             double t1 = getTickCount();
             find_flag = armor_detector.ArmorDetectTask(image, armor_param);
             double t2 = getTickCount();
-            other_param.cap_mode = 1;
-            other_param.cap_mode = armor_detector.chooseCamera(1000, 1500, other_param.cap_mode);
-            other_param.cap_mode = 1;
-            ++consumption_index;
-
             double t = (t2 - t1)*1000/getTickFrequency();
-                INFO(t);
+//                INFO(t);
             armor_detector.getAngle(angle_x, angle_y);
         }
         else
@@ -220,9 +223,11 @@ void ThreadControl::ImageProcess()
             //            INFO(angle_x);
         }
         limit_angle(angle_x, 5);
-        INFO(angle_x);
+//        INFO(angle_x);
+#ifdef GET_STM32_THREAD
         tx_data.get_xy_data(-angle_x*300, -angle_y*100,find_flag);
         serial_.send_data(tx_data);
+#endif
 #ifdef WAITKEY
 #ifdef IMAGESHOW
         imshow("image", image);

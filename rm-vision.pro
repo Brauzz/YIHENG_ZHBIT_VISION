@@ -54,7 +54,8 @@ HEADERS += \
     common/solve_angle/solve_angle.h \
     common/thread_control.h \
     mainwindow.h \
-    qcustomplot.h
+    qcustomplot.h \
+    base.h
 
 SOURCES += \
     armor_detection/armor_detect.cpp \
@@ -70,3 +71,10 @@ SOURCES += \
 
 FORMS += \
     mainwindow.ui
+
+DISTFILES += \
+    camera/camera_param/camera.xml \
+    camera/camera_param/camera4mm.xml \
+    camera/camera_param/camera8mm.xml \
+    camera/camera_param/cameraParam_0.xml \
+    camera/camera_param/galaxy_0.xml

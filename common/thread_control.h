@@ -28,6 +28,7 @@
 #include "./serial/serial_port.h"
 #include "./solve_angle/solve_angle.h"
 #include "./filter/predict.h"
+#include "../base.h"
 
 using namespace cv;
 using namespace std;
@@ -35,48 +36,6 @@ using namespace std;
 /**
  * @brief 图像信息，用于线程之间的图像传输
  */
-struct ImageData
-{
-    Mat img;
-    float gimbal_data;
-    bool serial_success = 1;
-    //    unsigned int frame;
-};
-
-
-struct OtherParam
-{
-    int8_t color = 0;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
-    int8_t mode = 0;        // 视觉模式，0是自瞄模式，1是能量机关模式
-    int8_t cap_mode = 1;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
-};
-
-// ****** systems  ******//
-#define SHOT_CAMERA_THREAD
-#define LONG_CAMERA_THREAD
-#define PROCESS_IMAGE_THREAD
-#define GET_STM32_THREAD
-//#define GET_GIMBAL_THREAD
-//#define WAITKEY
-//#define IMAGESHOW
-// ****** settings ******//
-#define GALAXY;
-// for armor --------------
-//#define DEBUG_ARMOR_DETECT
-//#define DEBUG_BUFF_DETECT
-//#define SHOW_PUT_TEXT
-#define SHOW_DRAW
-#define USE_FIT_ELLIPSE
-//#define PREDICT
-// for buff --------------
-//#define DEBUG_BUFF_DETECT
-
-// for image
-#define VIDEO_WIDTH 640
-#define VIDEO_HEIGHT 360
-#define BUFFER_SIZE 1
-
-
 
 
 void protectDate(int& a, int &b, int &c, int& d, int& e, int& f);
@@ -97,13 +56,11 @@ public:
     void GetSTM32();          // 用于接收电控发来的数据
 
 private:
-//    SerialPort serial_;
-    ImageData data[BUFFER_SIZE];
+    Mat image_;
     OtherParam other_param;
     bool end_thread_flag = false;
-//    unsigned int produce_index;
-//    unsigned int consumption_index;
-//    unsigned int gimbal_data_index;
+    bool camera0_enable = false;
+    bool camera1_enable = false;
 };
 
 class GimbalDataProcess
@@ -131,39 +88,3 @@ private:
     float last_gimbal_yaw;
 };
 
-
-// ****** common ******//
-#define END_THREAD if(end_thread_flag) return;
-#define INFO(a) cout<<#a<<"="<<a<<endl;
-#define TIME_START(a) double a=getTickCount();
-#define TIME_END(a) cout<<#a<<" "<<(getTickCount()-a)*1000/getTickFrequency()<<endl;
-#define NOTICE(test, num){                   \
-    static bool flag = true;            \
-    static int i=0; \
-    if(flag)                            \
-    {              \
-        i++;                          \
-        std::cout << test << std::endl; \
-    if(i>=num)               \
-        flag = false;                   \
-    }                                   \
-}                                       \
-
-
-
-//#define TIMER_START boost::timer t_##__func__;
-//#define TIMER_END std:: cout << "[" << #__func__ << "]" << "cost time: " << t_##__func__.elapsed() << std::endl;
-
-
-
-//                printf("debug test: armor_type = %d, bullet_speed = %f", final_armor_type, bullet_speed_);
-//                putText(image, "origin z :" + to_string(distance) + " x: " + to_string(angle_x) + " y :" + to_string(angle_y) + "theta_y :" + to_string(theta_y)
-//                        , Point(0,20), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
-//                putText(image, "orICRA z :" + to_string(distance_i) + " x: " + to_string(angle_x_i) + " y :" + to_string(angle_y_i)
-//                        , Point(0,40), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
-
-
-
-//    ofstream file("test.txt");
-//        file << csmIdx << " " << angle_x << " " << angle_y << "\n";
-//    file.close();
