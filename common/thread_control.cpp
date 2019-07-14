@@ -48,7 +48,7 @@ void ThreadControl::ImageProduce()
     {
         // 等待图像进入处理瞬间，再去生成图像
         while(!(produce_index - consumption_index <= 0
-              && (other_param.cap_mode == 0 || (other_param.cap_mode == 1 && camera1_enable == 0))))
+                && (other_param.cap_mode == 0 || (other_param.cap_mode == 1 && camera1_enable == 0))))
             END_THREAD;
         short_camera >> image_;
         if(short_camera.getFD() != -1)
@@ -70,7 +70,7 @@ void ThreadControl::ImageProduceLong()
     while(1)
     {
         while(!(produce_index - consumption_index <= 0
-               &&(other_param.cap_mode == 1 || (other_param.cap_mode == 0 && camera0_enable == 0))))
+                &&(other_param.cap_mode == 1 || (other_param.cap_mode == 0 && camera0_enable == 0))))
             END_THREAD;
         galaxy.getImage(image_);
         ++produce_index;
@@ -153,11 +153,12 @@ void ThreadControl::ImageProcess()
     // 预测类声明
     ZeYuPredict zeyu_predict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
     ArmorDetector armor_detector(solve_angle, solve_angle_long, zeyu_predict);
+#if(ROBOT_TYPE == INFANTRY)
     BuffDetector buff_detector(solve_angle_long);
+#endif
     serial_transmit_data tx_data;       // 串口发送stm32数据结构
     {
         namedWindow("ArmorParam");
-        namedWindow("BuffParam");
         createTrackbar("armor_gray_th", "ArmorParam", &armor_detector.gray_th_, 255);
         createTrackbar("armor_color_th", "ArmorParam", &armor_detector.color_th_, 255);
         createTrackbar("short_offset_x","ArmorParam",&armor_detector.short_offset_x_,200);
@@ -170,12 +171,15 @@ void ThreadControl::ImageProcess()
         createTrackbar("rv","ArmorParam",&armor_detector.km_Rv_,1000);
         createTrackbar("t","ArmorParam",&armor_detector.km_t_,10);
         createTrackbar("pt","ArmorParam",&armor_detector.km_pt_,500);
+#if(ROBOT_TYPE == INFANTRY)
+        namedWindow("BuffParam");
         createTrackbar("buff_gray_th", "BuffParam", &buff_detector.gray_th_, 255);
         createTrackbar("buff_color_th", "BuffParam", &buff_detector.color_th_, 255);
         createTrackbar("buff_offset_x_","BuffParam",&buff_detector.buff_offset_x_,200);
         createTrackbar("buff_offset_y_","BuffParam",&buff_detector.buff_offset_y_,200);
         createTrackbar("world_offset_x","BuffParam",&buff_detector.world_offset_x_,1000);
         createTrackbar("world_offset_y","BuffParam",&buff_detector.world_offset_y_,1000);
+#endif
     }
     Mat image;
     float angle_x = 0.0, angle_y = 0.0;
@@ -189,6 +193,7 @@ void ThreadControl::ImageProcess()
         // 数据初始化
         image_.copyTo(image);
 
+#if(ROBOT_TYPE == INFANTRY)
         if(other_param.mode == 0)
         {
             //            ***************************auto_mode***********************************
@@ -201,7 +206,7 @@ void ThreadControl::ImageProcess()
             find_flag = armor_detector.ArmorDetectTask(image, other_param);
             double t2 = getTickCount();
             double t = (t2 - t1)*1000/getTickFrequency();
-//                INFO(t);
+            //                INFO(t);
             armor_detector.getAngle(angle_x, angle_y);
         }
         else
@@ -214,6 +219,21 @@ void ThreadControl::ImageProcess()
             if(find_flag)
                 buff_detector.getAngle(angle_x, angle_y);
         }
+
+#elif(ROBOT_TYPE == HERO)
+#ifndef FORCE_CHANGE_CAMERA
+        other_param.cap_mode = armor_detector.chooseCamera(1000, 1500, other_param.cap_mode);
+#endif
+        ++consumption_index;
+        find_flag = armor_detector.ArmorDetectTask(image, other_param);
+        armor_detector.getAngle(angle_x, angle_y);
+
+
+#elif(ROBOT_TYPE == PLANE)
+        ++consumption_index;
+        find_flag = armor_detector.ArmorDetectTask(image, other_param);
+        armor_detector.getAngle(angle_x, angle_y);
+#endif
         limit_angle(angle_x, 5);
 #ifdef GET_STM32_THREAD
         tx_data.get_xy_data(-angle_x*300, -angle_y*100,find_flag);

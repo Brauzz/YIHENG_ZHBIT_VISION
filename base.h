@@ -1,9 +1,14 @@
 #pragma once
 #include "iostream"
 
+#define INFANTRY  0
+#define HERO 1
+#define PLANE 2
+
+#define ROBOT_TYPE INFANTRY
 
 // ****** systems  ******//
-//#define SHOT_CAMERA_THREAD
+#define SHOT_CAMERA_THREAD
 #define LONG_CAMERA_THREAD
 #define PROCESS_IMAGE_THREAD
 //#define GET_STM32_THREAD
