@@ -1,11 +1,8 @@
 #pragma once
 #include "iostream"
 
-#define INFANTRY  0
-#define HERO 1
-#define PLANE 2
 
-#define ROBOT_TYPE INFANTRY
+#define ROBOT_TYPE INFANTRY // INFANTRY HERO PLANE
 
 // ****** systems  ******//
 #define SHOT_CAMERA_THREAD
@@ -31,6 +28,18 @@
 #define VIDEO_HEIGHT 360
 #define BUFFER_SIZE 1
 
+#define SERIAL_PATH "/dev/ttyUSB0"
+#define SERIAL_BAUD B115200     // B115200 B921600
+#define GIMBAL_PATH "/dev/ttyUSB1"
+#define GIMBAL_BAUD B921600
+#define CAMERA0_PATH "/dev/video1"
+#define CAMERA1_PATH "/dev/video2"
+
+#define CAMERA0_FILEPATH "../rm-vision/camera/camera_param/\
+camera4mm.xml"
+#define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
+galaxy_0.xml"
+
 #define FORCE_CHANGE_CAMERA
 struct OtherParam
 {
@@ -48,15 +57,23 @@ struct OtherParam
     static bool flag = true;            \
     static int i=0; \
     if(flag)                            \
-    {              \
-        i++;                          \
-        std::cout << test << std::endl; \
+{              \
+    i++;                          \
+    std::cout << test << std::endl; \
     if(i>=num)               \
-        flag = false;                   \
+    flag = false;                   \
     }                                   \
-}                                       \
+    }                                       \
 
 
+
+
+#define INFANTRY  0
+#define HERO 1
+#define PLANE 2
+
+#define B115200 0
+#define B921600 1
 
 //#define TIMER_START boost::timer t_##__func__;
 //#define TIMER_END std:: cout << "[" << #__func__ << "]" << "cost time: " << t_##__func__.elapsed() << std::endl;

@@ -22,10 +22,10 @@ static volatile unsigned int gimbal_data_index;     // gimbal data 生成序号�
 static volatile unsigned int consumption_index; // 图像消耗序号
 
 #ifdef GET_STM32_THREAD
-SerialPort serial_("/dev/ttyUSB0",0);                 // pc与stm32之间的串口通信
+SerialPort serial_(SERIAL_PATH,SERIAL_BAUD);                 // pc与stm32之间的串口通信
 #endif
 #ifdef GET_GIMBAL_THREAD
-SerialPort serial_gimbal_("/dev/ttyUSB0",1);          // pc与陀螺仪之间的串口通信
+SerialPort serial_gimbal_(GIMBAL_PATH,GIMBAL_BAUD);          // pc与陀螺仪之间的串口通信
 #endif
 
 ThreadControl::ThreadControl()
@@ -38,7 +38,7 @@ void ThreadControl::ImageProduce()
 {
     cout << " ------ SHORT CAMERA PRODUCE TASK ON !!! ------ " << endl;
     camera0_enable = true;
-    CaptureVideo short_camera("/dev/video1", 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
+    CaptureVideo short_camera(CAMERA0_PATH, 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
     short_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
     short_camera.setExposureTime(0, 100);                         // 手动曝光，设置曝光时间。
     short_camera.startStream();                                  // 打开视频流
@@ -78,7 +78,7 @@ void ThreadControl::ImageProduceLong()
     }
 
 #else
-    CaptureVideo long_camera("/dev/video2", 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
+    CaptureVideo long_camera(CAMERA1_PATH, 1);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
     long_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
     long_camera.setExposureTime(0, 20);                         // 手动曝光，设置曝光时间。
     long_camera.startStream();                                  // 打开视频流
@@ -95,7 +95,7 @@ void ThreadControl::ImageProduceLong()
 }
 
 #ifdef GET_GIMBAL_THREAD
-void ThreadControl::GetGimbal()
+void ThreadControl::GetGimbal() //give up
 {
     cout << " ------GIMBAL DATA RECEVICE TASK ON !!! ------ " << endl;
     GimbalDataProcess GimDataPro;
@@ -106,19 +106,17 @@ void ThreadControl::GetGimbal()
         while(static_cast<int>(gimbal_data_index - consumption_index) >= BUFFER_SIZE)
             END_THREAD;
         serial_gimbal_.read_gimbal(&gim_rx_data_, raw_gimbal_yaw);
-
-        data[consumption_index % BUFFER_SIZE].serial_success = serial_gimbal_.success_;
         if(serial_gimbal_.success_)
         {
             GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
-            INFO(dst_gimbal_yaw);
-            data[consumption_index % BUFFER_SIZE].gimbal_data = dst_gimbal_yaw;
+            float gimbal_data = dst_gimbal_yaw;
         }
         gimbal_data_index++;
         END_THREAD;
     }
 }
 #endif
+
 
 #ifdef GET_STM32_THREAD
 void ThreadControl::GetSTM32()
@@ -135,7 +133,7 @@ void ThreadControl::GetSTM32()
 
         serial_.read_data(&rx_data, mode, color, raw_gimbal_yaw);
         GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
-        data[consumption_index % BUFFER_SIZE].gimbal_data = dst_gimbal_yaw;
+        float gimbal_data = dst_gimbal_yaw;
         INFO(dst_gimbal_yaw);
         gimbal_data_index++;
         END_THREAD;
@@ -148,8 +146,8 @@ void ThreadControl::ImageProcess()
 {
     cout << " ------ IMAGE PROCESS TASK ON !!! ------" << endl;
     // 角度结算类声明
-    SolveAngle solve_angle("../rm-vision/camera/camera_param/camera4mm.xml", -20, 80, -135, 0);
-    SolveAngle solve_angle_long("../rm-vision/camera/camera_param/galaxy_0.xml", 0, 40.0, -135, 0);
+    SolveAngle solve_angle(CAMERA0_FILEPATH, -20, 80, -135, 0);
+    SolveAngle solve_angle_long(CAMERA1_FILEPATH, 0, 40.0, -135, 0);
     // 预测类声明
     ZeYuPredict zeyu_predict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
     ArmorDetector armor_detector(solve_angle, solve_angle_long, zeyu_predict);
@@ -201,12 +199,9 @@ void ThreadControl::ImageProcess()
             other_param.cap_mode = armor_detector.chooseCamera(1000, 1500, other_param.cap_mode);
 #endif
             ++consumption_index;
-
-            double t1 = getTickCount();
+            TIME_START(t);
             find_flag = armor_detector.ArmorDetectTask(image, other_param);
-            double t2 = getTickCount();
-            double t = (t2 - t1)*1000/getTickFrequency();
-            //                INFO(t);
+            TIME_END(t);
             armor_detector.getAngle(angle_x, angle_y);
         }
         else
@@ -236,7 +231,7 @@ void ThreadControl::ImageProcess()
 #endif
         limit_angle(angle_x, 5);
 #ifdef GET_STM32_THREAD
-        tx_data.get_xy_data(-angle_x*300, -angle_y*100,find_flag);
+        tx_data.get_xy_data(-angle_x*100, -angle_y*100,find_flag);
         serial_.send_data(tx_data);
 #endif
 #ifdef WAITKEY
