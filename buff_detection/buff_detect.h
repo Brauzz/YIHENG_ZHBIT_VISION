@@ -66,7 +66,6 @@ public:
 
 private:
     int color_;
-    int cap_mode_;
 public:
     int buff_offset_x_ = 115;
     int buff_offset_y_ = 92;

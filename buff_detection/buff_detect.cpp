@@ -109,7 +109,7 @@ bool BuffDetector::DetectBuff(Mat& img)
         if(big_contour_length < 5)
             continue;
 
-        if(small_contour_area * 4       > big_contour_area
+        if(small_contour_area * 8       > big_contour_area
                 && small_contour_area * 1.5 < big_contour_area
                 && small_contour_length * 7 > big_contour_length
                 && small_contour_length * 1.5 < big_contour_length)
@@ -220,7 +220,9 @@ bool BuffDetector::DetectBuff(Mat& img)
 
 int8_t BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 {
+
     bool find_flag = DetectBuff(img);
+    color_ = other_param.color;
     float theta_y = 0;
     if(find_flag)
     {
@@ -240,7 +242,7 @@ int8_t BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
         solve_angle_long_.Generate3DPoints(2, world_offset);
         solve_angle_long_.getAngle(points_2d, 28.5, angle_x_, angle_y_, distance_, theta_y);
         angle_y_*=0.8;
-        INFO(distance_);
+//        INFO(distance_);
         return 1;
     }
     return 0;

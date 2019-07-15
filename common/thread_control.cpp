@@ -194,7 +194,7 @@ void ThreadControl::ImageProcess()
 #if(DEBUG_VIDEO == 0)
     VideoCapture cap("../Videos/test.avi");
 #else
-    VideoCapture cap("../Videos/successd.avi");
+    VideoCapture cap("../Videos/successed.avi");
 #endif
 #endif
 
