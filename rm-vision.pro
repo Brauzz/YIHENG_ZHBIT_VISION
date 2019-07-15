@@ -73,8 +73,17 @@ FORMS += \
     mainwindow.ui
 
 DISTFILES += \
+    camera/camera_param/cameraParam_0.xml \
     camera/camera_param/camera.xml \
     camera/camera_param/camera4mm.xml \
+    camera/camera_param/camera4mm_2.xml \
+    camera/camera_param/camera4mm_3.xml \
+    camera/camera_param/camera4mm_5.xml \
     camera/camera_param/camera8mm.xml \
-    camera/camera_param/cameraParam_0.xml \
-    camera/camera_param/galaxy_0.xml
+    camera/camera_param/camera8mm_1.xml \
+    camera/camera_param/camera8mm_11.xml \
+    camera/camera_param/galaxy_0.xml \
+    camera/camera_param/galaxy_1.xml \
+    camera/camera_param/galaxy_1024.xml \
+    camera/camera_param/galaxy_2.xml \
+    camera/camera_param/galaxy_3.xml
