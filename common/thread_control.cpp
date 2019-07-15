@@ -37,46 +37,47 @@ ThreadControl::ThreadControl()
 void ThreadControl::ImageProduce()
 {
     cout << " ------ SHORT CAMERA PRODUCE TASK ON !!! ------ " << endl;
-    camera0_enable = true;
-#if(SHORT_CAMERA_ENABLE)
-    CaptureVideo short_camera(CAMERA0_PATH, 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
-    short_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
-    short_camera.setExposureTime(0, 100);                         // 手动曝光，设置曝光时间。
-    short_camera.startStream();                                  // 打开视频流
-    //        short_camera.info();                                         // 输出摄像头信息
-#endif
-#if(LONG_CAMERA_ENABLE)
-#ifdef GALAXY
 
+
+    #if(SHORT_CAMERA_ENABLE)
+        CaptureVideo short_camera(CAMERA0_PATH, 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
+        short_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
+        short_camera.setExposureTime(0, 100);                         // 手动曝光，设置曝光时间。
+        short_camera.startStream();                                  // 打开视频流
+        //        short_camera.info();                                         // 输出摄像头信息
+    #endif
+    #if(LONG_CAMERA_ENABLE)
+    #ifdef GALAXY
     CameraDevice galaxy;
     galaxy.init();
-#else
-    CaptureVideo long_camera(CAMERA1_PATH, 1);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
-    long_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
-    long_camera.setExposureTime(0, 100);                         // 手动曝光，设置曝光时间。
-    long_camera.startStream();                                  // 打开视频流
-#endif
-#endif
+    #else
+        CaptureVideo long_camera(CAMERA1_PATH, 3);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
+        long_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
+        long_camera.setExposureTime(0, 100);                         // 手动曝光，设置曝光时间。
+        long_camera.startStream();                                  // 打开视频流
+    #endif
+    #endif
     while(1)
     {
         // 等待图像进入处理瞬间，再去生成图像
-        while(produce_index - consumption_index >= 1)
+        while(produce_index - consumption_index >= BUFFER_SIZE)
             END_THREAD;
-#if(SHORT_CAMERA_ENABLE==1&&LONG_CAMERA_ENABLE==1)
-        if(other_param.cap_mode == 0)
-#endif
-#if(SHORT_CAMERA_ENABLE)
-            short_camera >> image_;
-#endif
-   #if(SHORT_CAMERA_ENABLE==1&&LONG_CAMERA_ENABLE==1)
-        if(other_param.cap_mode == 1)
-            #endif
-#if(LONG_CAMERA_ENABLE)
-#ifdef GALAXY
-            galaxy.getImage(image_);
-#endif
-        long_camera >> image_;
-#endif
+        #if(SHORT_CAMERA_ENABLE==1&&LONG_CAMERA_ENABLE==1)
+                if(other_param.cap_mode == 0)
+        #endif
+        #if(SHORT_CAMERA_ENABLE)
+                    short_camera >> image_;
+        #endif
+        #if(SHORT_CAMERA_ENABLE==1&&LONG_CAMERA_ENABLE==1)
+                else if(other_param.cap_mode == 1)
+        #endif
+        #if(LONG_CAMERA_ENABLE)
+        #ifdef GALAXY
+        galaxy.getImage(image_);
+        #else
+                            long_camera >> image_;
+        #endif
+        #endif
         ++produce_index;
         END_THREAD;
     }
@@ -195,7 +196,7 @@ void ThreadControl::ImageProcess()
             END_THREAD;
         }
         // 数据初始化
-        image_.copyTo(image);
+        image_.copyTo(image);//        image_.copyTo(image);
 #else
         cap.read(image);
 #endif
@@ -258,6 +259,13 @@ void ThreadControl::ImageProcess()
         char key = waitKey(1);
         if(key == 'q')
             end_thread_flag = true;
+        if(key == 'c')
+        {
+            if(other_param.cap_mode == 0)
+                other_param.cap_mode = 1;
+            else
+                other_param.cap_mode = 0;
+        }
         END_THREAD;
 #endif
     }

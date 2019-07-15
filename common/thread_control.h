@@ -42,6 +42,10 @@ void protectDate(int& a, int &b, int &c, int& d, int& e, int& f);
 void limit_angle(float &a, float max);
 
 /**
+ * @brief 图像信息，用于线程之间的图像传输
+ */
+
+/**
  * @brief 线程管理类
  * 负责图像生成、图像处理、串口数据接收
  */
@@ -57,10 +61,7 @@ public:
 private:
     Mat image_;
     OtherParam other_param;
-    int mode = 0;        // 视觉模式，0是自瞄模式，1是能量机关模式
     bool end_thread_flag = false;
-    bool camera0_enable = false;
-    bool camera1_enable = false;
 };
 
 class GimbalDataProcess

@@ -26,7 +26,8 @@ CameraDevice::CameraDevice()
     status = GX_STATUS_SUCCESS;
 //    GX_DEV_HANDLE hDevice = nullptr;
 //    uint32_t nDeviceNum = 0;
-    src.create(420,640,CV_8UC3);            // 工业相机尺寸
+    src.create(480,640,CV_8UC3);            // 工业相机尺寸
+//    src.create(1024,1280,CV_8UC3);            // 工业相机尺寸
     stOpenParam.accessMode = GX_ACCESS_EXCLUSIVE;
     stOpenParam.openMode   = GX_OPEN_INDEX;
     stOpenParam.pszContent = "1";
@@ -55,13 +56,13 @@ int CameraDevice::init()
         return 0;
     }
     status = GXUpdateDeviceList(&nDeviceNum, 1000);
-    std::cout << status << " " << nDeviceNum << std::endl;
+
     if ((status != GX_STATUS_SUCCESS) || (nDeviceNum <= 0))
     {
         return 0;
     }
     status = GXOpenDevice(&stOpenParam, &hDevice);
-    std::cout << status << std::endl;
+            std::cout << status << std::endl;
     if (status == GX_STATUS_SUCCESS)
     {
         int64_t nPayLoadSize = 0;

@@ -363,7 +363,6 @@ bool ArmorDetector::DetectArmor(Mat &img)
     RotatedRect target_rect;
     if(found_flag)
     {
-
         target.draw_spot(img);
         Point2f point_tmp[4];
         Point2f point_2d[4];
@@ -395,8 +394,6 @@ bool ArmorDetector::DetectArmor(Mat &img)
         point_2d[1] = point_tmp[2];
         point_2d[2] = point_tmp[3];
 
-
-
         //        circle(img, point_2d[0],3,Scalar(255,255,255),1);
         //        circle(img, point_2d[1],3,Scalar(0,0,255),1);
         //        circle(img, point_2d[2],3,Scalar(0,255,0),1);
@@ -406,41 +403,15 @@ bool ArmorDetector::DetectArmor(Mat &img)
         for(int i=0;i<4;i++)
         {
             points_tmp.push_back(point_2d[i]);
-            points_2d_.push_back(point_2d[i] + offset_point + Point2f(detect_rect_.x, detect_rect_.y));
+            points_2d_.push_back(point_2d[i] + offset_point);
         }
-        target_rect = minAreaRect(points_tmp);
 
-
-        //        float armor_h = (target.Led_stick[0].rect.size.height+target.Led_stick[1].rect.size.height)/2;
-        //        float armor_w = pow(pow(target.Led_stick[0].rect.center.x, 2)+pow(target.Led_stick[1].rect.center.y, 2), 0.5);
         float armor_h = target.rect.height;
         float armor_w = target.rect.width;
-        //        cout << armor_w / armor_h <<endl;
         if(armor_w / armor_h < 3.0f)
             is_small_ = 1;
         else
             is_small_ = 0;
-    }
-    rectangle(img, detect_rect_, Scalar(255, 0, 255), 3);
-    if(found_flag){
-        target_rect.center.x += detect_rect_.x;
-        target_rect.center.y += detect_rect_.y;
-        last_target = target_rect;
-        lost_cnt = 0;
-    }
-    else{
-        ++lost_cnt;
-        if (lost_cnt < 3)
-            last_target.size =Size2f(last_target.size.width * 1.5, last_target.size.height * 1.5);
-        else if(lost_cnt == 6)
-            last_target.size =Size2f(last_target.size.width * 2.0, last_target.size.height * 2.0);
-        else if(lost_cnt == 12)
-            last_target.size =Size2f(last_target.size.width * 2.5, last_target.size.height * 2.5);
-        else if(lost_cnt == 18)
-            last_target.size =Size2f(last_target.size.width * 3.0, last_target.size.height * 3.0);
-        else if (lost_cnt > 60 )
-            last_target = RotatedRect();
-
     }
 
     return found_flag;
@@ -454,13 +425,12 @@ int8_t ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
     float theta_y = 0;
     color_ = other_param.color;
     cap_mode_ = other_param.cap_mode;
-    Mat roi = setImage(img);
 
 #ifdef DEBUG_ARMOR_DETECT
     namedWindow("result", WINDOW_NORMAL);
     imshow("result", roi);
 #endif
-    if(DetectArmor(roi))
+    if(DetectArmor(img))
     {
         DrawTarget(img);
         bool final_armor_type = getTypeResult(is_small_);
@@ -488,7 +458,6 @@ int8_t ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
             angle_x_ = predict_angle_x;
         }
 #endif
-
         return 1;
 
     }else

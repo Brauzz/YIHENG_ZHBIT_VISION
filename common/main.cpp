@@ -33,7 +33,7 @@ int main()
 
     // 串口数据接受线程
 #ifdef GET_GIMBAL_THREAD
-    std::thread gimbal_task(&ThreadControl::GetGimbal, ImageControl);
+    std::thread gimbal_task(&ThreadControl::GetGimbal, &ImageControl);
 #endif
 #ifdef GET_STM32_THREAD
     std::thread stm32_task(&ThreadControl::GetSTM32, &ImageControl);

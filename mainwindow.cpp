@@ -113,7 +113,6 @@ void MainWindow::clickedGreph(QMouseEvent *event)
     {
         mouse_flag_ = 0;
     }
-
     //     addPoint(ui->plot->xAxis->pixelToCoord(point.x()),ui->plot->yAxis->pixelToCoord(point.y()));
     //     plot();
 }
