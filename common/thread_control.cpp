@@ -163,12 +163,14 @@ void ThreadControl::ImageProcess()
         createTrackbar("short_offset_y","ArmorParam",&armor_detector.short_offset_y_,200);
         createTrackbar("long_offset_x","ArmorParam",&armor_detector.long_offset_x_,200);
         createTrackbar("long_offset_y","ArmorParam",&armor_detector.long_offset_y_,200);
+#ifdef PREDICT
         createTrackbar("Qp","ArmorParam",&armor_detector.km_Qp_,1000);
         createTrackbar("Qv","ArmorParam",&armor_detector.km_Qv_,1000);
         createTrackbar("rp","ArmorParam",&armor_detector.km_Rp_,1000);
         createTrackbar("rv","ArmorParam",&armor_detector.km_Rv_,1000);
         createTrackbar("t","ArmorParam",&armor_detector.km_t_,10);
         createTrackbar("pt","ArmorParam",&armor_detector.km_pt_,500);
+#endif
 #if(ROBOT_TYPE == INFANTRY)
         namedWindow("BuffParam");
         createTrackbar("buff_gray_th", "BuffParam", &buff_detector.gray_th_, 255);
