@@ -50,7 +50,6 @@ class ThreadControl
 public:
     ThreadControl();          // 线程管理构造函数，用于线程中变量初始化
     void ImageProduce();      // 短焦摄像头获取图像线程
-    void ImageProduceLong();  // 长焦摄像头获取图像线程
     void ImageProcess();      // 图像处理线程，用于自瞄，能量机关识别
     void GetGimbal();         // 用于获取云台陀螺仪数据
     void GetSTM32();          // 用于接收电控发来的数据

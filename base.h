@@ -5,17 +5,16 @@
 #define ROBOT_TYPE INFANTRY // INFANTRY HERO PLANE
 
 // ****** systems  ******//
-#define SHOT_CAMERA_THREAD
-//#define LONG_CAMERA_THREAD
-#define PROCESS_IMAGE_THREAD
+#define SHORT_CAMERA_ENABLE 1
+#define LONG_CAMERA_ENABLE  1
 //#define GET_STM32_THREAD
 #define GET_GIMBAL_THREAD
 #define WAITKEY
 #define IMAGESHOW
 // ****** settings ******//
-#define GALAXY;
+//#define GALAXY;
 #define DEBUG_PLOT
-#define DEBUG_VIDEO 1
+//#define DEBUG_VIDEO 1
 // for armor --------------
 //#define DEBUG_ARMOR_DETECT
 //#define SHOW_PUT_TEXT
@@ -47,8 +46,8 @@ galaxy_0.xml"
 struct OtherParam
 {
     int8_t color = 1;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
-    int8_t mode = 1;        // 视觉模式，0是自瞄模式，1是能量机关模式
-    int8_t cap_mode = 0;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
+    int8_t mode = 0;        // 视觉模式，0是自瞄模式，1是能量机关模式
+    int8_t cap_mode = 1;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
 };
 
 // ****** common ******//

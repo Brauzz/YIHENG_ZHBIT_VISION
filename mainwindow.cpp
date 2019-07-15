@@ -79,7 +79,7 @@ void MainWindow::plot()
         ui->plot->graph(0)->setData(qv_t1, qv_x);
         ui->plot->graph(1)->setData(qv_t2, qv_y);
         ui->plot->replot();
-        ui->plot->update();
+//        ui->plot->update();
     }
     // ui->plot->xAxis->setRange(ui->plot->xAxis->range().upper, 100, Qt::AlignRight);
     // ui->plot->rescaleAxes();
