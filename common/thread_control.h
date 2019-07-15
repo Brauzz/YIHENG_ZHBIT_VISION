@@ -29,7 +29,7 @@
 #include "./solve_angle/solve_angle.h"
 #include "./filter/predict.h"
 #include "../base.h"
-
+#include "../mainwindow.h"
 using namespace cv;
 using namespace std;
 

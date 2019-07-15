@@ -54,7 +54,7 @@ int CameraDevice::init()
     {
         return 0;
     }
-    status = GXUpdateDeviceList(&nDeviceNum, 2000);
+    status = GXUpdateDeviceList(&nDeviceNum, 1000);
     std::cout << status << " " << nDeviceNum << std::endl;
     if ((status != GX_STATUS_SUCCESS) || (nDeviceNum <= 0))
     {
@@ -82,14 +82,14 @@ int CameraDevice::init()
             //            status = GXSetEnum(hDevice, GX_ENUM_ACQUISITION_MODE, GX_ACQ_MODE_CONTINUOUS);
             //            status = GXSetInt(hDevice, GX_INT_ACQUISITION_SPEED_LEVEL, 1);
             //            status = GXSetEnum(hDevice, GX_ENUM_BALANCE_WHITE_AUTO, GX_BALANCE_WHITE_AUTO_CONTINUOUS);
-            int64_t nWidth   = 640;
-            int64_t nHeight  = 420;
-            int64_t nOffsetX = 0;
-            int64_t nOffsetY = 0;
-            status = GXSetInt(hDevice, GX_INT_WIDTH, nWidth);
-            status = GXSetInt(hDevice, GX_INT_HEIGHT, nHeight);
-            status = GXSetInt(hDevice, GX_INT_OFFSET_X, nOffsetX);
-            status = GXSetInt(hDevice, GX_INT_OFFSET_Y, nOffsetY);
+//            int64_t nWidth   = 640;
+//            int64_t nHeight  = 420;
+//            int64_t nOffsetX = 0;
+//            int64_t nOffsetY = 0;
+//            status = GXSetInt(hDevice, GX_INT_WIDTH, nWidth);
+//            status = GXSetInt(hDevice, GX_INT_HEIGHT, nHeight);
+//            status = GXSetInt(hDevice, GX_INT_OFFSET_X, nOffsetX);
+//            status = GXSetInt(hDevice, GX_INT_OFFSET_Y, nOffsetY);
 
 
             //发送开始采集命令
@@ -102,7 +102,7 @@ int CameraDevice::init()
 
 void CameraDevice::getImage(Mat &img)
 {
-
+    GXFlushQueue(hDevice);
     GXGetImage(hDevice, &stFrameData, 100);
     //usleep(1);
 

@@ -43,7 +43,10 @@ void ThreadControl::ImageProduce()
     short_camera.setExposureTime(0, 100);                         // 手动曝光，设置曝光时间。
     short_camera.startStream();                                  // 打开视频流
     //        short_camera.info();                                         // 输出摄像头信息
-
+    CaptureVideo long_camera(CAMERA1_PATH, 1);                // 选择相机驱动文件，可在终端下输入"ls /dev" 查看. 4帧缓存
+    long_camera.setVideoFormat(VIDEO_WIDTH, VIDEO_HEIGHT, 1);   // 设置长宽格式及使用mjpg编码格式
+    long_camera.setExposureTime(0, 100);                         // 手动曝光，设置曝光时间。
+    long_camera.startStream();                                  // 打开视频流
     while(1)
     {
         // 等待图像进入处理瞬间，再去生成图像
@@ -145,9 +148,16 @@ void ThreadControl::GetSTM32()
 void ThreadControl::ImageProcess()
 {
     cout << " ------ IMAGE PROCESS TASK ON !!! ------" << endl;
+#ifdef DEBUG_PLOT
+    int argc;char **argv = nullptr;
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
+#endif
     // 角度结算类声明
     SolveAngle solve_angle(CAMERA0_FILEPATH, -20, 80, -135, 0);
     SolveAngle solve_angle_long(CAMERA1_FILEPATH, 0, 40.0, -135, 0);
+
     // 预测类声明
     ZeYuPredict zeyu_predict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
     ArmorDetector armor_detector(solve_angle, solve_angle_long, zeyu_predict);
@@ -155,43 +165,54 @@ void ThreadControl::ImageProcess()
     BuffDetector buff_detector(solve_angle_long);
 #endif
     serial_transmit_data tx_data;       // 串口发送stm32数据结构
-    {
-        namedWindow("ArmorParam");
-        createTrackbar("armor_gray_th", "ArmorParam", &armor_detector.gray_th_, 255);
-        createTrackbar("armor_color_th", "ArmorParam", &armor_detector.color_th_, 255);
-        createTrackbar("short_offset_x","ArmorParam",&armor_detector.short_offset_x_,200);
-        createTrackbar("short_offset_y","ArmorParam",&armor_detector.short_offset_y_,200);
-        createTrackbar("long_offset_x","ArmorParam",&armor_detector.long_offset_x_,200);
-        createTrackbar("long_offset_y","ArmorParam",&armor_detector.long_offset_y_,200);
+
+    namedWindow("ArmorParam");
+    createTrackbar("armor_gray_th", "ArmorParam", &armor_detector.gray_th_, 255);
+    createTrackbar("armor_color_th", "ArmorParam", &armor_detector.color_th_, 255);
+    createTrackbar("short_offset_x","ArmorParam",&armor_detector.short_offset_x_,200);
+    createTrackbar("short_offset_y","ArmorParam",&armor_detector.short_offset_y_,200);
+    createTrackbar("long_offset_x","ArmorParam",&armor_detector.long_offset_x_,200);
+    createTrackbar("long_offset_y","ArmorParam",&armor_detector.long_offset_y_,200);
 #ifdef PREDICT
-        createTrackbar("Qp","ArmorParam",&armor_detector.km_Qp_,1000);
-        createTrackbar("Qv","ArmorParam",&armor_detector.km_Qv_,1000);
-        createTrackbar("rp","ArmorParam",&armor_detector.km_Rp_,1000);
-        createTrackbar("rv","ArmorParam",&armor_detector.km_Rv_,1000);
-        createTrackbar("t","ArmorParam",&armor_detector.km_t_,10);
-        createTrackbar("pt","ArmorParam",&armor_detector.km_pt_,500);
+    createTrackbar("Qp","ArmorParam",&armor_detector.km_Qp_,1000);
+    createTrackbar("Qv","ArmorParam",&armor_detector.km_Qv_,1000);
+    createTrackbar("rp","ArmorParam",&armor_detector.km_Rp_,1000);
+    createTrackbar("rv","ArmorParam",&armor_detector.km_Rv_,1000);
+    createTrackbar("t","ArmorParam",&armor_detector.km_t_,10);
+    createTrackbar("pt","ArmorParam",&armor_detector.km_pt_,500);
 #endif
 #if(ROBOT_TYPE == INFANTRY)
-        namedWindow("BuffParam");
-        createTrackbar("buff_gray_th", "BuffParam", &buff_detector.gray_th_, 255);
-        createTrackbar("buff_color_th", "BuffParam", &buff_detector.color_th_, 255);
-        createTrackbar("buff_offset_x_","BuffParam",&buff_detector.buff_offset_x_,200);
-        createTrackbar("buff_offset_y_","BuffParam",&buff_detector.buff_offset_y_,200);
-        createTrackbar("world_offset_x","BuffParam",&buff_detector.world_offset_x_,1000);
-        createTrackbar("world_offset_y","BuffParam",&buff_detector.world_offset_y_,1000);
+    namedWindow("BuffParam");
+    createTrackbar("buff_gray_th", "BuffParam", &buff_detector.gray_th_, 255);
+    createTrackbar("buff_color_th", "BuffParam", &buff_detector.color_th_, 255);
+    createTrackbar("buff_offset_x_","BuffParam",&buff_detector.buff_offset_x_,200);
+    createTrackbar("buff_offset_y_","BuffParam",&buff_detector.buff_offset_y_,200);
+    createTrackbar("world_offset_x","BuffParam",&buff_detector.world_offset_x_,1000);
+    createTrackbar("world_offset_y","BuffParam",&buff_detector.world_offset_y_,1000);
 #endif
-    }
+#ifdef DEBUG_VIDEO
+#if(DEBUG_VIDEO == 0)
+    VideoCapture cap("../Videos/test.avi");
+#else
+    VideoCapture cap("../Videos/successd.avi");
+#endif
+#endif
+
     Mat image;
     float angle_x = 0.0, angle_y = 0.0;
     int8_t find_flag = 0;
     while(1)
     {
+#ifndef DEBUG_VIDEO
         // 等待图像生成后进行处理
         while(produce_index - consumption_index <= 0){
             END_THREAD;
         }
         // 数据初始化
         image_.copyTo(image);
+#else
+        cap.read(image);
+#endif
 
 #if(ROBOT_TYPE == INFANTRY)
         if(other_param.mode == 0)
@@ -231,11 +252,17 @@ void ThreadControl::ImageProcess()
         find_flag = armor_detector.ArmorDetectTask(image, other_param);
         armor_detector.getAngle(angle_x, angle_y);
 #endif
+#ifdef DEBUG_PLOT
+        w.addPoint(angle_x, 0);
+        w.addPoint(angle_y, 1);
+        w.plot();
+#endif
         limit_angle(angle_x, 5);
 #ifdef GET_STM32_THREAD
         tx_data.get_xy_data(-angle_x*100, -angle_y*100,find_flag);
         serial_.send_data(tx_data);
 #endif
+
 #ifdef WAITKEY
 #ifdef IMAGESHOW
         imshow("image", image);
