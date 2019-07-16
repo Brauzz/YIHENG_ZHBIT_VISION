@@ -146,12 +146,12 @@ public:
     int km_t_ = 1;
     int km_pt_ = 60;
 public:
-    int short_offset_x_ = 120;
-    int short_offset_y_ = 100;
-    int long_offset_x_ = 85;
-    int long_offset_y_ = 100;
-    int color_th_ = 100;
-    int gray_th_ = 100;
+    int short_offset_x_ = 100;
+    int short_offset_y_ = 134;
+    int long_offset_x_ = 90;
+    int long_offset_y_ = 137;
+    int color_th_ = 70;
+    int gray_th_ = 70;
 
 private:
     SolveAngle solve_angle_;

@@ -118,13 +118,15 @@ void ThreadControl::GetSTM32()
     int8_t mode = 0;
     int8_t color = 0;
     while(1){
-        while(static_cast<int>(gimbal_data_index - consumption_index) >= BUFFER_SIZE)
+        while(static_cast<int>(gimbal_data_index - consumption_index) >= 1)
             END_THREAD;
 
         serial_.read_data(&rx_data, mode, color, raw_gimbal_yaw);
+        other_param.mode = mode;
+        other_param.color = color;
         GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
         float gimbal_data = dst_gimbal_yaw;
-        INFO(dst_gimbal_yaw);
+        INFO(color);
         gimbal_data_index++;
         END_THREAD;
     }
@@ -142,8 +144,8 @@ void ThreadControl::ImageProcess()
     w.show();
 #endif
     // 角度结算类声明
-    SolveAngle solve_angle(CAMERA0_FILEPATH, -20, 80, -135, 0);
-    SolveAngle solve_angle_long(CAMERA1_FILEPATH, 0, 40.0, -135, 0);
+    SolveAngle solve_angle(CAMERA0_FILEPATH, 57, 47.5f, -111.37f, 0);
+    SolveAngle solve_angle_long(CAMERA1_FILEPATH, 0, 40.7f, -123, 0);
 
     // 预测类声明
     ZeYuPredict zeyu_predict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
@@ -206,12 +208,12 @@ void ThreadControl::ImageProcess()
         {
             //            ***************************auto_mode***********************************
 #ifndef FORCE_CHANGE_CAMERA
-            other_param.cap_mode = armor_detector.chooseCamera(1000, 1500, other_param.cap_mode);
+            other_param.cap_mode = armor_detector.chooseCamera(1300, 1600, other_param.cap_mode);
 #endif
             ++consumption_index;
-            TIME_START(t);
+//            TIME_START(t);
             find_flag = armor_detector.ArmorDetectTask(image, other_param);
-            TIME_END(t);
+//            TIME_END(t);
             armor_detector.getAngle(angle_x, angle_y);
         }
         else
