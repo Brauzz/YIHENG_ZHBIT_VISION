@@ -40,8 +40,11 @@ INCLUDEPATH += /usr/local/include/opencv2/contrib
 LIBS += `pkg-config opencv --cflags --libs`
 
 
-LIBS += -lgxiapi -ldximageproc
+LIBS += -lgxiapi \
+-ldximageproc
 
+
+#INCLUDEPATH += ../dhcam_install_20181107/dh_camera/daheng-sdk-x64/sdk/include
 INCLUDEPATH += ../dhcam_install_20181107/dh_camera/daheng-sdk-x64/sdk/genicam/library/CPP/include
 INCLUDEPATH += ../dhcam_install_20181107/dh_camera/daheng-sdk-x64/sdk/include
 
@@ -55,7 +58,8 @@ HEADERS += \
     common/thread_control.h \
     mainwindow.h \
     qcustomplot.h \
-    base.h
+    base.h \
+    base_detection/base_detect.h
 
 SOURCES += \
     armor_detection/armor_detect.cpp \
@@ -67,7 +71,8 @@ SOURCES += \
     common/main.cpp \
     common/thread_control.cpp \
     mainwindow.cpp \
-    qcustomplot.cpp
+    qcustomplot.cpp \
+    base_detection/base_detect.cpp
 
 FORMS += \
     mainwindow.ui
