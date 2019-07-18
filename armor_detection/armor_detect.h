@@ -34,7 +34,7 @@ using namespace cv;
 #define SHOW_DRAW_RECT
 // ------ debug armor ------
 #endif
-#define ROI_ENABLE
+
 #define FAST_DISTANCE
 /**
  * @brief 装甲板灯条相关数据信息
@@ -86,42 +86,19 @@ public:
     ArmorDetector(){}
     ArmorDetector(SolveAngle solve_short, SolveAngle solve_long, ZeYuPredict zeyu_predict);
     ~ArmorDetector(){}
-
-    bool chooseCamera(int short_distance, int long_distance, bool last_mode)
-    {
-        // 没找到目标距离为0
-        if(distance_ == 0)
-        {
-            if(lost_cnt_ % 200 == 0 && lost_cnt_ != 0)
-            {
-                if(last_mode == true)
-                    return false;
-                else
-                    return true;
-            }else
-            {
-                return last_mode;
-            }
-        }else
-        {
-            if(dist_ == 0)
-                dist_ = distance_;
-            else
-                dist_ = (1-r_)*dist_ + r_*distance_;
-            if(dist_ > long_distance && last_mode == 0)
-                return true;
-            else if(dist_ < short_distance && last_mode == 1)
-                return false;
-            else
-                return last_mode;
-        }
-    }
+    /**
+     * @brief chooseCamera 选择相机类型，长短焦切换逻辑
+     * @param 短距离阈值(mm)
+     * @param 长距离阈值(mm)
+     * @param 上一次摄像头模式
+     * @return 返回本次摄像头类型 1长焦 0短焦
+     */
+    bool chooseCamera(int short_distance, int long_distance, bool last_mode);
 
     /**
-     * @brief 装甲板检测任务函数，每帧调用
-     * @param img 输入相机采集RGB图像
-     * @param param 自瞄相关参数
-     * @return 发现目标为1，未发现为0
+     * @brief GetRoi 获取图像ROI区域
+     * @param img
+     * @return 返回感兴趣区域的矩形
      */
     Rect GetRoi(const Mat &img);
     bool makeRectSafe(cv::Rect & rect, cv::Size size){
@@ -137,8 +114,21 @@ public:
             return false;
         return true;
     }
+
+    /**
+     * @brief DetectArmor 装甲板识别函数
+     * @param img
+     * @param roi_rect
+     * @return
+     */
     bool DetectArmor(Mat &img, Rect roi_rect);
-    int8_t ArmorDetectTask(Mat &img, OtherParam other_param);
+    /**
+     * @brief ArmorDetectTask 自瞄任务函数（识别，角度解算）
+     * @param img
+     * @param other_param 其他参数，其中使用到color颜色和cap_mode摄像头类型
+     * @return 返回命令 0没发现 1发现
+     */
+    int ArmorDetectTask(Mat &img, OtherParam other_param);
     void DrawTarget(Mat &img)
     {
         if(!points_2d_.empty())
@@ -153,21 +143,18 @@ public:
         pitch = angle_y_;
     }
 
-public:
-    void setFilter(int filter_size){
-        filter_size_ = filter_size;
-    }
-
-    void clear(){
-        history_.clear();
-    }
-
     /**
      * @brief 装甲板类型确定
      * 通过检测历史数据判断装甲板类型，大装甲板和小装甲板
      */
     bool getTypeResult(bool is_small);
-    //
+    void setFilter(int filter_size){
+        filter_size_ = filter_size;
+    }
+    void clear(){
+        history_.clear();
+    }
+
 private:
     int color_;
     int cap_mode_;
@@ -183,8 +170,8 @@ public:
     int short_offset_y_ = 100;
     int long_offset_x_ = 85;
     int long_offset_y_ = 100;
-    int color_th_ = 220;
-    int gray_th_ = 260;
+    int color_th_ = 20;
+    int gray_th_ = 60;
 
 private:
     SolveAngle solve_angle_;

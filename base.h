@@ -17,6 +17,7 @@
 
 // for armor --------------
 //#define DEBUG_ARMOR_DETECT
+#define ROI_ENABLE
 //#define PREDICT
 // for buff --------------
 #define DEBUG_BUFF_DETECT
@@ -39,7 +40,7 @@ camera4mm.xml"
 #define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
 galaxy_0.xml"
 
-#define FORCE_CHANGE_CAMERA
+//#define FORCE_CHANGE_CAMERA
 #define DEBUG_VIDEO 0
 struct OtherParam
 {

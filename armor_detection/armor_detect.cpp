@@ -166,8 +166,6 @@ Rect ArmorDetector::GetRoi(const Mat &img)
     Size img_size = img.size();
     Rect rect_tmp = last_target_;
     Rect rect_roi;
-    //    INFO(img_size.width);
-    //    INFO(img_size.height);
     if(rect_tmp.x == 0 || rect_tmp.y == 0
             || rect_tmp.width == 0 || rect_tmp.height == 0
             || lost_cnt_ >= 15 || detect_cnt_%100 == 0)
@@ -203,7 +201,6 @@ Rect ArmorDetector::GetRoi(const Mat &img)
 
 bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
 {
-    INFO(lost_cnt_);
     // **预处理** -图像进行相应颜色的二值化
     Mat roi_image = img(roi_rect);
     Point2f offset_roi_point(roi_rect.x, roi_rect.y);
@@ -274,7 +271,6 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
             }
         }
     }
-
 
     // **寻找可能的装甲板** -遍历每个可能的灯条, 两两灯条拟合成装甲板进行逻辑判断
     for(size_t i = 0; i < LED_Stick_v.size() ; i++)
@@ -400,11 +396,10 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
     }
     detect_cnt_++;
     return found_flag;
-
 }
 
 
-int8_t ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
+int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
 {
     //    double t1 = getTickCount();
     float theta_y = 0;
@@ -423,7 +418,6 @@ int8_t ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
     {
         DrawTarget(img);
         bool final_armor_type = getTypeResult(is_small_);
-        //        INFO(final_armor_type);
         if(cap_mode_ == 0) // close
         {
             solve_angle_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
@@ -477,4 +471,34 @@ bool ArmorDetector::getTypeResult(bool is_small)
     if (vote_cnt[0] == vote_cnt[1])
         return is_small;
     return vote_cnt[0] > vote_cnt[1] ? 0 : 1;
+}
+
+bool ArmorDetector::chooseCamera(int short_distance, int long_distance, bool last_mode)
+{
+    // 没找到目标距离为0
+    if(distance_ == 0)
+    {
+        if(lost_cnt_ % 200 == 0 && lost_cnt_ != 0)
+        {
+            if(last_mode == true)
+                return false;
+            else
+                return true;
+        }else
+        {
+            return last_mode;
+        }
+    }else
+    {
+        if(dist_ == 0)
+            dist_ = distance_;
+        else
+            dist_ = (1-r_)*dist_ + r_*distance_;
+        if(dist_ > long_distance && last_mode == 0)
+            return true;
+        else if(dist_ < short_distance && last_mode == 1)
+            return false;
+        else
+            return last_mode;
+    }
 }

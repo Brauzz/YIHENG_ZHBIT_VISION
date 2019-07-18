@@ -200,51 +200,49 @@ void ThreadControl::ImageProcess()
 #else
         cap.read(image);
 #endif
-        OtherParam current_param = other_param;
 #if(ROBOT_TYPE == INFANTRY)
-        if(current_param.mode == 0)
+        if(other_param.mode == 0)
         {
             //            ***************************auto_mode***********************************
 #ifndef FORCE_CHANGE_CAMERA
-            current_param.cap_mode = armor_detector.chooseCamera(1000, 1500, current_param.cap_mode);
-            other_param.cap_mode = current_param.cap_mode;
+            other_param.cap_mode = armor_detector.chooseCamera(1000, 1500, other_param.cap_mode);
 #endif
             ++consumption_index;
-//            TIME_START(t);
-            find_flag = armor_detector.ArmorDetectTask(image, current_param);
-//            TIME_END(t);
+            TIME_START(t);
+            find_flag = armor_detector.ArmorDetectTask(image, other_param);
+            TIME_END(t);
             armor_detector.getAngle(angle_x, angle_y);
         }
         else
         {
             //***************************buff_mode***********************************
 #ifndef FORCE_CHANGE_CAMERA
-            current_param.cap_mode = 1;
+            other_param.cap_mode = 1;
 #endif
             ++consumption_index;
 
-            find_flag = buff_detector.BuffDetectTask(image, current_param);
+            find_flag = buff_detector.BuffDetectTask(image, other_param);
             if(find_flag)
                 buff_detector.getAngle(angle_x, angle_y);
         }
 
 #elif(ROBOT_TYPE == HERO)
 #ifndef FORCE_CHANGE_CAMERA
-        current_param.cap_mode = armor_detector.chooseCamera(1000, 1500, current_param.cap_mode);
+        other_param.cap_mode = armor_detector.chooseCamera(1000, 1500, other_param.cap_mode);
 #endif
         ++consumption_index;
-        find_flag = armor_detector.ArmorDetectTask(image, current_param);
+        find_flag = armor_detector.ArmorDetectTask(image, other_param);
         armor_detector.getAngle(angle_x, angle_y);
 
 
 #elif(ROBOT_TYPE == PLANE)
         ++consumption_index;
-        find_flag = armor_detector.ArmorDetectTask(image, current_param);
+        find_flag = armor_detector.ArmorDetectTask(image, other_param);
         armor_detector.getAngle(angle_x, angle_y);
 #endif
 #ifdef DEBUG_PLOT
-        w.addPoint(current_param.cap_mode, 0);
-        //        w.addPoint(angle_y, 1);
+        w.addPoint(angle_x, 0);
+        w.addPoint(angle_y, 1);
         w.plot();
 #endif
         limit_angle(angle_x, 5);
