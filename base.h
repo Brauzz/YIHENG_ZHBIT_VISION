@@ -7,7 +7,7 @@
 // ****** systems  ******//
 //#define SHORT_CAMERA_ENABLE 1
 #define LONG_CAMERA_ENABLE  1
-#define GET_STM32_THREAD
+//#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
 #define WAITKEY 1
 #define IMAGESHOW
@@ -16,7 +16,7 @@
 #define DEBUG_PLOT
 
 // for armor --------------
-//#define DEBUG_ARMOR_DETECT
+#define DEBUG_ARMOR_DETECT
 #define ROI_ENABLE
 //#define PREDICT
 // for buff --------------
@@ -40,11 +40,12 @@ camera4mm_5.xml"
 #define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
 galaxy_1.xml"
 
-//#define FORCE_CHANGE_CAMERA
+#define DEBUG_VIDEO 1
+#define FORCE_CHANGE_CAMERA
 struct OtherParam
 {
-    int8_t color = 0;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
-    int8_t mode = 0;        // 视觉模式，0是自瞄模式，1是能量机关模式
+    int8_t color = 1;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
+    int8_t mode = 1;        // 视觉模式，0是自瞄模式，1是能量机关模式
     int8_t cap_mode = 1;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
 };
 

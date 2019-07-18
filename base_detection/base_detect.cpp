@@ -220,7 +220,7 @@ int8_t BaseDetector::BaseDetectTask(Mat &img)
     if(command == 1)
     {
         solve_angle_.Generate3DPoints(3, Point2f(-120, 0));
-        solve_angle_.getAngle(points_2d_, 28, angle_x_, angle_y_, distance_, theta_y_);
+        solve_angle_.getAngle(points_2d_, 28, angle_x_, angle_y_, distance_);
         putText(img, "yaw :" + to_string(angle_x_) + " pitch :" + to_string(angle_y_) + " distacne: " + to_string(distance_), Point2f(20,20), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255), 1);
     }
     if(distance_ < 8000)

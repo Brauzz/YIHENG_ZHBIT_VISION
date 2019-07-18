@@ -42,7 +42,7 @@ SolveAngle::SolveAngle(const char* file_path, float c_x, float c_y, float c_z, f
     Mat tvec(3, 1, DataType<double>::type);
 }
 
-void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist, float& theta_y)
+void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist)
 {
     // 姿态结算
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
@@ -53,7 +53,7 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
     Mat rotMat(3, 3, CV_64FC1, rm);
     Rodrigues(rvec, rotMat);
 //    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;
-    theta_y = atan2(static_cast<float>(rm[1][0]), static_cast<float>(rm[0][0])) * 57.2958f;//x
+//    float theta_y = atan2(static_cast<float>(rm[1][0]), static_cast<float>(rm[0][0])) * 57.2958f;//x
 //    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;//y
 //    theta_y = atan2(rm[2][1], rm[2][2]) * 57.2958;//z
 

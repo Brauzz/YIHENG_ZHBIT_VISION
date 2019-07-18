@@ -24,7 +24,7 @@ class SolveAngle
 public:
     SolveAngle();
     SolveAngle(const char* file_path, float c_x, float c_y, float c_z, float barrel_y);
-    void getAngle(vector<Point2f>& image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist, float &theta_y);
+    void getAngle(vector<Point2f>& image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist);
     // ---------ICRA--------------------
     void getAngle_ICRA(vector<Point2f>& image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist);
     float GetPitch_ICRA(float x, float y, float v);

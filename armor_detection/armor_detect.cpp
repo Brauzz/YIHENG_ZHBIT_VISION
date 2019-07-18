@@ -421,12 +421,12 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
         if(cap_mode_ == 0) // close
         {
             solve_angle_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
-            solve_angle_.getAngle(points_2d_, 15,angle_x_,angle_y_,distance_,theta_y);   // pnp姿态结算
+            solve_angle_.getAngle(points_2d_, 15,angle_x_,angle_y_,distance_);   // pnp姿态结算
         }
         else                    // far
         {
             solve_angle_long_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
-            solve_angle_long_.getAngle(points_2d_, 15,angle_x_,angle_y_,distance_,theta_y);   // pnp姿态结算
+            solve_angle_long_.getAngle(points_2d_, 15,angle_x_,angle_y_,distance_);   // pnp姿态结算
         }
 
 #ifdef PREDICT
