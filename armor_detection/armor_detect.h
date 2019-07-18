@@ -22,10 +22,21 @@
 #include "../base.h"
 using namespace std;
 using namespace cv;
+
+#ifdef DEBUG_ARMOR_DETECT
+// ------ debug armor ------
+//#define SHOW_BINARY_IMAGE
+//#define SHOW_LIGHT_PUT_TEXT
+#define SHOW_ARMOR_PUT_TEXT
+#define SHOW_LIGHT_CONTOURS
+#define SHOW_ROI_RECTANGLE
+// ------ debug armor ------
+#endif
+#define ROI_ENABLE
+#define FAST_DISTANCE
 /**
  * @brief 装甲板灯条相关数据信息
  */
-
 class LED_Stick{
 public:
 
@@ -52,8 +63,8 @@ public:
     armor();
     armor(const LED_Stick& L1, const LED_Stick& L2);
 
-    void draw_rect( Mat& img) const;    // 画出装甲板
-    void draw_spot(Mat &img) const;
+    void draw_rect( Mat& img, Point2f roi_offset_poin) const;    // 画出装甲板
+    void draw_spot(Mat &img, Point2f roi_offset_point) const;
     int get_average_intensity(const Mat& img) ; // 计算装甲板roi平均色彩强度，用于筛选装甲板中心有灯条
     void max_match(vector<LED_Stick>& LED, size_t i, size_t j); // 灯条匹配算法
     bool is_suitable_size(void) const;          // 判断可能的装甲板是否符合尺寸
@@ -91,7 +102,7 @@ public:
      * @param param 自瞄相关参数
      * @return 发现目标为1，未发现为0
      */
-    Mat setImage(const cv::Mat &src);
+    Rect GetRoi(const Mat &img);
     bool makeRectSafe(cv::Rect & rect, cv::Size size){
         if (rect.x < 0)
             rect.x = 0;
@@ -105,7 +116,7 @@ public:
             return false;
         return true;
     }
-    bool DetectArmor(Mat &img);
+    bool DetectArmor(Mat &img, Rect roi_rect);
     int8_t ArmorDetectTask(Mat &img, OtherParam other_param);
     void DrawTarget(Mat &img)
     {
@@ -135,6 +146,7 @@ public:
      * 通过检测历史数据判断装甲板类型，大装甲板和小装甲板
      */
     bool getTypeResult(bool is_small);
+    //
 private:
     int color_;
     int cap_mode_;
@@ -150,17 +162,17 @@ public:
     int short_offset_y_ = 100;
     int long_offset_x_ = 85;
     int long_offset_y_ = 100;
-    int color_th_ = 100;
-    int gray_th_ = 100;
+    int color_th_ = 20;
+    int gray_th_ = 60;
 
 private:
     SolveAngle solve_angle_;
     SolveAngle solve_angle_long_;
     ZeYuPredict zeyu_predict_;
 private:
-    RotatedRect last_target;
-    Rect detect_rect_;
-    int lost_cnt = 0;
+    Rect last_target_;
+    int lost_cnt_ = 0;
+    int detect_cnt_ = 0;
 private:
     float dist_ = 3000;
     float r_ = 0.5;

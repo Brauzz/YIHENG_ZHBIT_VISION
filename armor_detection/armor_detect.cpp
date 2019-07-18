@@ -39,14 +39,14 @@ armor::armor(const LED_Stick& L1, const LED_Stick& L2){
     rect.height*= 2.0/3;
 }
 
-void armor::draw_rect( Mat& img) const
+void armor::draw_rect( Mat& img, Point2f roi_offset_point) const
 {
-    rectangle(img, rect, Scalar(255,255,255), 1);
+    rectangle(img, rect + Point_<int>(roi_offset_point), Scalar(255,255,255), 1);
 }
 
-void armor::draw_spot(Mat &img) const
+void armor::draw_spot(Mat &img, Point2f roi_offset_point) const
 {
-    circle(img, center, int(rect.height/4), Scalar(0,0,255), -1);
+    circle(img, center + Point_<int>(roi_offset_point), int(rect.height/4), Scalar(0,0,255), -1);
 }
 
 
@@ -161,64 +161,58 @@ ArmorDetector::ArmorDetector(SolveAngle solve_short, SolveAngle solve_long, ZeYu
 
 }
 
-Mat ArmorDetector::setImage(const cv::Mat &src)
+Rect ArmorDetector::GetRoi(const Mat &img)
 {
+    Size img_size = img.size();
+    Rect rect_tmp = last_target_;
     Rect rect_roi;
-    Mat result_mat;
-    const cv::Point2f last_result_center = last_target.center;
-    if(last_result_center.x == 0 || last_result_center.y == 0)
+    //    INFO(img_size.width);
+    //    INFO(img_size.height);
+    if(rect_tmp.x == 0 || rect_tmp.y == 0
+            || rect_tmp.width == 0 || rect_tmp.height == 0
+            || lost_cnt_ >= 15 || detect_cnt_%100 == 0)
     {
-        rect_roi = Rect(0, 0, src.cols, src.rows);
+        last_target_ = Rect(0,0,img_size.width, img_size.height);
+        rect_roi = Rect(0,0,img_size.width, img_size.height);
+        return rect_roi;
     }
     else
     {
-        Rect rect = last_target.boundingRect();
-        int max_half_w = 640;
-        int max_half_h = 480;
-        float scale = 1.2;
-        //        if (lost_cnt < 3)
-        //            scale = 1.2;
-        //        else if(lost_cnt == 6)
-        //            scale = 1.5;
-        //        else if(lost_cnt == 12)
-        //            scale = 2.0;
-        int exp_half_w = min(max_half_w / 2, int(rect.width * scale));
-        int exp_half_h = min(max_half_h / 2, int(rect.height * scale));
+        float scale = 2;
+        if (lost_cnt_ < 3)
+            scale = 3;
+        else if(lost_cnt_ <= 6)
+            scale = 4;
+        else if(lost_cnt_ <= 12)
+            scale = 5;
 
-        int w = std::min(max_half_w, exp_half_w);
-        int h = std::min(max_half_h, exp_half_h);
-        Point center = last_result_center;
-        int x = std::max(center.x - w, 0);
-        int y = std::max(center.y - h, 0);
-        Point lu = Point(x, y);
-        x = std::min(center.x + w, src.cols);
-        y = std::min(center.y + h, src.rows);
-        Point rd = Point(x, y);
-        //        cout << lu << endl;
-        detect_rect_ = Rect(lu, rd);
-        if(makeRectSafe(detect_rect_, src.size())== false)
+        int w = int(rect_tmp.width * 2*scale);
+        int h = int(rect_tmp.height * scale);
+        int x = int(rect_tmp.x - (w - rect_tmp.width)*0.5f);
+        int y = int(rect_tmp.y - (h - rect_tmp.height)*0.5f);
+
+        rect_roi = Rect(x, y, w, h);
+
+        if(makeRectSafe(rect_roi, img_size)== false)
         {
-            last_target = cv::RotatedRect();
-            detect_rect_ = Rect(0, 0, src.cols, src.rows);
-
+            rect_roi = Rect(0,0,img_size.width, img_size.height);
         }
-        rect_roi = detect_rect_;
     }
-    src(rect_roi).copyTo(result_mat);
-    return result_mat;
+    return rect_roi;
 }
 
-bool ArmorDetector::DetectArmor(Mat &img)
+bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
 {
     // **预处理** -图像进行相应颜色的二值化
-
+    Mat roi_image = img(roi_rect);
+    Point2f offset_roi_point(roi_rect.x, roi_rect.y);
     vector<LED_Stick> LED_Stick_v;  // 声明所有可能的灯条容器
     Mat binary_brightness_img, binary_color_img, gray;
-    cvtColor(img,gray,COLOR_BGR2GRAY);
+    cvtColor(roi_image,gray,COLOR_BGR2GRAY);
     //    Mat element = getStructuringElement(MORPH_RECT, Size(3,3));
     //    dilate(img, img, element);
     vector<cv::Mat> bgr;
-    split(img, bgr);
+    split(roi_image, bgr);
     Mat result_img;
     if(color_ == 0)
     {
@@ -233,7 +227,7 @@ bool ArmorDetector::DetectArmor(Mat &img)
 
     // **提取可能的灯条** -利用灯条（灰度）周围有相应颜色的光圈包围
     //    printf("bin_th = %d, color_th = %d\r\n", show_bin_th, show_color_th);
-#ifdef DEBUG_ARMOR_DETECT
+#ifdef SHOW_BINARY_IMAGE
     imshow("binary_brightness_img", binary_brightness_img);
     imshow("binary_color_img", binary_color_img);
 #endif
@@ -244,57 +238,30 @@ bool ArmorDetector::DetectArmor(Mat &img)
     //#pragma omp for
     for(size_t i = 0; i < contours_brightness.size(); i++)
     {
-
         double area = contourArea(contours_brightness[i]);
         if (area < 20.0 || 1e5 < area) continue;
-#pragma omp for
         for(size_t ii = 0; ii < contours_light.size(); ii++)
         {
-            //            test_cnt ++;
             if(pointPolygonTest(contours_light[ii], contours_brightness[i][0], false) >= 0.0 )
             {
                 double length = arcLength(contours_brightness[i], true); // 灯条周长
-                if (length > 15 && length <400)
-                {
-#ifdef USE_FIT
-                    // 使用拟合椭圆的方法要比拟合最小矩形提取出来的角度更精确
+                if (length > 15 && length <4000)
+                {                    // 使用拟合椭圆的方法要比拟合最小矩形提取出来的角度更精确
                     RotatedRect RRect = fitEllipse(contours_brightness[i]);
-#ifdef show_rect_bound
+#ifdef SHOW_LIGHT_CONTOURS
                     // 旋转矩形提取四个点
                     Point2f rect_point[4];
                     RRect.points(rect_point);
-                    for (int i = 0; i < 3 ; i++)
+                    for (int i = 0; i < 4 ; i++)
                     {
-                        line(img, Point_<int>(rect_point[i]), Point_<int>(rect_point[(i+1)%4]), Scalar(255,0,255),1);
+                        line(img, rect_point[i]+offset_roi_point, rect_point[(i+1)%4]+offset_roi_point, Scalar(255,0,255),1);
                     }
 #endif
                     // 角度换算，将拟合椭圆0~360 -> -180~180
                     if(RRect.angle>90.0f)
                         RRect.angle =  RRect.angle - 180.0f;
-#ifdef show_rect_angle
-                    //                    putText(img, to_string(RRect.angle), RRect.center + Point2f(2,2), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255), 1);
-#endif
-#else
-                    RotatedRect RRect = minAreaRect( Mat(contours_brightness[i]));
-#ifdef show_rect_angle
-                    putText(img, to_string(int(RRect.angle)), RRect.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255), 2);
-#endif
-#ifdef show_rect_bound
-
-                    Point2f rect_point[4];
-                    RRect.points(rect_point);
-                    for (int i = 0; i < 3 ; i++)
-                    {
-                        line(img, Point_<int>(rect_point[i]), Point_<int>(rect_point[(i+1)%4]), Scalar(255,0,255),2);
-                    }
-#endif
-                    if(RRect.size.height < RRect.size.width)    // convert angle to
-                    {
-                        RRect.angle+= 90;
-                        double tmp = RRect.size.height;
-                        RRect.size.height = RRect.size.width;
-                        RRect.size.width = tmp;
-                    }
+#ifdef SHOW_LIGHT_PUT_TEXT
+                    putText(img, to_string(RRect.angle), RRect.center + Point2f(2,2) + offset_roi_point, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255), 1);
 #endif
                     if (fabs(RRect.angle) <= 30)  // 超过一定角度的灯条不要
                     {
@@ -315,12 +282,15 @@ bool ArmorDetector::DetectArmor(Mat &img)
         {
             armor arm_tmp( LED_Stick_v.at(i), LED_Stick_v.at(j) );
             if (arm_tmp.error_angle < 8.0f)
-            {
-                putText(img, to_string(arm_tmp.rect.width/(arm_tmp.rect.height+0.0001)), arm_tmp.center , FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255), 1);
+            {g
+#ifdef SHOW_ARMOR_PUT_TEXT
+                putText(img, to_string(arm_tmp.rect.width/(arm_tmp.rect.height+0.0001)), arm_tmp.center + Point_<int>(offset_roi_point) , FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255), 1);
+#endif
                 // TODO(cz): 推荐加入灯条宽度要小于装甲板宽度的条件
                 if(arm_tmp.is_suitable_size())
                 {
-                    if(arm_tmp.get_average_intensity(gray)< 100 )
+                    // TODO(cz): 推荐使用255值的面积进行判断
+                    if(arm_tmp.get_average_intensity(gray)< 150 )
                     {
                         arm_tmp.max_match(LED_Stick_v, i, j);
                     }
@@ -345,27 +315,34 @@ bool ArmorDetector::DetectArmor(Mat &img)
     float dist=1e8;
     bool found_flag = false;
     armor target;
-    target.center.x = 320; // trackbar get only positive vulue;
-    target.center.y = 180;
-    Point2f aim_center = target.center;
+    Point2f roi_center(roi_rect.width/2, roi_rect.height/2);
     float dx,dy;
     for (size_t i = 0; i < final_armor_list.size() ; i++ )
     {
-        dx = pow((final_armor_list.at(i).center.x - aim_center.x), 2.0f);
-        dy = pow((final_armor_list.at(i).center.y - aim_center.y), 2.0f);
+#ifdef FAST_DISTANCE
+        dx = fabs(final_armor_list.at(i).center.x - roi_center.x);
+        dy = fabs(final_armor_list.at(i).center.y - roi_center.y);
+#else
+        dx = pow((final_armor_list.at(i).center.x - roi_center.x), 2.0f);
+        dy = pow((final_armor_list.at(i).center.y - roi_center.y), 2.0f);
+#endif
         if( dx + dy < dist)
             target = final_armor_list.at(i);
-        final_armor_list.at(i).draw_rect(img);
+        final_armor_list.at(i).draw_rect(img, offset_roi_point);
         found_flag = true;
     }
+#ifdef SHOW_ROI_RECTANGLE
+    rectangle(img, roi_rect,Scalar(255, 0, 255),1);
+#endif
     // **计算装甲板四个点顶点** -用于pnp姿态结算
     // TODO(cz): 四个点的不同的bug修复
     RotatedRect target_rect;
     if(found_flag)
     {
-        target.draw_spot(img);
+        target.draw_spot(img, offset_roi_point);
         Point2f point_tmp[4];
         Point2f point_2d[4];
+        // 左右灯条分类，本别提取装甲板四个外角点
         RotatedRect R, L;
         if(target.Led_stick[0].rect.center.x > target.Led_stick[1].rect.center.x)
         {
@@ -376,6 +353,13 @@ bool ArmorDetector::DetectArmor(Mat &img)
             R = target.Led_stick[1].rect;
             L = target.Led_stick[0].rect;
         }
+        L.points(point_tmp);
+        point_2d[0] = point_tmp[1];
+        point_2d[3] = point_tmp[0];
+        R.points(point_tmp);
+        point_2d[1] = point_tmp[2];
+        point_2d[2] = point_tmp[3];
+        // 计算补偿，用于调试调整准心
         Point2f offset_point;
         if(cap_mode_ == 0)
         {
@@ -386,34 +370,30 @@ bool ArmorDetector::DetectArmor(Mat &img)
             offset_point = Point2f(100, 100) - Point2f(long_offset_x_,long_offset_y_);
         }
 
-        L.points(point_tmp);
-
-        point_2d[0] = point_tmp[1];
-        point_2d[3] = point_tmp[0];
-        R.points(point_tmp);
-        point_2d[1] = point_tmp[2];
-        point_2d[2] = point_tmp[3];
-
-        //        circle(img, point_2d[0],3,Scalar(255,255,255),1);
-        //        circle(img, point_2d[1],3,Scalar(0,0,255),1);
-        //        circle(img, point_2d[2],3,Scalar(0,255,0),1);
-        //        circle(img, point_2d[3],3,Scalar(255,0,0),1);
         points_2d_.clear();
-        vector<Point2f> points_tmp;
+        vector<Point2f> points_roi_tmp;
         for(int i=0;i<4;i++)
         {
-            points_tmp.push_back(point_2d[i]);
-            points_2d_.push_back(point_2d[i] + offset_point);
+            points_roi_tmp.push_back(point_2d[i] + offset_roi_point);
+            points_2d_.push_back(point_2d[i] + offset_roi_point +offset_point);
         }
-
+        // 计算当前装甲板类型，到后面task中还有滤波，可以有误差
         float armor_h = target.rect.height;
         float armor_w = target.rect.width;
         if(armor_w / armor_h < 3.0f)
             is_small_ = 1;
         else
             is_small_ = 0;
-    }
 
+        //计算ROI的相关参数
+        last_target_ = boundingRect(points_roi_tmp);
+        rectangle(img, last_target_,Scalar(255,255,255), 1);
+        lost_cnt_ = 0;
+    }else {
+        //计算ROI的相关参数
+        lost_cnt_ ++;
+    }
+    detect_cnt_++;
     return found_flag;
 
 }
@@ -421,16 +401,19 @@ bool ArmorDetector::DetectArmor(Mat &img)
 
 int8_t ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
 {
-//    double t1 = getTickCount();
+    //    double t1 = getTickCount();
     float theta_y = 0;
     color_ = other_param.color;
     cap_mode_ = other_param.cap_mode;
 
-#ifdef DEBUG_ARMOR_DETECT
-    namedWindow("result", WINDOW_NORMAL);
-    imshow("result", roi);
+    // 获取历史时刻roi使能
+#ifdef ROI_ENABLE
+    Rect roi = GetRoi(img);
+#else
+    Size img_size = img.size();
+    Rect roi = Rect(0,0, img_size.width, img_size.height);
 #endif
-    if(DetectArmor(img))
+    if(DetectArmor(img, roi))
     {
         DrawTarget(img);
         bool final_armor_type = getTypeResult(is_small_);
@@ -462,6 +445,8 @@ int8_t ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
 
     }else
     {
+        angle_x_ = 0;
+        angle_y_ = 0;
         return 0;
     }
 }
