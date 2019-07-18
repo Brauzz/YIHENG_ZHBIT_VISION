@@ -89,13 +89,32 @@ public:
 
     bool chooseCamera(int short_distance, int long_distance, bool last_mode)
     {
-        dist_ = (1-r_)*dist_ + r_*distance_ + 1;
-        if(dist_ > long_distance && last_mode == 0)
-            return 1;
-        else if(dist_ < short_distance && last_mode == 1)
-            return 0;
-        else
-            return last_mode;
+        // 没找到目标距离为0
+        if(distance_ == 0)
+        {
+            if(lost_cnt_ % 200 == 0 && lost_cnt_ != 0)
+            {
+                if(last_mode == true)
+                    return false;
+                else
+                    return true;
+            }else
+            {
+                return last_mode;
+            }
+        }else
+        {
+            if(dist_ == 0)
+                dist_ = distance_;
+            else
+                dist_ = (1-r_)*dist_ + r_*distance_;
+            if(dist_ > long_distance && last_mode == 0)
+                return true;
+            else if(dist_ < short_distance && last_mode == 1)
+                return false;
+            else
+                return last_mode;
+        }
     }
 
     /**
@@ -164,8 +183,8 @@ public:
     int short_offset_y_ = 100;
     int long_offset_x_ = 85;
     int long_offset_y_ = 100;
-    int color_th_ = 20;
-    int gray_th_ = 60;
+    int color_th_ = 220;
+    int gray_th_ = 260;
 
 private:
     SolveAngle solve_angle_;

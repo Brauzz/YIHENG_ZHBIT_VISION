@@ -203,6 +203,7 @@ Rect ArmorDetector::GetRoi(const Mat &img)
 
 bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
 {
+    INFO(lost_cnt_);
     // **预处理** -图像进行相应颜色的二值化
     Mat roi_image = img(roi_rect);
     Point2f offset_roi_point(roi_rect.x, roi_rect.y);
@@ -407,6 +408,7 @@ int8_t ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
 {
     //    double t1 = getTickCount();
     float theta_y = 0;
+    // 取外部参数的值
     color_ = other_param.color;
     cap_mode_ = other_param.cap_mode;
 
@@ -451,6 +453,8 @@ int8_t ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
     {
         angle_x_ = 0;
         angle_y_ = 0;
+        distance_ = 0;
+        dist_ = 0;
         return 0;
     }
 }

@@ -58,7 +58,7 @@ public:
 
     void restart_serial(void);  // 尝试重连的函数
     void send_data(const struct serial_transmit_data& data);
-    bool read_data(const struct serial_receive_data *data, int8_t &mode, int8_t &my_car_color, float &gimbal_data);
+    bool read_data(const struct serial_receive_data *data, bool &mode, bool &my_car_color, float &gimbal_data);
     bool read_gimbal(const struct serial_gimbal_data* data, float &gimbal_yaw);
     int fd;
     int last_fd;
