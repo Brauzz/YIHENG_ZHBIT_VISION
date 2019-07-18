@@ -256,7 +256,7 @@ void ThreadControl::ImageProcess()
 #ifdef IMAGESHOW
         imshow("image", image);
 #endif
-        char key = waitKey(1);
+        char key = waitKey(WAITKEY);
         if(key == 'q')
             end_thread_flag = true;
         if(key == 'c')

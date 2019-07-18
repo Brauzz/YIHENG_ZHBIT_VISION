@@ -5,23 +5,23 @@
 #define ROBOT_TYPE INFANTRY // INFANTRY HERO PLANE
 
 // ****** systems  ******//
-#define SHORT_CAMERA_ENABLE 1
+//#define SHORT_CAMERA_ENABLE 1
 #define LONG_CAMERA_ENABLE  1
 //#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
-#define WAITKEY
+#define WAITKEY 100
 #define IMAGESHOW
 // ****** settings ******//
 #define GALAXY
-//#define DEBUG_PLOT
-//#define DEBUG_VIDEO 1
+#define DEBUG_PLOT
+
 // for armor --------------
-//#define DEBUG_ARMOR_DETECT
-//#define SHOW_PUT_TEXT
-//#define SHOW_DRAW
+#define DEBUG_ARMOR_DETECT
+#define SHOW_PUT_TEXT
+#define SHOW_DRAW
 //#define PREDICT
 // for buff --------------
-//#define DEBUG_BUFF_DETECT
+#define DEBUG_BUFF_DETECT
 
 // for image
 #define VIDEO_WIDTH 640
@@ -42,6 +42,7 @@ camera4mm.xml"
 galaxy_0.xml"
 
 #define FORCE_CHANGE_CAMERA
+#define DEBUG_VIDEO 0
 struct OtherParam
 {
     int8_t color = 1;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
