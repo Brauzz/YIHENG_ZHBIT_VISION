@@ -30,6 +30,8 @@ using namespace cv;
 #define SHOW_ARMOR_PUT_TEXT
 #define SHOW_LIGHT_CONTOURS
 #define SHOW_ROI_RECTANGLE
+#define SHOW_DRAW_SPOT
+#define SHOW_DRAW_RECT
 // ------ debug armor ------
 #endif
 #define ROI_ENABLE

@@ -282,7 +282,7 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
         {
             armor arm_tmp( LED_Stick_v.at(i), LED_Stick_v.at(j) );
             if (arm_tmp.error_angle < 8.0f)
-            {g
+            {
 #ifdef SHOW_ARMOR_PUT_TEXT
                 putText(img, to_string(arm_tmp.rect.width/(arm_tmp.rect.height+0.0001)), arm_tmp.center + Point_<int>(offset_roi_point) , FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255), 1);
 #endif
@@ -328,7 +328,9 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
 #endif
         if( dx + dy < dist)
             target = final_armor_list.at(i);
+#ifdef SHOW_DRAW_RECT
         final_armor_list.at(i).draw_rect(img, offset_roi_point);
+#endif
         found_flag = true;
     }
 #ifdef SHOW_ROI_RECTANGLE
@@ -339,7 +341,9 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
     RotatedRect target_rect;
     if(found_flag)
     {
+#ifdef SHOW_DRAW_SPOT
         target.draw_spot(img, offset_roi_point);
+#endif
         Point2f point_tmp[4];
         Point2f point_2d[4];
         // 左右灯条分类，本别提取装甲板四个外角点

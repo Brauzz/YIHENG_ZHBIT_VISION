@@ -9,16 +9,14 @@
 #define LONG_CAMERA_ENABLE  1
 //#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
-#define WAITKEY 100
+#define WAITKEY 1
 #define IMAGESHOW
 // ****** settings ******//
 #define GALAXY
 #define DEBUG_PLOT
 
 // for armor --------------
-#define DEBUG_ARMOR_DETECT
-#define SHOW_PUT_TEXT
-#define SHOW_DRAW
+//#define DEBUG_ARMOR_DETECT
 //#define PREDICT
 // for buff --------------
 #define DEBUG_BUFF_DETECT
