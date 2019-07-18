@@ -7,7 +7,7 @@
 // ****** systems  ******//
 //#define SHORT_CAMERA_ENABLE 1
 #define LONG_CAMERA_ENABLE  1
-//#define GET_STM32_THREAD
+#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
 #define WAITKEY 1
 #define IMAGESHOW
@@ -28,25 +28,24 @@
 #define BUFFER_SIZE 1
 
 // device setting
-#define SERIAL_PATH "/dev/ttyUSB0"
+#define SERIAL_PATH "/dev/stm32"
 #define SERIAL_BAUD B115200     // B115200 B921600
 #define GIMBAL_PATH "/dev/ttyUSB1"
 #define GIMBAL_BAUD B921600
-#define CAMERA0_PATH "/dev/video2"
-#define CAMERA1_PATH "/dev/video3"
+#define CAMERA0_PATH "/dev/camera"
+#define CAMERA1_PATH "/dev/video1"
 
 #define CAMERA0_FILEPATH "../rm-vision/camera/camera_param/\
-camera4mm.xml"
+camera4mm_5.xml"
 #define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
-galaxy_0.xml"
+galaxy_1.xml"
 
 //#define FORCE_CHANGE_CAMERA
-#define DEBUG_VIDEO 0
 struct OtherParam
 {
-    bool color = 1;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
-    bool mode = 0;        // 视觉模式，0是自瞄模式，1是能量机关模式
-    bool cap_mode = 1;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
+    int8_t color = 0;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
+    int8_t mode = 0;        // 视觉模式，0是自瞄模式，1是能量机关模式
+    int8_t cap_mode = 1;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
 };
 
 // ****** common ******//
