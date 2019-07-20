@@ -184,6 +184,7 @@ private:
 private:
     float dist_ = 3000;
     float r_ = 0.5;
+    int update_cap_cnt = 0;
     float distance_ = 0;
     float angle_x_ = 0;
     float angle_y_ = 0;

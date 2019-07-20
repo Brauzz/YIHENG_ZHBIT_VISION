@@ -493,17 +493,21 @@ bool ArmorDetector::getTypeResult(bool is_small)
 bool ArmorDetector::chooseCamera(int short_distance, int long_distance, bool last_mode)
 {
     // 没找到目标距离为0
+    //找不到目标时自动切换摄像头寻找目标
+    bool input_type = last_mode;
+    bool temp_type = last_mode;
+    bool output_type = last_mode;
     if(distance_ == 0)
     {
         if(lost_cnt_ % 200 == 0 && lost_cnt_ != 0)
         {
             if(last_mode == true)
-                return false;
+                temp_type =  false;
             else
-                return true;
+                temp_type =  true;
         }else
         {
-            return last_mode;
+            temp_type = last_mode;
         }
     }else
     {
@@ -512,10 +516,28 @@ bool ArmorDetector::chooseCamera(int short_distance, int long_distance, bool las
         else
             dist_ = (1-r_)*dist_ + r_*distance_;
         if(dist_ > long_distance && last_mode == 0)
-            return true;
+            temp_type = true;
         else if(dist_ < short_distance && last_mode == 1)
-            return false;
+            temp_type = false;
         else
-            return last_mode;
+            temp_type = last_mode;
     }
+    // 强制条件限制了切换帧数10帧
+    update_cap_cnt++;
+    if(input_type == temp_type)
+    {
+        output_type =  temp_type;
+    }
+    else
+    {
+        if(update_cap_cnt > 10)
+        {
+            update_cap_cnt = 0;
+            output_type = temp_type;
+        }else
+        {
+            output_type = input_type;
+        }
+    }
+    return output_type;
 }
