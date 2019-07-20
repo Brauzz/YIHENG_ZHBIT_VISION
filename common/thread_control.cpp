@@ -246,8 +246,8 @@ void ThreadControl::ImageProcess()
         armor_detector.getAngle(angle_x, angle_y);
 #endif
 #ifdef DEBUG_PLOT
-//        w.addPoint(distance, 0);
-//        w.addPoint(angle_x, 0);
+        //        w.addPoint(distance, 0);
+        //        w.addPoint(angle_x, 0);
         w.addPoint(angle_y, 1);
         w.plot();
 #endif

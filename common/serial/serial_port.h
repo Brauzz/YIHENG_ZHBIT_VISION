@@ -16,32 +16,33 @@
  ***************************************************************************/
 #pragma once
 #include <iostream>
+#include "../../base.h"
 using namespace std;
 
 struct serial_transmit_data
 {
-    u_char raw_data[10];
+    unsigned char raw_data[10];
     int size;
-    u_char head = 0xaa;
-    u_char end = 0xbb;
+    unsigned char head = 0xaa;
+    unsigned char end = 0xbb;
     void get_xy_data(int16_t x, int16_t y, int8_t found);
 };
 
 struct serial_receive_data
 {
-    u_char raw_data[10];
+    unsigned char raw_data[10];
     int size;
-    u_char head = 0xaa;
-    u_char end = 0xbb;
+    unsigned char head = 0xaa;
+    unsigned char end = 0xbb;
 
 };
 
 struct serial_gimbal_data
 {
-    u_char raw_data[20];
+    unsigned char raw_data[20];
     int size;
-    u_char head = 0x55;
-    u_char end = 0x53;
+    unsigned char head = 0x55;
+    unsigned char end = 0x53;
 };
 
 class SerialPort

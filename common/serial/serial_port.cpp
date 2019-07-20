@@ -19,8 +19,6 @@
 #include <fcntl.h>      // File Control Definitions
 #include <errno.h>      // ERROR Number Definitions
 #include <termios.h>    // POSIX Terminal Control Definitions
-#include "opencv.hpp"
-//#include "thread_control.h"
 
 SerialPort::SerialPort(){}
 
@@ -118,11 +116,12 @@ bool SerialPort::read_data(const struct serial_receive_data *data, bool &mode, b
 //    printf("buffer1 = %d\t\buffer1 = %d\t buffer1 = %d\tbuffer1 = %d\t\n", read_buffer[1], read_buffer[2], read_buffer[3], read_buffer[4]);
     if(read_buffer[0] == data->head && read_buffer[6] == data->end)
     {
+        NOTICE("Get stm32 data sucessed!!!", 3)
         mode = bool(read_buffer[1]);
 //        printf("buffer1 = %d\r\n", read_buffer[1]);
         my_car_color = bool(read_buffer[2]);
         gimbal_data = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
-        cout << gimbal_data<< endl;
+//        cout << gimbal_data<< endl;
         success_ = true;
         return 1;
     }
@@ -241,7 +240,7 @@ void serial_transmit_data::get_xy_data(int16_t x, int16_t y, int8_t found)
     raw_data[2] = (y>>8) &0xff;
     raw_data[3] = x & 0xff;
     raw_data[4] = (x>>8) &0xff;
-    raw_data[5] = static_cast<uchar>(found);
+    raw_data[5] = static_cast<unsigned char>(found);
 }
 
 

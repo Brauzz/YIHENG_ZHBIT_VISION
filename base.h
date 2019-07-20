@@ -42,13 +42,14 @@ galaxy_1.xml"
 //****** 角度解算配置 *****
 #define SET_ZEROS_GRAVITY
 //****** 笔记本调试相关参数 *****
-#define DEBUG_VIDEO 1
+#define DEBUG_VIDEO 0
 #define FORCE_CHANGE_CAMERA
 struct OtherParam
 {
     int8_t color = 1;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
-    int8_t mode = 1;        // 视觉模式，0是自瞄模式，1是能量机关模式
+    int8_t mode = 0;        // 视觉模式，0是自瞄模式，1是能量机关模式
     int8_t cap_mode = 1;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
+    float gimbal_data;
 };
 
 // ****** common ******//

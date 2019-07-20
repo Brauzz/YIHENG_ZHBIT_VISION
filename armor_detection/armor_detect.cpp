@@ -428,18 +428,14 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
             solve_angle_long_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
             solve_angle_long_.getAngle(points_2d_, 15,angle_x_,angle_y_,distance_);   // pnp姿态结算
         }
-
 #ifdef PREDICT
         protectDate(km_Qp_, km_Qv_, km_Rp_, km_Rv_, km_t_, km_pt_);
         float pre_time = distance_/10000*static_cast<float>(km_pt_)+10.0f;
         zeyu_predict_.setQRT(km_Qp_,km_Qv_,km_Rp_,km_t_,pre_time);
-        if(extern_param.serial_success_)   // gimbal is successed
-        {
-            float gim_and_pnp_angle_x = -extern_param.gimbal_data_ + angle_x_;
+            float gim_and_pnp_angle_x = -other_param.gimbal_data + angle_x_;
             float predict_angle_x = zeyu_predict_.run_position(gim_and_pnp_angle_x);   // kalman滤波预测
-            predict_angle_x += extern_param.gimbal_data_;
+            predict_angle_x += other_param.gimbal_data;
             angle_x_ = predict_angle_x;
-        }
 #endif
         return 1;
 
