@@ -74,21 +74,21 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
 #endif
     // 计算角度
     double xyz[3] = {_xyz[0], _xyz[1] - offset_gravity, _xyz[2]};
-    double alpha = 0.0, thta = 0.0;
+    double alpha = 0.0, Beta = 0.0;
     alpha = asin(static_cast<double>(barrel_ptz_offset_y)/sqrt(xyz[1]*xyz[1] + xyz[2]*xyz[2]));
 
     if(xyz[1] < 0)
     {
-        thta = atan(-xyz[1]/xyz[2]);
-        angle_y = static_cast<float>(-(alpha+thta)); //camera coordinate
+        Beta = atan(-xyz[1]/xyz[2]);
+        angle_y = static_cast<float>(-(alpha+Beta)); //camera coordinate
     }else if(xyz[1] < static_cast<double>(barrel_ptz_offset_y))
     {
-        theta = atan(xyz[1]/xyz[2]);
-        angle_y = static_cast<float>(-(alpha - thta));
+        Beta = atan(xyz[1]/xyz[2]);
+        angle_y = static_cast<float>(-(alpha - Beta));
     }else
     {
-        theta = atan(xyz[1]/xyz[2]);
-        angle_y = static_cast<float>((theta-alpha));   // camera coordinate
+        Beta = atan(xyz[1]/xyz[2]);
+        angle_y = static_cast<float>((Beta-alpha));   // camera coordinate
     }
     angle_x = static_cast<float>(atan2(xyz[0],xyz[2]));
     angle_x = static_cast<float>(angle_x) * 57.2957805f;
