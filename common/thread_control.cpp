@@ -126,7 +126,7 @@ void ThreadControl::GetSTM32()
         other_param.color = color;
         GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
         float gimbal_data = dst_gimbal_yaw;
-        INFO(color);
+        other_param.gimbal_data = gimbal_data;
         gimbal_data_index++;
         END_THREAD;
     }

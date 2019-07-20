@@ -168,7 +168,7 @@ Rect ArmorDetector::GetRoi(const Mat &img)
     Rect rect_roi;
     if(rect_tmp.x == 0 || rect_tmp.y == 0
             || rect_tmp.width == 0 || rect_tmp.height == 0
-            || lost_cnt_ >= 15 || detect_cnt_%100 == 0)
+            || lost_cnt_ >= 15 || detect_cnt_%100 == 0 || update_cap_cnt < 20)
     {
         last_target_ = Rect(0,0,img_size.width, img_size.height);
         rect_roi = Rect(0,0,img_size.width, img_size.height);
@@ -443,10 +443,10 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
         else                    // far
         {
 #ifdef SIMPLE_SOLVE_ANGLE_FOR_ARMOR_DETECT
-            solve_angle_long_.getAngle(points_2d_, 15,angle_x_, angle_y_ ,distance_);   // pnp姿态结算
-#else
             long_simple_solve.getAngle(screen_point.x, screen_point.y, dh, angle_x_, angle_y_, distance_);
+#else
             solve_angle_long_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
+            solve_angle_long_.getAngle(points_2d_, 15,angle_x_, angle_y_ ,distance_);   // pnp姿态结算
 #endif
         }
 #ifdef PREDICT
