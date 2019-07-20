@@ -41,6 +41,7 @@ galaxy_1.xml"
 
 //****** 角度解算配置 *****
 #define SET_ZEROS_GRAVITY
+#define SIMPLE_SOLVE_ANGLE_FOR_ARMOR_DETECT
 //****** 笔记本调试相关参数 *****
 #define DEBUG_VIDEO 0
 #define FORCE_CHANGE_CAMERA

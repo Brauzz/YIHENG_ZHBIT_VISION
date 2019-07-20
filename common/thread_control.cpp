@@ -245,9 +245,9 @@ void ThreadControl::ImageProcess()
         find_flag = armor_detector.ArmorDetectTask(image, other_param);
         armor_detector.getAngle(angle_x, angle_y);
 #endif
-#ifdef DEBUG_PLOT
-        //        w.addPoint(distance, 0);
-        //        w.addPoint(angle_x, 0);
+#ifdef DEBUG_PLOT //0紫 1橙
+        //                w.addPoint(distance, 0);
+        w.addPoint(angle_x, 0);
         w.addPoint(angle_y, 1);
         w.plot();
 #endif

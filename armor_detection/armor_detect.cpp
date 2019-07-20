@@ -416,26 +416,47 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
 #endif
     if(DetectArmor(img, roi))
     {
+        // 精简角度解算算法参数
+#ifdef SIMPLE_SOLVE_ANGLE_FOR_ARMOR_DETECT
+        SimpleSolveAngle short_simple_solve(511.8909f, 511.8642f, 334.1404f, 172.4067f, 700);
+        SimpleSolveAngle long_simple_solve(1300.3841f, 1300.2605f, 331.3789f, 269.5436f, 1500);
+        Point2f screen_point;
+        for(int i = 0; i <4; i++)
+        {
+            screen_point += points_2d_.at(i);
+        }
+        screen_point /= 4;
+        float dh = points_2d_.at(2).y - points_2d_.at(1).y;
+#endif
         DrawTarget(img);
         bool final_armor_type = getTypeResult(is_small_);
+        //                    float angle_x, angle_y, distance;
         if(cap_mode_ == 0) // close
         {
+#ifdef SIMPLE_SOLVE_ANGLE_FOR_ARMOR_DETECT
+            short_simple_solve.getAngle(screen_point.x, screen_point.y, dh, angle_x_, angle_y_, distance_);
             solve_angle_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
+#else
             solve_angle_.getAngle(points_2d_, 15,angle_x_,angle_y_,distance_);   // pnp姿态结算
+#endif
         }
         else                    // far
         {
+#ifdef SIMPLE_SOLVE_ANGLE_FOR_ARMOR_DETECT
+            solve_angle_long_.getAngle(points_2d_, 15,angle_x_, angle_y_ ,distance_);   // pnp姿态结算
+#else
+            long_simple_solve.getAngle(screen_point.x, screen_point.y, dh, angle_x_, angle_y_, distance_);
             solve_angle_long_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
-            solve_angle_long_.getAngle(points_2d_, 15,angle_x_,angle_y_,distance_);   // pnp姿态结算
+#endif
         }
 #ifdef PREDICT
         protectDate(km_Qp_, km_Qv_, km_Rp_, km_Rv_, km_t_, km_pt_);
         float pre_time = distance_/10000*static_cast<float>(km_pt_)+10.0f;
         zeyu_predict_.setQRT(km_Qp_,km_Qv_,km_Rp_,km_t_,pre_time);
-            float gim_and_pnp_angle_x = -other_param.gimbal_data + angle_x_;
-            float predict_angle_x = zeyu_predict_.run_position(gim_and_pnp_angle_x);   // kalman滤波预测
-            predict_angle_x += other_param.gimbal_data;
-            angle_x_ = predict_angle_x;
+        float gim_and_pnp_angle_x = -other_param.gimbal_data + angle_x_;
+        float predict_angle_x = zeyu_predict_.run_position(gim_and_pnp_angle_x);   // kalman滤波预测
+        predict_angle_x += other_param.gimbal_data;
+        angle_x_ = predict_angle_x;
 #endif
         return 1;
 
