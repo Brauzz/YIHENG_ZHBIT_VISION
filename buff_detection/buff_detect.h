@@ -66,12 +66,6 @@ public:
     int type_ = UNKOWN;
 };
 
-/**
- * @brief BuffDetectTask 能量机关识别总任务，每帧调用
- * @param img 摄像头获取的RGB图像
- * @return 1是发现目标，0是未发现目标
- */
-
 class AutoAttack
 {
 public:
@@ -86,19 +80,26 @@ private:
 
 double calcDistanceFor2Point(Point2f p1, Point2f p2);
 
+/**
+ * @brief BuffDetectTask 能量机关识别总任务，每帧调用
+ * @param img 摄像头获取的RGB图像
+ * @return 1是发现目标，0是未发现目标
+ */
 class BuffDetector
 {
 public:
-    BuffDetector();
+    BuffDetector(){}
     BuffDetector(SolveAngle solve_angle);
-    ~BuffDetector();
+    ~BuffDetector(){}
     bool DetectBuff(Mat& img);
     int8_t BuffDetectTask(Mat& img, OtherParam param);
     void getAngle(float &yaw, float &pitch){
         yaw = angle_x_;
         pitch = angle_y_;
     }
-
+    float getDistance(){
+        return distance_;
+    }
     /**
      * @brief 辨别能量机关旋转方向
      * 根据每次识别得到的角度进行滤波，判断能量机关旋转方向

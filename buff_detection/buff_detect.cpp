@@ -16,46 +16,9 @@
  ***************************************************************************/
 #include "buff_detect.h"
 
-double calcDistanceFor2Point(Point2f p1, Point2f p2)
-{
-    return pow(pow((p1.x-p2.x), 2) + pow((p1.y - p2.y), 2), 0.5);
-}
-
-/**
- * @brief conversionAbsolutePoint 对不同情况的点进行补偿
- * @param point_tmp 原始点
- * @param dst 最终处理
- * @param offset 补偿值
- * @param i1 转换序号
- * @param i2
- * @param i3
- * @param i4
- */
-void conversionAbsolutePoint(Point2f *point_tmp, vector<Point2f>& dst
-                             ,Point2f offset
-                             ,int8_t i1, int8_t i2, int8_t i3, int8_t i4)
-{
-    dst.push_back(point_tmp[i1] + offset);
-    dst.push_back(point_tmp[i2] + offset);
-    dst.push_back(point_tmp[i3] + offset);
-    dst.push_back(point_tmp[i4] + offset);
-}
-
-
-
-BuffDetector::BuffDetector()
-{
-
-}
-
 BuffDetector::BuffDetector(SolveAngle solve_angle)
 {
     solve_angle_long_ = solve_angle;
-}
-
-BuffDetector::~BuffDetector()
-{
-
 }
 
 bool BuffDetector::DetectBuff(Mat& img)
@@ -228,7 +191,8 @@ int8_t BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 #endif
 
         solve_angle_long_.Generate3DPoints(2, world_offset);
-        solve_angle_long_.getAngle(points_2d, 28.5, angle_x_, angle_y_, distance_);
+        float distance;
+        solve_angle_long_.getBuffAngle(points_2d, 28.5, buff_angle_, angle_x_, angle_y_, distance_);
         angle_y_*=0.8;
         return 1;
     }

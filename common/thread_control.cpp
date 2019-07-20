@@ -188,7 +188,7 @@ void ThreadControl::ImageProcess()
 #endif
 
     Mat image;
-    float angle_x = 0.0, angle_y = 0.0;
+    float angle_x = 0.0, angle_y = 0.0, distance =  0.0;
     int8_t find_flag = 0;
     while(1)
     {
@@ -210,9 +210,9 @@ void ThreadControl::ImageProcess()
             other_param.cap_mode = armor_detector.chooseCamera(1300, 1600, other_param.cap_mode);
 #endif
             ++consumption_index;
-//            TIME_START(t);
+            //            TIME_START(t);
             find_flag = armor_detector.ArmorDetectTask(image, other_param);
-//            TIME_END(t);
+            //            TIME_END(t);
             armor_detector.getAngle(angle_x, angle_y);
         }
         else
@@ -224,8 +224,11 @@ void ThreadControl::ImageProcess()
             ++consumption_index;
 
             find_flag = buff_detector.BuffDetectTask(image, other_param);
-            if(find_flag)
+            if(find_flag){
                 buff_detector.getAngle(angle_x, angle_y);
+                distance = buff_detector.getDistance();
+            }
+
         }
 
 #elif(ROBOT_TYPE == HERO)
@@ -243,7 +246,8 @@ void ThreadControl::ImageProcess()
         armor_detector.getAngle(angle_x, angle_y);
 #endif
 #ifdef DEBUG_PLOT
-        w.addPoint(angle_x, 0);
+//        w.addPoint(distance, 0);
+//        w.addPoint(angle_x, 0);
         w.addPoint(angle_y, 1);
         w.plot();
 #endif

@@ -4,42 +4,44 @@
 
 #define ROBOT_TYPE INFANTRY // INFANTRY HERO PLANE
 
-// ****** systems  ******//
-//#define SHORT_CAMERA_ENABLE 1
+// ****** 整个系统的调试  ******//
+#define WAITKEY 1
+#define IMAGESHOW
+#define GALAXY
+#define DEBUG_PLOT
+//****** 线程使能 *****
+#define SHORT_CAMERA_ENABLE 0
 #define LONG_CAMERA_ENABLE  1
 //#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
-#define WAITKEY 1
-#define IMAGESHOW
-// ****** settings ******//
-#define GALAXY
-#define DEBUG_PLOT
 
-// for armor --------------
+//****** 装甲板识别配置 *****
 #define DEBUG_ARMOR_DETECT
 #define ROI_ENABLE
 //#define PREDICT
-// for buff --------------
+//****** 能量机关识别信息 *****
 #define DEBUG_BUFF_DETECT
 
-// for image
+//****** 摄像头信息 *****
 #define VIDEO_WIDTH 640
 #define VIDEO_HEIGHT 360
 #define BUFFER_SIZE 1
 
-// device setting
+//****** 外部驱动配置 *****
 #define SERIAL_PATH "/dev/stm32"
 #define SERIAL_BAUD B115200     // B115200 B921600
 #define GIMBAL_PATH "/dev/ttyUSB1"
 #define GIMBAL_BAUD B921600
 #define CAMERA0_PATH "/dev/camera"
 #define CAMERA1_PATH "/dev/video1"
-
 #define CAMERA0_FILEPATH "../rm-vision/camera/camera_param/\
 camera4mm_5.xml"
 #define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
 galaxy_1.xml"
 
+//****** 角度解算配置 *****
+#define SET_ZEROS_GRAVITY
+//****** 笔记本调试相关参数 *****
 #define DEBUG_VIDEO 1
 #define FORCE_CHANGE_CAMERA
 struct OtherParam

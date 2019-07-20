@@ -16,15 +16,20 @@
  ***************************************************************************/
 #pragma once
 #include <opencv2/opencv.hpp>
-
+#include "../../base.h"
 using namespace cv;
 using namespace std;
 class SolveAngle
 {
 public:
-    SolveAngle();
+    SolveAngle(){}
     SolveAngle(const char* file_path, float c_x, float c_y, float c_z, float barrel_y);
+    // 普通角度解算
     void getAngle(vector<Point2f>& image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist);
+    // 能量机关角度解算
+    void getBuffAngle(vector<Point2f>& image_point, float ballet_speed, float buff_angle, float &angle_x, float &angle_y, float &dist);
+    float getBuffPitch(float dist, float tvec_y, float ballet_speed);
+
     // ---------ICRA--------------------
     void getAngle_ICRA(vector<Point2f>& image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist);
     float GetPitch_ICRA(float x, float y, float v);
