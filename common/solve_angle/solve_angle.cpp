@@ -18,10 +18,6 @@
 
 using namespace cv;
 
-SolveAngle::SolveAngle()
-{
-}
-
 SolveAngle::SolveAngle(const char* file_path, float c_x, float c_y, float c_z, float barrel_y)
 {
     //读取摄像头标定xml文件
@@ -34,28 +30,28 @@ SolveAngle::SolveAngle(const char* file_path, float c_x, float c_y, float c_z, f
     // 读取相机内参和畸变矩阵
     fs["Camera_Matrix"] >> cameraMatrix;
     fs["Distortion_Coefficients"] >> distCoeffs;
-//    cout << cameraMatrix << endl;
-//    cout << distCoeffs << endl;
+    cout << cameraMatrix << endl;
+    cout << distCoeffs << endl;
     Generate3DPoints(0,Point2f(0,0));
     Mat(objectPoints).convertTo(object_point_mat, CV_32F);
     Mat rvec(3, 1, DataType<double>::type);
     Mat tvec(3, 1, DataType<double>::type);
 }
 
-void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist, float& theta_y)
+void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist)
 {
     // 姿态结算
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
     tvec.at<double>(2,0)*=scale;
-    cout << tvec << endl;
+    //    cout << tvec << endl;
     // 估计装甲板y轴坐标旋转量2
     double rm[3][3];
     Mat rotMat(3, 3, CV_64FC1, rm);
     Rodrigues(rvec, rotMat);
-//    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;
-    theta_y = atan2(static_cast<float>(rm[1][0]), static_cast<float>(rm[0][0])) * 57.2958f;//x
-//    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;//y
-//    theta_y = atan2(rm[2][1], rm[2][2]) * 57.2958;//z
+    //    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;
+    //    float theta_y = atan2(static_cast<float>(rm[1][0]), static_cast<float>(rm[0][0])) * 57.2958f;//x
+    //    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;//y
+    //    theta_y = atan2(rm[2][1], rm[2][2]) * 57.2958;//z
 
     // 坐标系转换 -摄像头坐标到云台坐标
     double theta = -atan(static_cast<double>(ptz_camera_y + barrel_ptz_offset_y))/static_cast<double>(overlap_dist);
@@ -73,29 +69,88 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
     if(bullet_speed > 10e-3)
         down_t = _xyz[2] /1000.0 / bullet_speed;
     double offset_gravity = 0.5 * 9.8 * down_t*down_t * 1000;
-//            offset_gravity = 0;
+#ifdef SET_ZEROS_GRAVITY
+    offset_gravity = 0;
+#endif
     // 计算角度
     double xyz[3] = {_xyz[0], _xyz[1] - offset_gravity, _xyz[2]};
-    double alpha = 0.0, thta = 0.0;
+    double alpha = 0.0, Beta = 0.0;
     alpha = asin(static_cast<double>(barrel_ptz_offset_y)/sqrt(xyz[1]*xyz[1] + xyz[2]*xyz[2]));
 
     if(xyz[1] < 0)
     {
-        thta = atan(-xyz[1]/xyz[2]);
-        angle_y = static_cast<float>(-(alpha+thta)); //camera coordinate
+        Beta = atan(-xyz[1]/xyz[2]);
+        angle_y = static_cast<float>(-(alpha+Beta)); //camera coordinate
     }else if(xyz[1] < static_cast<double>(barrel_ptz_offset_y))
     {
-        theta = atan(xyz[1]/xyz[2]);
-        angle_y = static_cast<float>(-(alpha - thta));
+        Beta = atan(xyz[1]/xyz[2]);
+        angle_y = static_cast<float>(-(alpha - Beta));
     }else
     {
-        theta = atan(xyz[1]/xyz[2]);
-        angle_y = static_cast<float>((theta-alpha));   // camera coordinate
+        Beta = atan(xyz[1]/xyz[2]);
+        angle_y = static_cast<float>((Beta-alpha));   // camera coordinate
     }
     angle_x = static_cast<float>(atan2(xyz[0],xyz[2]));
     angle_x = static_cast<float>(angle_x) * 57.2957805f;
     angle_y = static_cast<float>(angle_y) * 57.2957805f;
     dist = static_cast<float>(xyz[2]);
+}
+
+// ------ 能量机关角度解算 ------
+
+float SolveAngle::GetPitch_ICRA(float x, float y, float v) {
+    float y_temp, y_actual, dy;
+    float a = 0.0;
+    y_temp = y;
+    // by iteration
+    for (int i = 0; i < 10; i++) {
+        a = (float) atan2(y_temp, x);
+        y_actual = BulletModel_ICRA(x, v, a);
+        dy = y - y_actual;
+        y_temp = y_temp + dy;
+        if (fabsf(dy) < 0.001) {
+            break;
+        }
+        //printf("iteration num %d: angle %f,temp target y:%f,err of y:%f\n",i+1,a*180/3.1415926535,yTemp,dy);
+    }
+    return a;
+}
+
+
+void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, float buff_angle, float &angle_x, float &angle_y, float &dist)
+{
+    // 姿态结算
+    solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
+    tvec.at<double>(2,0)*=scale;
+
+
+    // 坐标系转换 -摄像头坐标到云台坐标
+    double theta = -atan(static_cast<double>(ptz_camera_y + barrel_ptz_offset_y))/static_cast<double>(overlap_dist);
+    double r_data[] = {1,0,0,0,cos(theta),sin(theta),0,-sin(theta),cos(theta)};
+    double t_data[] = {static_cast<double>(ptz_camera_x),static_cast<double>(ptz_camera_y),static_cast<double>(ptz_camera_z)};
+    Mat t_camera_ptz(3,1,CV_64FC1,t_data);
+    Mat r_camera_ptz(3,3,CV_64FC1,r_data);
+    Mat position_in_ptz;
+    position_in_ptz = r_camera_ptz * tvec - t_camera_ptz;
+
+    // 距离解算
+    float H = 800;
+    float h = 430;
+    float D = 7100;
+    float delta_h = H - h;
+    float buff_h = 800*sin(buff_angle *3.14/180)+800;
+    dist = sqrt(pow(delta_h+buff_h, 2) + pow(D, 2));
+
+    //计算子弹下坠补偿
+    const double *_xyz = (const double *)position_in_ptz.data;
+
+    // 计算角度
+    double xyz[3] = {_xyz[0], _xyz[1], _xyz[2]};
+
+    angle_x = static_cast<float>(atan2(xyz[0],xyz[2]));
+    angle_x = static_cast<float>(angle_x) * 57.2957805f;
+    angle_y = getBuffPitch(dist/1000, xyz[1]/1000, ballet_speed);
+    angle_y = static_cast<float>(angle_y) * 57.2957805f;
 }
 
 
@@ -122,23 +177,33 @@ float SolveAngle::BulletModel_ICRA(float x, float v, float angle)
     return y;
 }
 
-float SolveAngle::GetPitch_ICRA(float x, float y, float v) {
+
+float SolveAngle::getBuffPitch(float dist, float tvec_y, float ballet_speed)
+{
+    // 申明临时y轴方向长度,子弹实际落点，实际落点与击打点三个变量不断更新（mm）
     float y_temp, y_actual, dy;
+    // 重力补偿枪口抬升角度
     float a = 0.0;
-    y_temp = y;
-    // by iteration
-    for (int i = 0; i < 20; i++) {
-        a = (float) atan2(y_temp, x);
-        y_actual = BulletModel_ICRA(x, v, a);
-        dy = y - y_actual;
+    float GRAVITY = 9.7887f; //shenzhen 9.7887  zhuhai
+    y_temp = tvec_y;
+    // 迭代求抬升高度
+    for (int i = 0; i < 10; i++) {
+        // 计算枪口抬升角度
+        a = (float) atan2(y_temp, dist);
+        // 计算实际落点
+        float t, y = 0.0;
+        t = dist / (ballet_speed * cos(a));
+        y_actual = ballet_speed * sin(a) * t - GRAVITY * t * t / 2;
+        dy = tvec_y - y_actual;
         y_temp = y_temp + dy;
+        // 当枪口抬升角度与实际落点误差较小时退出
         if (fabsf(dy) < 0.001) {
             break;
         }
-        //printf("iteration num %d: angle %f,temp target y:%f,err of y:%f\n",i+1,a*180/3.1415926535,yTemp,dy);
     }
     return a;
 }
+
 //--------------------------/ICRA------------------------------------
 
 void SolveAngle::Generate3DPoints(uint8_t mode, Point2f offset_point)

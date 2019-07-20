@@ -16,32 +16,33 @@
  ***************************************************************************/
 #pragma once
 #include <iostream>
+#include "../../base.h"
 using namespace std;
 
 struct serial_transmit_data
 {
-    u_char raw_data[10];
+    unsigned char raw_data[10];
     int size;
-    u_char head = 0xaa;
-    u_char end = 0xbb;
+    unsigned char head = 0xaa;
+    unsigned char end = 0xbb;
     void get_xy_data(int16_t x, int16_t y, int8_t found);
 };
 
 struct serial_receive_data
 {
-    u_char raw_data[10];
+    unsigned char raw_data[10];
     int size;
-    u_char head = 0xaa;
-    u_char end = 0xbb;
+    unsigned char head = 0xaa;
+    unsigned char end = 0xbb;
 
 };
 
 struct serial_gimbal_data
 {
-    u_char raw_data[20];
+    unsigned char raw_data[20];
     int size;
-    u_char head = 0x55;
-    u_char end = 0x53;
+    unsigned char head = 0x55;
+    unsigned char end = 0x53;
 };
 
 class SerialPort
@@ -58,7 +59,7 @@ public:
 
     void restart_serial(void);  // 尝试重连的函数
     void send_data(const struct serial_transmit_data& data);
-    bool read_data(const struct serial_receive_data *data, int8_t &mode, int8_t &my_car_color, float &bullet_speed, int8_t& cancel_kalman);
+    bool read_data(const struct serial_receive_data *data, bool &mode, bool &my_car_color, float &gimbal_data);
     bool read_gimbal(const struct serial_gimbal_data* data, float &gimbal_yaw);
     int fd;
     int last_fd;

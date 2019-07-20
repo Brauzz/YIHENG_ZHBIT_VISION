@@ -26,7 +26,8 @@ CameraDevice::CameraDevice()
     status = GX_STATUS_SUCCESS;
 //    GX_DEV_HANDLE hDevice = nullptr;
 //    uint32_t nDeviceNum = 0;
-    src.create(420,640,CV_8UC3);            // 工业相机尺寸
+    src.create(480,640,CV_8UC3);            // 工业相机尺寸
+//    src.create(1024,1280,CV_8UC3);            // 工业相机尺寸
     stOpenParam.accessMode = GX_ACCESS_EXCLUSIVE;
     stOpenParam.openMode   = GX_OPEN_INDEX;
     stOpenParam.pszContent = "1";
@@ -76,20 +77,20 @@ int CameraDevice::init()
             stFrameData.pImgBuf = malloc((size_t)nPayLoadSize);
 
             // 设置曝光值
-            status = GXSetFloat(hDevice, GX_FLOAT_EXPOSURE_TIME, 1000);
+            status = GXSetFloat(hDevice, GX_FLOAT_EXPOSURE_TIME, 1500);
 
             //设置采集模式连续采集
             //            status = GXSetEnum(hDevice, GX_ENUM_ACQUISITION_MODE, GX_ACQ_MODE_CONTINUOUS);
             //            status = GXSetInt(hDevice, GX_INT_ACQUISITION_SPEED_LEVEL, 1);
             //            status = GXSetEnum(hDevice, GX_ENUM_BALANCE_WHITE_AUTO, GX_BALANCE_WHITE_AUTO_CONTINUOUS);
-            int64_t nWidth   = 640;
-            int64_t nHeight  = 420;
-            int64_t nOffsetX = 0;
-            int64_t nOffsetY = 0;
-            status = GXSetInt(hDevice, GX_INT_WIDTH, nWidth);
-            status = GXSetInt(hDevice, GX_INT_HEIGHT, nHeight);
-            status = GXSetInt(hDevice, GX_INT_OFFSET_X, nOffsetX);
-            status = GXSetInt(hDevice, GX_INT_OFFSET_Y, nOffsetY);
+//            int64_t nWidth   = 640;
+//            int64_t nHeight  = 420;
+//            int64_t nOffsetX = 0;
+//            int64_t nOffsetY = 0;
+//            status = GXSetInt(hDevice, GX_INT_WIDTH, nWidth);
+//            status = GXSetInt(hDevice, GX_INT_HEIGHT, nHeight);
+//            status = GXSetInt(hDevice, GX_INT_OFFSET_X, nOffsetX);
+//            status = GXSetInt(hDevice, GX_INT_OFFSET_Y, nOffsetY);
 
 
             //发送开始采集命令
@@ -102,7 +103,7 @@ int CameraDevice::init()
 
 void CameraDevice::getImage(Mat &img)
 {
-
+    GXFlushQueue(hDevice);
     GXGetImage(hDevice, &stFrameData, 100);
     //usleep(1);
 

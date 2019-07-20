@@ -19,8 +19,6 @@
 #include <fcntl.h>      // File Control Definitions
 #include <errno.h>      // ERROR Number Definitions
 #include <termios.h>    // POSIX Terminal Control Definitions
-#include "opencv.hpp"
-//#include "thread_control.h"
 
 SerialPort::SerialPort(){}
 
@@ -94,7 +92,7 @@ void SerialPort::send_data(const struct serial_transmit_data &data)
 }
 
 // stm32 -> pc
-bool SerialPort::read_data(const struct serial_receive_data *data, int8_t &mode, int8_t &my_car_color, float &bullet_speed, int8_t &cancel_kalman)
+bool SerialPort::read_data(const struct serial_receive_data *data, bool &mode, bool &my_car_color, float &gimbal_data)
 {
 
     tcflush(fd, TCIFLUSH);   /* Discards old data in the rx buffer            */
@@ -118,21 +116,12 @@ bool SerialPort::read_data(const struct serial_receive_data *data, int8_t &mode,
 //    printf("buffer1 = %d\t\buffer1 = %d\t buffer1 = %d\tbuffer1 = %d\t\n", read_buffer[1], read_buffer[2], read_buffer[3], read_buffer[4]);
     if(read_buffer[0] == data->head && read_buffer[6] == data->end)
     {
-
-        mode = int8_t(read_buffer[1]);
+        NOTICE("Get stm32 data sucessed!!!", 3)
+        mode = bool(read_buffer[1]);
 //        printf("buffer1 = %d\r\n", read_buffer[1]);
-        my_car_color = int8_t(read_buffer[2]);
-        bullet_speed = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
-        float bullet_speed_tmp = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
-        cancel_kalman = int8_t(read_buffer[5]);
-        if(bullet_speed_tmp < 10){
-            bullet_speed = last_bullet_speed;
-        }
-        else
-        {
-            last_bullet_speed = bullet_speed_tmp;
-            bullet_speed = last_bullet_speed;
-        }
+        my_car_color = bool(read_buffer[2]);
+        gimbal_data = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
+//        cout << gimbal_data<< endl;
         success_ = true;
         return 1;
     }
@@ -251,7 +240,7 @@ void serial_transmit_data::get_xy_data(int16_t x, int16_t y, int8_t found)
     raw_data[2] = (y>>8) &0xff;
     raw_data[3] = x & 0xff;
     raw_data[4] = (x>>8) &0xff;
-    raw_data[5] = static_cast<uchar>(found);
+    raw_data[5] = static_cast<unsigned char>(found);
 }
 
 
