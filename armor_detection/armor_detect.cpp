@@ -168,7 +168,11 @@ Rect ArmorDetector::GetRoi(const Mat &img)
     Rect rect_roi;
     if(rect_tmp.x == 0 || rect_tmp.y == 0
             || rect_tmp.width == 0 || rect_tmp.height == 0
-            || lost_cnt_ >= 15 || detect_cnt_%100 == 0 || update_cap_cnt < 20)
+            || lost_cnt_ >= 15 || detect_cnt_%100 == 0
+        #ifndef FORCE_CHANGE_CAMERA
+            || update_cap_cnt < 20
+        #endif
+            )
     {
         last_target_ = Rect(0,0,img_size.width, img_size.height);
         rect_roi = Rect(0,0,img_size.width, img_size.height);
@@ -530,7 +534,7 @@ bool ArmorDetector::chooseCamera(int short_distance, int long_distance, bool las
     }
     else
     {
-        if(update_cap_cnt > 10)
+        if(update_cap_cnt > 300)
         {
             update_cap_cnt = 0;
             output_type = temp_type;
