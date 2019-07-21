@@ -137,12 +137,6 @@ void ThreadControl::GetSTM32()
 void ThreadControl::ImageProcess()
 {
     cout << " ------ IMAGE PROCESS TASK ON !!! ------" << endl;
-#ifdef DEBUG_PLOT
-    int argc;char **argv = nullptr;
-    QApplication a(argc, argv);
-    MainWindow w;
-    w.show();
-#endif
     // 角度结算类声明
     SolveAngle solve_angle(CAMERA0_FILEPATH, 57, 47.5f, -111.37f, 0);
     SolveAngle solve_angle_long(CAMERA1_FILEPATH, 0, 40.7f, -123, 0);
@@ -150,8 +144,19 @@ void ThreadControl::ImageProcess()
     // 预测类声明
     ZeYuPredict zeyu_predict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
     ArmorDetector armor_detector(solve_angle, solve_angle_long, zeyu_predict);
+#ifdef DEBUG_PLOT
+    int argc;char **argv = nullptr;
+    QApplication a(argc, argv);
+    MainWindow w;
+    w.show();
+    armor_detector.DebugPlotInit(&w);
+#endif
+
 #if(ROBOT_TYPE == INFANTRY)
     BuffDetector buff_detector(solve_angle_long);
+   #ifdef DEBUG_PLOT
+    buff_detector.DebugPlotInit(&w);
+    #endif
 #endif
     serial_transmit_data tx_data;       // 串口发送stm32数据结构
 
@@ -245,12 +250,7 @@ void ThreadControl::ImageProcess()
         find_flag = armor_detector.ArmorDetectTask(image, other_param);
         armor_detector.getAngle(angle_x, angle_y);
 #endif
-#ifdef DEBUG_PLOT //0紫 1橙
-                        w.addPoint(distance, 0);
-//        w.addPoint(angle_x, 0);
-//        w.addPoint(angle_y, 1);
-        w.plot();
-#endif
+
         limit_angle(angle_x, 5);
 #ifdef GET_STM32_THREAD
         tx_data.get_xy_data(-angle_x*100, -angle_y*100,find_flag);

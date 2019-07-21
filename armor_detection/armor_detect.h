@@ -20,6 +20,7 @@
 #include "../common/solve_angle/solve_angle.h"
 #include "../common/filter/predict.h"
 #include "../base.h"
+#include "../mainwindow.h"
 using namespace std;
 using namespace cv;
 
@@ -86,6 +87,10 @@ public:
     ArmorDetector(){}
     ArmorDetector(SolveAngle solve_short, SolveAngle solve_long, ZeYuPredict zeyu_predict);
     ~ArmorDetector(){}
+    void DebugPlotInit(MainWindow *w){
+        w_ = w;
+    }
+
     /**
      * @brief chooseCamera 选择相机类型，长短焦切换逻辑
      * @param 短距离阈值(mm)
@@ -177,6 +182,7 @@ private:
     SolveAngle solve_angle_;
     SolveAngle solve_angle_long_;
     ZeYuPredict zeyu_predict_;
+    MainWindow *w_;
 private:
     Rect last_target_;
     int lost_cnt_ = 0;

@@ -18,6 +18,7 @@
 #include "../common/thread_control.h"
 #include "../common/solve_angle/solve_angle.h"
 #include "../base.h"
+#include "../mainwindow.h"
 using namespace cv;
 using namespace std;
 #define BUFF_DETECT_DEBUG
@@ -91,6 +92,9 @@ public:
     BuffDetector(){}
     BuffDetector(SolveAngle solve_angle);
     ~BuffDetector(){}
+    void DebugPlotInit(MainWindow *w){
+        w_ = w;
+    }
     bool DetectBuff(Mat& img);
     int8_t BuffDetectTask(Mat& img, OtherParam param);
     void getAngle(float &yaw, float &pitch){
@@ -123,6 +127,7 @@ public:
 
 private:
     SolveAngle solve_angle_long_;
+    MainWindow *w_;
 private:
     float angle_x_ = 0;
     float angle_y_ = 0;

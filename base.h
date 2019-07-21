@@ -8,7 +8,7 @@
 #define WAITKEY 1
 #define IMAGESHOW
 #define GALAXY
-#define DEBUG_PLOT
+//#define DEBUG_PLOT
 //****** 线程使能 *****
 #define SHORT_CAMERA_ENABLE 0
 #define LONG_CAMERA_ENABLE  0
@@ -24,7 +24,7 @@
 
 //****** 摄像头信息 *****
 #define VIDEO_WIDTH 640
-#define VIDEO_HEIGHT 360
+#define VIDEO_HEIGHT 360q
 #define BUFFER_SIZE 1
 
 //****** 外部驱动配置 *****
@@ -43,12 +43,12 @@ galaxy_1.xml"
 #define SET_ZEROS_GRAVITY
 //#define SIMPLE_SOLVE_ANGLE_FOR_ARMOR_DETECT
 //****** 笔记本调试相关参数 *****
-#define DEBUG_VIDEO 0
+#define DEBUG_VIDEO 1
 #define FORCE_CHANGE_CAMERA
 struct OtherParam
 {
     int8_t color = 1;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
-    int8_t mode = 0;        // 视觉模式，0是自瞄模式，1是能量机关模式
+    int8_t mode = 1;        // 视觉模式，0是自瞄模式，1是能量机关模式
     int8_t cap_mode = 1;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
     float gimbal_data;
 };

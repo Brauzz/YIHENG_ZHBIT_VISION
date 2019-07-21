@@ -453,6 +453,11 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
             solve_angle_long_.getAngle(points_2d_, 15,angle_x_, angle_y_ ,distance_);   // pnp姿态结算
 #endif
         }
+#ifdef DEBUG_PLOT //0紫 1橙
+        w_->addPoint(angle_x_, 0);
+        w_->addPoint(angle_y_, 1);
+        w_->plot();
+#endif
 #ifdef PREDICT
         protectDate(km_Qp_, km_Qv_, km_Rp_, km_Rv_, km_t_, km_pt_);
         float pre_time = distance_/10000*static_cast<float>(km_pt_)+10.0f;

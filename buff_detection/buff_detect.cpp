@@ -194,6 +194,12 @@ int8_t BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
         float distance;
         solve_angle_long_.getBuffAngle(points_2d, 28.5, buff_angle_, angle_x_, angle_y_, distance_);
         angle_y_*=0.8;
+
+#ifdef DEBUG_PLOT //0紫 1橙
+        w_->addPoint(distance_, 0);
+//        w_->addPoint(angle_y_, 1);
+        w_->plot();
+#endif
         return 1;
     }
     return 0;
