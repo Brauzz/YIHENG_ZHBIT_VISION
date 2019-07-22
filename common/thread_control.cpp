@@ -117,6 +117,7 @@ void ThreadControl::GetSTM32()
     float raw_gimbal_yaw, dst_gimbal_yaw;
     bool mode = 0;
     bool color = 0;
+    int cnt=0;
     while(1){
         while(static_cast<int>(gimbal_data_index - consumption_index) >= 1)
             END_THREAD;
@@ -127,6 +128,13 @@ void ThreadControl::GetSTM32()
         GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
         float gimbal_data = dst_gimbal_yaw;
         other_param.gimbal_data = gimbal_data;
+#ifdef DEBUG_PLOT
+        if(debug_enable_flag == true)
+        {
+            w_->addPoint(cnt,0);
+            w_->plot();
+        }
+#endif
         gimbal_data_index++;
         END_THREAD;
     }
@@ -149,14 +157,17 @@ void ThreadControl::ImageProcess()
     QApplication a(argc, argv);
     MainWindow w;
     w.show();
+    w_ = &w;
+    debug_enable_flag = true;
     armor_detector.DebugPlotInit(&w);
+
 #endif
 
 #if(ROBOT_TYPE == INFANTRY)
     BuffDetector buff_detector(solve_angle_long);
-   #ifdef DEBUG_PLOT
+#ifdef DEBUG_PLOT
     buff_detector.DebugPlotInit(&w);
-    #endif
+#endif
 #endif
     serial_transmit_data tx_data;       // 串口发送stm32数据结构
 

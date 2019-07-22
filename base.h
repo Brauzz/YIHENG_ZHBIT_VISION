@@ -8,11 +8,11 @@
 #define WAITKEY 1
 #define IMAGESHOW
 #define GALAXY
-//#define DEBUG_PLOT
+#define DEBUG_PLOT
 //****** 线程使能 *****
 #define SHORT_CAMERA_ENABLE 0
 #define LONG_CAMERA_ENABLE  0
-//#define GET_STM32_THREAD
+#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
 
 //****** 装甲板识别配置 *****

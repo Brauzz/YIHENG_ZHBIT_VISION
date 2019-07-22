@@ -61,7 +61,10 @@ public:
 private:
     Mat image_;
     OtherParam other_param;
+    MainWindow *w_;
+
     bool end_thread_flag = false;
+    bool debug_enable_flag = false;
 };
 
 class GimbalDataProcess

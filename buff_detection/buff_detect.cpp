@@ -196,7 +196,7 @@ int8_t BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
         angle_y_*=0.8;
 
 #ifdef DEBUG_PLOT //0紫 1橙
-        w_->addPoint(distance_, 0);
+        w_->addPoint(direction_tmp, 0);
 //        w_->addPoint(angle_y_, 1);
         w_->plot();
 #endif
