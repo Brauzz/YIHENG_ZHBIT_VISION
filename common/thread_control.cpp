@@ -90,7 +90,11 @@ void ThreadControl::GetGimbal() //give up
     cout << " ------GIMBAL DATA RECEVICE TASK ON !!! ------ " << endl;
     GimbalDataProcess GimDataPro;
     serial_gimbal_data gim_rx_data_;    // 陀螺仪接受数据格式
-    float raw_gimbal_yaw, dst_gimbal_yaw;
+    float raw_gimbal_yaw, dst_gimbal_yaw = 0.0;
+    Predictor predictor(20);
+    double t_start = getTickCount();
+    double t_tmp = t_start;
+    float predict = 0.0;
     while(1)
     {
         while(static_cast<int>(gimbal_data_index - consumption_index) >= BUFFER_SIZE)
@@ -100,8 +104,20 @@ void ThreadControl::GetGimbal() //give up
         {
             GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
             float gimbal_data = dst_gimbal_yaw;
+            t_tmp = getTickCount();
+            predictor.setRecord(gimbal_data, (t_tmp - t_start)*1000/getTickFrequency());
+            predict = predictor.predict(((t_tmp - t_start)*1000/getTickFrequency())+100);
         }
+
         gimbal_data_index++;
+#ifdef DEBUG_PLOT
+        if(debug_enable_flag == true)
+        {
+            w_->addPoint(dst_gimbal_yaw,0);
+            w_->addPoint(predict, 1);
+            w_->plot();
+        }
+#endif
         END_THREAD;
     }
 }

@@ -53,7 +53,7 @@ float ZeYuPredict::run_position(float gim_angle)
 //        v = 0;
 //    }
 //    std::cout << v << std::endl;
-    predict = xkf.at<float>(0,0) + v * pre_delta;
+    predict = xkf.at<float>(0,0);
     po = (I - kg * H) * po_pre;
     return predict;
 }
@@ -90,5 +90,73 @@ void ZeYuPredict::ClearFilters()
     kg = (Mat_<float>(2,1)<< 0,0);
     xkf = (Mat_<float>(2,1)<< 0,0);
     predict = 0;
+}
+
+
+// https://blog.csdn.net/weixin_44344462/article/details/88850409
+bool Predictor::setRecord(double value, double time){
+    if (history_value.size() < history_size){
+        history_time.push_back(time);
+        history_value.push_back(value);
+    }
+    else {
+        history_time.push_back(time);
+        history_value.push_back(value);
+        history_time.pop_front();
+        history_value.pop_front();
+    }
+}
+
+double Predictor::predict(double time){
+    std::list<double>::const_iterator it_in = history_time.begin();
+    double latest_value = history_value.back();
+//    if(abs(latest_value) < 5.0 || history_value.size() < history_size)
+//        return latest_value;
+//    if(history_time.back() - *it_in > 150.0)
+//        return latest_value;
+    std::list<double>::const_iterator it_out = history_value.begin();
+    std::list<double>::const_iterator prev_out = it_out;
+    double max_o = -500000, min_o = 500000;
+//    for(std::list<double>::const_iterator it = it_out, it_i = it_in; it != history_value.end(); ++it, ++it_i){
+//        if(max_o < *it)
+//            max_o = *it;
+//        if(min_o > *it)
+//            min_o = *it;
+//        if(abs(*it - *prev_out) > 5.0){
+//            return latest_value;
+//        }
+//        prev_out = it;
+//        //printf("(%2f,%2f) ", *it, *it_i);
+//    }
+   // printf("\n");
+//    if (max_o - min_o < 3.0)      // angle gap must lager than 3 degree
+//        return latest_value;
+
+    Mat A(history_size,3,CV_64F);
+    Mat b(history_size,1,CV_64F);
+    double * b_data = (double *) b.data;
+    double * A_data = (double *) A.data;
+    // Ａ矩阵 Ｂ矩阵赋值
+    for (; it_in != history_time.end(); ++A_data, ++b_data, ++it_in, ++it_out){
+        *A_data = (*it_in-time) * (*it_in-time);
+        *(++A_data) = (*it_in-time);
+        *(++A_data) = 1;
+        *b_data = *it_out;
+    }
+    // 方程 a∗X2+b∗X+c=y
+    // 矩阵形式  A*w = b  =>  w = (A_t * A).inverse * b
+    Mat A_t = A.t();
+    Mat w = (A_t*A).inv()*A_t * b;
+    Mat q = (Mat_<double>(1,3) << 0, 0, 1);
+    Mat ret = q*w;
+
+    double predict_angel = ret.at<double>(0);
+    const double max_gap = 10.0;
+    if(predict_angel - latest_value > max_gap)
+        predict_angel = latest_value + max_gap;
+    else if(predict_angel - latest_value < -max_gap)
+        predict_angel = latest_value - max_gap;
+    return predict_angel;
+
 }
 

@@ -182,6 +182,8 @@ private:
     SolveAngle solve_angle_;
     SolveAngle solve_angle_long_;
     ZeYuPredict zeyu_predict_;
+    Predictor predict_;
+    double t_start_;
     MainWindow *w_;
 private:
     Rect last_target_;

@@ -158,7 +158,9 @@ ArmorDetector::ArmorDetector(SolveAngle solve_short, SolveAngle solve_long, ZeYu
     solve_angle_ = solve_short;
     solve_angle_long_ = solve_long;
     zeyu_predict_ = zeyu_predict;
-
+    Predictor predict(30);
+    predict_ = predict;
+    t_start_ = getTickCount();
 }
 
 Rect ArmorDetector::GetRoi(const Mat &img)
@@ -455,18 +457,23 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
         }
 #ifdef DEBUG_PLOT //0紫 1橙
         w_->addPoint(angle_x_, 0);
-        w_->addPoint(angle_y_, 1);
-        w_->plot();
+
 #endif
 #ifdef PREDICT
         protectDate(km_Qp_, km_Qv_, km_Rp_, km_Rv_, km_t_, km_pt_);
-        float pre_time = distance_/10000*static_cast<float>(km_pt_)+10.0f;
-        zeyu_predict_.setQRT(km_Qp_,km_Qv_,km_Rp_,km_t_,pre_time);
+//        float pre_time = distance_/10000*static_cast<float>(km_pt_)+10.0f;
+        zeyu_predict_.setQRT(km_Qp_,km_Qv_,km_Rp_,km_t_,km_pt_);
         float gim_and_pnp_angle_x = -other_param.gimbal_data + angle_x_;
         float predict_angle_x = zeyu_predict_.run_position(gim_and_pnp_angle_x);   // kalman滤波预测
+        double t_tmp = getTickCount();
+        double detla_t = (t_tmp - t_start_) * 1000 / getTickFrequency();
+        predict_.setRecord(predict_angle_x, detla_t);
+        predict_angle_x = predict_.predict(detla_t + 10);
         predict_angle_x += other_param.gimbal_data;
         angle_x_ = predict_angle_x;
 #endif
+        w_->addPoint(angle_x_, 1);
+        w_->plot();
         return 1;
 
     }else

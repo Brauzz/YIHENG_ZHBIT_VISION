@@ -12,13 +12,13 @@
 //****** 线程使能 *****
 #define SHORT_CAMERA_ENABLE 0
 #define LONG_CAMERA_ENABLE  0
-#define GET_STM32_THREAD
+//#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
 
 //****** 装甲板识别配置 *****
 #define DEBUG_ARMOR_DETECT
 #define ROI_ENABLE
-//#define PREDICT
+#define PREDICT
 //****** 能量机关识别信息 *****
 #define DEBUG_BUFF_DETECT
 
@@ -30,7 +30,7 @@
 //****** 外部驱动配置 *****
 #define SERIAL_PATH "/dev/stm32"
 #define SERIAL_BAUD B115200     // B115200 B921600
-#define GIMBAL_PATH "/dev/ttyUSB1"
+#define GIMBAL_PATH "/dev/ttyUSB0"
 #define GIMBAL_BAUD B921600
 #define CAMERA0_PATH "/dev/camera"
 #define CAMERA1_PATH "/dev/video1"
@@ -43,12 +43,12 @@ galaxy_1.xml"
 #define SET_ZEROS_GRAVITY
 //#define SIMPLE_SOLVE_ANGLE_FOR_ARMOR_DETECT
 //****** 笔记本调试相关参数 *****
-#define DEBUG_VIDEO 1
+#define DEBUG_VIDEO 0
 #define FORCE_CHANGE_CAMERA
 struct OtherParam
 {
     int8_t color = 1;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
-    int8_t mode = 1;        // 视觉模式，0是自瞄模式，1是能量机关模式
+    int8_t mode = 0;        // 视觉模式，0是自瞄模式，1是能量机关模式
     int8_t cap_mode = 1;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
     float gimbal_data;
 };
