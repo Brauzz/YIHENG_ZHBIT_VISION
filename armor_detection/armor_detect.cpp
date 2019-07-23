@@ -460,20 +460,44 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
 
 #endif
 #ifdef PREDICT
+        // 间隔时间计算
+        double t_tmp = getTickCount();
+        double delta_t = (t_tmp - t_start_)*1000/getTickFrequency();
+        t_start_ = t_tmp;
+
         protectDate(km_Qp_, km_Qv_, km_Rp_, km_Rv_, km_t_, km_pt_);
-//        float pre_time = distance_/10000*static_cast<float>(km_pt_)+10.0f;
+        //        float pre_time = distance_/10000*static_cast<float>(km_pt_)+10.0f;
         zeyu_predict_.setQRT(km_Qp_,km_Qv_,km_Rp_,km_t_,km_pt_);
         float gim_and_pnp_angle_x = -other_param.gimbal_data + angle_x_;
+        // 速度计算
+        float angle_v = (gim_and_pnp_angle_x - last_angle)/delta_t;
+        last_angle = gim_and_pnp_angle_x;
+        // 加速度计算
+#if(0)
+        float u = (last_v - last_last_v)/delta_t;
+        last_last_v = last_v;
+        last_v = angle_v;
+#else
+        float u = (angle_v - last_v)/delta_t;
+        last_v = angle_v;
+#endif
+
         float predict_angle_x = zeyu_predict_.run_position(gim_and_pnp_angle_x);   // kalman滤波预测
-        double t_tmp = getTickCount();
-        double detla_t = (t_tmp - t_start_) * 1000 / getTickFrequency();
-        predict_.setRecord(predict_angle_x, detla_t);
-        predict_angle_x = predict_.predict(detla_t + 10);
-        predict_angle_x += other_param.gimbal_data;
+//        float predict_angle_x = zeyu_predict_.run_position(gim_and_pnp_angle_x, angle_v);   // kalman加入速度滤波预测
+//        float predict_angle_x = zeyu_predict_.run_position(gim_and_pnp_angle_x, angle_v, u);   // kalman加入加速度滤波预测
+        // ------ 二次拟合数据 ------
+        //        double t_tmp = getTickCount();
+        //        double detla_t = (t_tmp - t_start_) * 1000 / getTickFrequency();
+        //        predict_.setRecord(predict_angle_x, detla_t);
+        //        predict_angle_x = predict_.predict(detla_t + 10);
+        //        predict_angle_x += other_param.gimbal_data;
+        // ------ 二次拟合数据 ------
         angle_x_ = predict_angle_x;
 #endif
+#ifdef DEBUG_PLOT //0紫 1橙
         w_->addPoint(angle_x_, 1);
         w_->plot();
+#endif
         return 1;
 
     }else

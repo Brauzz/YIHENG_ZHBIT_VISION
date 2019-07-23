@@ -170,6 +170,9 @@ public:
     int km_Rv_ = 1;
     int km_t_ = 1;
     int km_pt_ = 60;
+    float last_angle = 0;
+    float last_v = 0;
+    float last_last_v = 0;
 public:
     int short_offset_x_ = 120;
     int short_offset_y_ = 100;
