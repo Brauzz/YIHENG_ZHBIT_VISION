@@ -77,7 +77,7 @@ void armor::max_match(vector<LED_Stick>& LED,size_t i,size_t j){
     //    cout << L.angle << " "<< R.angle << endl;
     if(angle_8 < 1e-3f)
         angle_8 = 0.0f;
-    float f = error_angle + angle_8;
+    float f = error_angle + 0.5 * angle_8;
     if(!LED.at(i).matched && !LED.at(j).matched )
     {
 
@@ -183,14 +183,14 @@ Rect ArmorDetector::GetRoi(const Mat &img)
     else
     {
         float scale = 2;
-        if (lost_cnt_ < 3)
+        if (lost_cnt_ < 30)
             scale = 3;
-        else if(lost_cnt_ <= 6)
+        else if(lost_cnt_ <= 60)
             scale = 4;
-        else if(lost_cnt_ <= 12)
+        else if(lost_cnt_ <= 120)
             scale = 5;
 
-        int w = int(rect_tmp.width * 2*scale);
+        int w = int(rect_tmp.width * scale);
         int h = int(rect_tmp.height * scale);
         int x = int(rect_tmp.x - (w - rect_tmp.width)*0.5f);
         int y = int(rect_tmp.y - (h - rect_tmp.height)*0.5f);
@@ -329,8 +329,10 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
         dx = pow((final_armor_list.at(i).center.x - roi_center.x), 2.0f);
         dy = pow((final_armor_list.at(i).center.y - roi_center.y), 2.0f);
 #endif
-        if( dx + dy < dist)
+        if( dx + dy < dist){
             target = final_armor_list.at(i);
+            dist = dx + dy;
+        }
 #ifdef SHOW_DRAW_RECT
         final_armor_list.at(i).draw_rect(img, offset_roi_point);
 #endif
@@ -456,9 +458,9 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
 #endif
         }
 #ifdef DEBUG_PLOT //0紫 1橙
-        w_->addPoint(final_armor_type, 0);
+//        w_->addPoint(final_armor_type, 0);
 //        w_->addPoint(angle_y_, 1);
-        w_->plot();
+//        w_->plot();
 #endif
 #ifdef PREDICT
         // 间隔时间计算
