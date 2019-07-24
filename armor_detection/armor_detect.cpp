@@ -408,7 +408,6 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
 int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
 {
     //    double t1 = getTickCount();
-    float theta_y = 0;
     // 取外部参数的值
     color_ = other_param.color;
     cap_mode_ = other_param.cap_mode;
@@ -441,8 +440,9 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
         {
 #ifdef SIMPLE_SOLVE_ANGLE_FOR_ARMOR_DETECT
             short_simple_solve.getAngle(screen_point.x, screen_point.y, dh, angle_x_, angle_y_, distance_);
-            solve_angle_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
+
 #else
+            solve_angle_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
             solve_angle_.getAngle(points_2d_, 15,angle_x_,angle_y_,distance_);   // pnp姿态结算
 #endif
         }
@@ -456,8 +456,9 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
 #endif
         }
 #ifdef DEBUG_PLOT //0紫 1橙
-        w_->addPoint(angle_x_, 0);
-
+        w_->addPoint(final_armor_type, 0);
+//        w_->addPoint(angle_y_, 1);
+        w_->plot();
 #endif
 #ifdef PREDICT
         // 间隔时间计算
@@ -493,10 +494,6 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
         //        predict_angle_x += other_param.gimbal_data;
         // ------ 二次拟合数据 ------
         angle_x_ = predict_angle_x;
-#endif
-#ifdef DEBUG_PLOT //0紫 1橙
-        w_->addPoint(angle_x_, 1);
-        w_->plot();
 #endif
         return 1;
 
