@@ -135,7 +135,7 @@ void ThreadControl::GetSTM32()
     bool color = 0;
     int cnt=0;
     while(1){
-        while(static_cast<int>(gimbal_data_index - consumption_index) >= 1)
+        while(static_cast<int>(gimbal_data_index - consumption_index) >= BUFFER_SIZE)
             END_THREAD;
 
         serial_.read_data(&rx_data, mode, color, raw_gimbal_yaw);
@@ -162,8 +162,9 @@ void ThreadControl::ImageProcess()
 {
     cout << " ------ IMAGE PROCESS TASK ON !!! ------" << endl;
     // 角度结算类声明
-    SolveAngle solve_angle(CAMERA0_FILEPATH, 57, 47.5f, -111.37f, 0);
-    SolveAngle solve_angle_long(CAMERA1_FILEPATH, 0, 40.7f, -123, 0);
+    SolveAngle solve_angle(CAMERA0_FILEPATH, SHOR_X, SHOR_Y, SHOR_Z, PTZ_TO_BARREL);
+    SolveAngle solve_angle_long(CAMERA1_FILEPATH, LONG_X, LONG_Y, LONG_Z, PTZ_TO_BARREL);
+
 
     // 预测类声明
     ZeYuPredict zeyu_predict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);

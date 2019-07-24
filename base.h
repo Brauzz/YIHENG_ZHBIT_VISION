@@ -18,13 +18,14 @@
 //****** 装甲板识别配置 *****
 #define DEBUG_ARMOR_DETECT
 #define ROI_ENABLE
-#define PREDICT
+//#define PREDICT
+
 //****** 能量机关识别信息 *****
 #define DEBUG_BUFF_DETECT
 
 //****** 摄像头信息 *****
 #define VIDEO_WIDTH 640
-#define VIDEO_HEIGHT 360q
+#define VIDEO_HEIGHT 360
 #define BUFFER_SIZE 1
 
 //****** 外部驱动配置 *****
@@ -42,6 +43,15 @@ galaxy_1.xml"
 //****** 角度解算配置 *****
 #define SET_ZEROS_GRAVITY
 //#define SIMPLE_SOLVE_ANGLE_FOR_ARMOR_DETECT
+// 摄像头坐标系到云台坐标系
+#define SHOR_X 57.0f
+#define SHOR_Y 47.5f
+#define SHOR_Z -111.37f
+#define LONG_X 0.0f
+#define LONG_Y 40.7f
+#define LONG_Z -123.0f
+#define PTZ_TO_BARREL 0.0f   // 补兵激光在２３ｍｍ下方
+
 //****** 笔记本调试相关参数 *****
 #define DEBUG_VIDEO 0
 #define FORCE_CHANGE_CAMERA
