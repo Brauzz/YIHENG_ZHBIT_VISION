@@ -144,6 +144,12 @@ void ThreadControl::GetSTM32()
         GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
         float gimbal_data = dst_gimbal_yaw;
         other_param.gimbal_data = gimbal_data;
+
+        if((gimbal_data_index%50)==0)
+        {
+            printf("Id: %d, Mode: %d, Color: %d\r\n", gimbal_data_index, mode, color);
+        }
+
 #ifdef DEBUG_PLOT
         if(debug_enable_flag == true)
         {
@@ -279,9 +285,9 @@ void ThreadControl::ImageProcess()
         armor_detector.getAngle(angle_x, angle_y);
 #endif
 
-        limit_angle(angle_x, 5);
+        limit_angle(angle_x, 90);
 #ifdef GET_STM32_THREAD
-        tx_data.get_xy_data(-angle_x*100, -angle_y*100,find_flag);
+        tx_data.get_xy_data(-angle_x*32767/90, -angle_y*32767/90,find_flag);
         serial_.send_data(tx_data);
 #endif
 

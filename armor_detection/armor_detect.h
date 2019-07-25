@@ -188,6 +188,7 @@ private:
     Predictor predict_;
     double t_start_;
     MainWindow *w_;
+    Kalman1 kalman;
 private:
     Rect last_target_;
     int lost_cnt_ = 0;
