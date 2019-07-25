@@ -144,6 +144,12 @@ void ThreadControl::GetSTM32()
         GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
         float gimbal_data = dst_gimbal_yaw;
         other_param.gimbal_data = gimbal_data;
+
+        if((gimbal_data_index%50)==0)
+        {
+            printf("Id: %d, Mode: %d, Color: %d\r\n", gimbal_data_index, mode, color);
+        }
+
 #ifdef DEBUG_PLOT
         if(debug_enable_flag == true)
         {
