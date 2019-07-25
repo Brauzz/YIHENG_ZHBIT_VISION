@@ -135,7 +135,8 @@ bool armor::is_suitable_size(void) const
     {
         float armor_width = fabs(Led_stick[0].rect.center.x - Led_stick[1].rect.center.x);
         if(armor_width > Led_stick[0].rect.size.width
-                && armor_width > Led_stick[1].rect.size.width)
+                && armor_width > Led_stick[1].rect.size.width
+                && armor_width > (Led_stick[0].rect.size.width+Led_stick[1].rect.size.width)*3)
         {
             float h_max = (Led_stick[0].rect.size.height + Led_stick[1].rect.size.height)/2.0f;
             // 两个灯条高度差不大
@@ -293,7 +294,7 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
                 if(arm_tmp.is_suitable_size())
                 {
                     // TODO(cz): 推荐使用255值的面积进行判断
-                    if(arm_tmp.get_average_intensity(gray)< 150 )
+                    if(arm_tmp.get_average_intensity(gray)< 50 )
                     {
                         arm_tmp.max_match(LED_Stick_v, i, j);
                     }
@@ -457,6 +458,8 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
             solve_angle_long_.getAngle(points_2d_, 15,angle_x_, angle_y_ ,distance_);   // pnp姿态结算
 #endif
         }
+        angle_x_ = kalman.run(angle_x_);
+
 #ifdef DEBUG_PLOT //0紫 1橙
 //        w_->addPoint(final_armor_type, 0);
 //        w_->addPoint(angle_y_, 1);
