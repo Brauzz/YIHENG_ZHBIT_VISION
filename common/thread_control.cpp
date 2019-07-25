@@ -279,9 +279,9 @@ void ThreadControl::ImageProcess()
         armor_detector.getAngle(angle_x, angle_y);
 #endif
 
-        limit_angle(angle_x, 5);
+        limit_angle(angle_x, 90);
 #ifdef GET_STM32_THREAD
-        tx_data.get_xy_data(-angle_x*100, -angle_y*100,find_flag);
+        tx_data.get_xy_data(-angle_x*32767/90, -angle_y*32767/90,find_flag);
         serial_.send_data(tx_data);
 #endif
 
