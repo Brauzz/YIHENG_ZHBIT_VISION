@@ -229,7 +229,8 @@ void ThreadControl::ImageProcess()
             ++consumption_index;
 
             find_flag = buff_detector.BuffDetectTask(image, other_param);
-            if(find_flag){
+            if(find_flag)
+            {
                 buff_detector.getAngle(angle_x, angle_y);
                 distance = buff_detector.getDistance();
             }

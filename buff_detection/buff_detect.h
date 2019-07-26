@@ -32,7 +32,9 @@ using namespace std;
 #endif
 
 typedef enum{UNKOWN,INACTION,ACTION}ObjectType;
+typedef enum{restore_center,follow,shoot}mode_buff;
 
+static int target_size=0;
 /**
  * @brief 矩形类物体属性
  * 在逻辑识别部分需要修改原有旋转矩形属性
@@ -71,12 +73,13 @@ class AutoAttack
 {
 public:
     AutoAttack(){}
-    int8_t run(bool find_target_flag, bool is_new_target, float angle_x, float angle_y);
+    int8_t run(bool find_target_flag, float angle_x, float angle_y,int target_size);
 private:
-    int8_t mode_ = 1; // 1wait 2track 3shoot
-    int lost_cnt_ = 0;
-    int prepare_shoot_cnt = 0;
-    double t1_;
+    int control_=restore_center;
+    int8_t buff_mode;
+    int t_tocul=0;
+    int8_t move_static; //0=little; 1=big
+    int restore_count=0;
 };
 
 double calcDistanceFor2Point(Point2f p1, Point2f p2);

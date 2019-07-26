@@ -8,7 +8,7 @@
 #define WAITKEY 1
 #define IMAGESHOW
 #define GALAXY
-//#define DEBUG_PLOT
+#define DEBUG_PLOT
 //****** 线程使能 *****
 #define SHORT_CAMERA_ENABLE 0
 #define LONG_CAMERA_ENABLE  0
@@ -24,7 +24,7 @@
 
 //****** 摄像头信息 *****
 #define VIDEO_WIDTH 640
-#define VIDEO_HEIGHT 360q
+#define VIDEO_HEIGHT 360
 #define BUFFER_SIZE 1
 
 //****** 外部驱动配置 *****

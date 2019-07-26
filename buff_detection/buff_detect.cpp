@@ -39,10 +39,10 @@ bool BuffDetector::DetectBuff(Mat& img)
     Mat binary_color_img;
     double th = threshold(result_img, binary_color_img, 50, 255, CV_THRESH_BINARY|CV_THRESH_OTSU);
     if(th-25>0)
-    threshold(result_img, binary_color_img, th-25, 255, CV_THRESH_BINARY);
-//        Mat element = getStructuringElement(MORPH_RECT, Size(5,5));
-//        morphologyEx(binary_color_img,binary_color_img,MORPH_CLOSE,element);
-//        dilate(img, img, element);
+        threshold(result_img, binary_color_img, th-25, 255, CV_THRESH_BINARY);
+    //        Mat element = getStructuringElement(MORPH_RECT, Size(5,5));
+    //        morphologyEx(binary_color_img,binary_color_img,MORPH_CLOSE,element);
+    //        dilate(img, img, element);
 #ifdef DEBUG_BUFF_DETECT
     imshow("mask", binary_color_img);
 #endif
@@ -59,8 +59,8 @@ bool BuffDetector::DetectBuff(Mat& img)
     {
         // 用于超预测时比例扩展时矩形的判断
         if(hierarchy[i][3]<0){
-        Rect rect = boundingRect(contours[i]);
-        vec_color_rect.push_back(rect);
+            Rect rect = boundingRect(contours[i]);
+            vec_color_rect.push_back(rect);
         }
         // 用于寻找小轮廓，没有父轮廓的跳过, 以及不满足6点拟合椭圆
         if(hierarchy[i][3]<0 || contours[i].size() < 6)
@@ -107,7 +107,7 @@ bool BuffDetector::DetectBuff(Mat& img)
         }
     }
     // 遍历所有结果并处理\选择需要击打的目标
-    // TODO(cz): 超预测写了一版基础，未加入识别到5个激活目标后再进入超预测的逻辑，仅供参考
+    //     TODO(cz): 超预测写了一版基础，未加入识别到5个激活目标后再进入超预测的逻辑，仅供参考
     Object final_target;
     bool find_flag = false;
     bool do_you_find_inaction = true;  // 你需要击打的能量机关类型 1(true)击打未激活 0(false)击打激活
@@ -140,8 +140,8 @@ bool BuffDetector::DetectBuff(Mat& img)
             bool is_contain = false;
             for(int j=0; j < vec_color_rect.size(); j++)
             {
-//                Object other_object_tmp = vec_target.at(j);
-//                Rect bound_rect_tmp = other_object_tmp.big_rect_.boundingRect();
+                //                Object other_object_tmp = vec_target.at(j);
+                //                Rect bound_rect_tmp = other_object_tmp.big_rect_.boundingRect();
                 Rect bound_rect_tmp = vec_color_rect.at(j);
                 rectangle(img, bound_rect_tmp, Scalar(255,0,255));
                 if(bound_rect_tmp.contains(object_tmp.test_point_)==true)
@@ -154,15 +154,15 @@ bool BuffDetector::DetectBuff(Mat& img)
             if(is_contain == false)
             {
 #ifdef DEBUG_PUT_TEST_TARGET
-                 putText(img, "<<---attack here", Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+                putText(img, "<<---attack here", Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 #endif
-                 final_target = object_tmp;
+                final_target = object_tmp;
                 find_flag = true;
                 break;
             }
         }
 
-//        putText(img, to_string(object_tmp.angle_), Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+        //        putText(img, to_string(object_tmp.angle_), Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
     }
 #ifdef DEBUG_DRAW_TARGET
     if(find_flag)
@@ -197,7 +197,7 @@ int8_t BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 
 #ifdef DEBUG_PLOT //0紫 1橙
         w_->addPoint(distance_, 0);
-//        w_->addPoint(angle_y_, 1);
+        //        w_->addPoint(angle_y_, 1);
         w_->plot();
 #endif
         return 1;
@@ -255,8 +255,9 @@ void Object::UpdateOrder()
         points_2d_.push_back(points[2]);points_2d_.push_back(points[3]);
         points_2d_.push_back(points[0]);points_2d_.push_back(points[1]);
     }
-
 }
+
+
 
 
 void Object::UpdataPredictPoint()
@@ -264,7 +265,7 @@ void Object::UpdataPredictPoint()
     float length_scale;
     float width_scale = width_scale_;
     if(direction_ < 0){
-       length_scale = -length_scale_;
+        length_scale = -length_scale_;
     }else
     {
         length_scale = length_scale_;
@@ -277,14 +278,115 @@ void Object::UpdataPredictPoint()
         test_point_.x = 640;
     else if(test_point_.x < 0)
         test_point_.x = 0;
-    if(test_point_.y > 360)
+    if(test_point_.y > 360)  //industrial 480
         test_point_.y = 360;
     else if(test_point_.y < 0)
         test_point_.y = 0;
 }
-
 float Point_distance(Point2f p1,Point2f p2)
 {
     float Dis=pow(pow((p1.x-p2.x),2)+pow((p1.y-p2.y),2),0.5);
     return Dis;
 }
+
+int8_t AutoAttack::run(bool find_target_flag,float angle_x,float angle_y,int target_size)
+{
+    if(find_target_flag)
+    {
+        if(move_static==0)
+        {
+            control_=0;
+        }
+        else if(move_static==1)
+        {
+            if(target_size<4 || target_size ==5)
+            {
+                control_=0;
+            }
+            else if(target_size==4)
+            {
+                control_=1;
+            }
+        }
+
+    }
+
+    switch (control_)
+    {
+    case 0:
+        if(find_target_flag)
+        {
+            if(fabs(angle_x) > 0.8f || fabs(angle_y) > 1.0f) // still not stable, wait
+            {
+                buff_mode=follow;
+                t_tocul=0;
+            }
+            else if(fabs(angle_x) < 0.8f && fabs(angle_y) < 1.0f)
+            {
+                if(t_tocul==0) //stable, shoot
+                {
+                    buff_mode=shoot;
+                    t_tocul++;
+                }
+                else if(t_tocul>0 && t_tocul <20) //only shoot once, then wait
+                {
+                    t_tocul++;
+                    buff_mode=follow;
+                }
+                else if(t_tocul>20)  // when out of the time, back to center
+                {
+                    t_tocul=0;
+                }
+            }
+        }
+        else if(find_target_flag==0) // if don't find the target, back to center
+        {
+            buff_mode=restore_center;
+        }
+        break;
+
+    case 1:
+        if(find_target_flag)
+        {
+            if(fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count==0)
+            {
+                buff_mode=restore_center;
+                ++restore_count;
+            }
+            else if (fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count!=0)
+            {
+                if(fabs(angle_x) > 0.8f || fabs(angle_y) > 1.0f)
+                {
+                    buff_mode=follow;
+                    t_tocul=0;
+                }
+                else if(fabs(angle_x) < 0.8f && fabs(angle_y) < 1.0f)
+                {
+                    restore_count=0;
+                    if(t_tocul==0)
+                    {
+                        buff_mode=shoot;
+                        t_tocul++;
+                    }
+                    else if(t_tocul>0 && t_tocul <20)
+                    {
+                        t_tocul++;
+                        buff_mode=follow;
+                    }
+                    else if(t_tocul>20)
+                    {
+                        t_tocul=0;
+                    }
+                }
+            }
+            else if(find_target_flag==0) // if don't find the target, back to center
+            {
+                buff_mode=restore_center;
+            }
+        }
+
+        break;
+    }
+    return buff_mode;
+}
+
