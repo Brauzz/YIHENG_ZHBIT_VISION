@@ -38,19 +38,22 @@ public:
 
 class BaseDetector{
 public:
-    BaseDetector(){}
-    BaseDetector(SolveAngle solve_angle){
-        solve_angle_ = solve_angle;
+    BaseDetector(){
+        solve_angle_ = SolveAngle(CAMERA1_FILEPATH, LONG_X, LONG_Y, LONG_Z, PTZ_TO_BARREL);
     }
     ~BaseDetector(){}
-    Mat setImage(const cv::Mat &src);
-    bool detectBase(Mat &img);
+
     int8_t BaseDetectTask(Mat &img);
     void getAngle(float &yaw, float &pitch)
     {
         yaw = angle_x_;
         pitch = angle_y_;
     }
+
+private:
+    Mat setImage(const cv::Mat &src);
+    bool detectBase(Mat &img);
+
 private:
     bool makeRectSafe(cv::Rect & rect, cv::Size size){
         if (rect.x < 0)

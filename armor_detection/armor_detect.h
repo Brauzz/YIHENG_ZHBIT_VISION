@@ -84,8 +84,13 @@ public:
 class ArmorDetector
 {
 public:
-    ArmorDetector(){}
-    ArmorDetector(SolveAngle solve_short, SolveAngle solve_long, ZeYuPredict zeyu_predict);
+    ArmorDetector(){
+        solve_angle_ = SolveAngle(CAMERA0_FILEPATH, SHOR_X, SHOR_Y, SHOR_Z, PTZ_TO_BARREL);
+        solve_angle_long_ = SolveAngle(CAMERA1_FILEPATH, LONG_X, LONG_Y, LONG_Z, PTZ_TO_BARREL);
+        predict_ = Predictor(30);
+        zeyu_predict_ = ZeYuPredict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
+        t_start_ = getTickCount();
+    }
     ~ArmorDetector(){}
     void DebugPlotInit(MainWindow *w){
         w_ = w;
@@ -100,6 +105,29 @@ public:
      */
     bool chooseCamera(int short_distance, int long_distance, bool last_mode);
 
+
+    /**
+     * @brief ArmorDetectTask 自瞄任务函数（识别，角度解算）
+     * @param img
+     * @param other_param 其他参数，其中使用到color颜色和cap_mode摄像头类型
+     * @return 返回命令 0没发现 1发现
+     */
+    int ArmorDetectTask(Mat &img, OtherParam other_param);
+    void DrawTarget(Mat &img)
+    {
+        if(!points_2d_.empty())
+        {
+            line(img, points_2d_[0],points_2d_[2],Scalar(255,100,0), 3);
+            line(img, points_2d_[1],points_2d_[3],Scalar(255,100,0), 3);
+        }
+    }
+    void getAngle(float &yaw, float &pitch)
+    {
+        yaw = angle_x_;
+        pitch = angle_y_;
+    }
+
+private:
     /**
      * @brief GetRoi 获取图像ROI区域
      * @param img
@@ -127,27 +155,6 @@ public:
      * @return
      */
     bool DetectArmor(Mat &img, Rect roi_rect);
-    /**
-     * @brief ArmorDetectTask 自瞄任务函数（识别，角度解算）
-     * @param img
-     * @param other_param 其他参数，其中使用到color颜色和cap_mode摄像头类型
-     * @return 返回命令 0没发现 1发现
-     */
-    int ArmorDetectTask(Mat &img, OtherParam other_param);
-    void DrawTarget(Mat &img)
-    {
-        if(!points_2d_.empty())
-        {
-            line(img, points_2d_[0],points_2d_[2],Scalar(255,100,0), 3);
-            line(img, points_2d_[1],points_2d_[3],Scalar(255,100,0), 3);
-        }
-    }
-    void getAngle(float &yaw, float &pitch)
-    {
-        yaw = angle_x_;
-        pitch = angle_y_;
-    }
-
     /**
      * @brief 装甲板类型确定
      * 通过检测历史数据判断装甲板类型，大装甲板和小装甲板

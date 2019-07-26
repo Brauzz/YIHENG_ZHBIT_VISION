@@ -154,16 +154,6 @@ bool armor::is_suitable_size(void) const
 }
 
 
-ArmorDetector::ArmorDetector(SolveAngle solve_short, SolveAngle solve_long, ZeYuPredict zeyu_predict)
-{
-    solve_angle_ = solve_short;
-    solve_angle_long_ = solve_long;
-    zeyu_predict_ = zeyu_predict;
-    Predictor predict(30);
-    predict_ = predict;
-    t_start_ = getTickCount();
-}
-
 Rect ArmorDetector::GetRoi(const Mat &img)
 {
     Size img_size = img.size();
@@ -461,9 +451,9 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
         angle_x_ = kalman.run(angle_x_);
 
 #ifdef DEBUG_PLOT //0紫 1橙
-//        w_->addPoint(final_armor_type, 0);
-//        w_->addPoint(angle_y_, 1);
-//        w_->plot();
+        w_->addPoint(final_armor_type, 0);
+        w_->addPoint(angle_y_, 1);
+        w_->plot();
 #endif
 #ifdef PREDICT
         // 间隔时间计算
