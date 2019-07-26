@@ -236,10 +236,12 @@ int BuffDetector::getDirection(float angle)
     sum /= history_.size();
     //        cout << "sum " << sum << endl;
 
-    if(sum >= 0)
-        return 0;   // shun
+    if(sum >= 0.5)
+        return 1;   // shun
+    else if(sum <= 0.5)
+        return -1;   // ni
     else
-        return 1;   // ni
+        return 0;
 }
 
 
