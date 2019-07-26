@@ -16,8 +16,10 @@
  ***************************************************************************/
 #include "buff_detect.h"
 
-bool BuffDetector::DetectBuff(Mat& img)
+bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 {
+
+    float diff_data=fabs(other_param.gimbal_data-26);
     // **预处理** -图像进行相应颜色的二值化
     GaussianBlur(img, img, Size(3,3),0);
     points_2d.clear();
@@ -99,23 +101,31 @@ bool BuffDetector::DetectBuff(Mat& img)
             object.UpdataPredictPoint();
             circle(img , object.test_point_, 3, Scalar(22,255,25));
             vec_target.push_back(object);
+            if(diff_data<2)
+            {
+                target_size=vec_target.size();
+            }
         }
     }
     // 遍历所有结果并处理\选择需要击打的目标
     //     TODO(cz): 超预测写了一版基础，未加入识别到5个激活目标后再进入超预测的逻辑，仅供参考
     Object final_target;
     bool find_flag = false;
-    bool do_you_find_inaction = true;  // 你需要击打的能量机关类型 1(true)击打未激活 0(false)击打激活
+    if(target_size==4 && move_static==1)
+    {
+        do_you_find_inaction+=1;
+    }
+    // 你需要击打的能量机关类型 1(true)击打未激活 0(false)击打激活
     for(int i=0; i < vec_target.size(); i++)
     {
         Object object_tmp = vec_target.at(i);
-        if(do_you_find_inaction)
+        if(do_you_find_inaction==0)
         {
             // 普通模式击打未激活机关
             if(object_tmp.type_ == INACTION)
             {
 #ifdef DEBUG_PUT_TEST_TARGET
-                putText(img, /*"<<---attack here"*/to_string(object_tmp.angle_), Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+                putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 #endif
                 final_target = object_tmp;
                 points_2d = final_target.points_2d_;
@@ -129,7 +139,7 @@ bool BuffDetector::DetectBuff(Mat& img)
                 find_flag = true;
                 break;
             }
-        }else
+        }else if(do_you_find_inaction>=1)
         {
             // 超预测模式击打目标选择
             bool is_contain = false;
@@ -143,15 +153,15 @@ bool BuffDetector::DetectBuff(Mat& img)
                 {
                     is_contain = true;
                     break;
-
                 }
             }
             if(is_contain == false)
             {
 #ifdef DEBUG_PUT_TEST_TARGET
-                putText(img, "<<---attack here", Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+                putText(img, "<<---attack advance here", Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 #endif
                 final_target = object_tmp;
+                points_2d=final_target.points_2d_;
                 find_flag = true;
                 break;
             }
@@ -169,7 +179,8 @@ bool BuffDetector::DetectBuff(Mat& img)
 int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 {
     color_ = other_param.color;
-    bool find_flag = DetectBuff(img);
+    gimbal=other_param.gimbal_data;
+    bool find_flag = DetectBuff(img,other_param);
     if(find_flag)
     {
         bool direction_tmp = getDirection(buff_angle_);
@@ -189,6 +200,8 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
         float distance;
         solve_angle_long_.getBuffAngle(points_2d, 28.5, buff_angle_, angle_x_, angle_y_, distance_);
         angle_y_*=0.8;
+
+        attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,move_static);
 
 #ifdef DEBUG_PLOT //0紫 1橙
         w_->addPoint(distance_, 0);
@@ -339,12 +352,14 @@ int AutoAttack::run(bool find_target_flag,float angle_x,float angle_y,int target
         break;
 
     case 1:
+        float diff=fabs(gimbal-20);
         if(find_target_flag)
         {
-            if(fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count==0)
+            if(fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count==0 )
             {
                 buff_mode=restore_center;
-                ++restore_count;
+                    ++restore_count;
+
             }
             else if (fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count!=0)
             {
@@ -366,8 +381,13 @@ int AutoAttack::run(bool find_target_flag,float angle_x,float angle_y,int target
                         t_tocul++;
                         buff_mode=follow;
                     }
-                    else if(t_tocul>20)
+                    else if(t_tocul>20 && diff>2)
                     {
+                        buff_mode=restore_center;
+                    }
+                    else if(t_tocul>20 && diff <2)
+                    {
+                        buff_mode=restore_center;
                         t_tocul=0;
                     }
                 }

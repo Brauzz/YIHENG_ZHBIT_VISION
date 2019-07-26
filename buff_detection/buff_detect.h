@@ -77,8 +77,7 @@ public:
 private:
     int control_=restore_center;
     int8_t buff_mode;
-    int t_tocul=0;
-    int8_t move_static; //0=little; 1=big
+    int t_tocul=0; //0=little; 1=big
     int restore_count=0;
 };
 
@@ -118,7 +117,7 @@ public:
     int getDirection(float angle);
 
 private:
-    bool DetectBuff(Mat& img);
+    bool DetectBuff(Mat& img, OtherParam other_param);
     void setFilter(size_t buff_size, float filter_angle_threshold){
         history_size_=buff_size;
         max_filter_value_=filter_angle_threshold;
@@ -127,6 +126,7 @@ private:
 
 private:
     int color_;
+    float gimbal;
 public:
     int buff_offset_x_ = 115;
     int buff_offset_y_ = 92;
@@ -135,7 +135,10 @@ public:
     int color_th_ = 50;
     int gray_th_ = 50;
     float buff_angle_ = 0;
-
+    AutoAttack attack;
+    int target_size;
+    int move_static;
+    int do_you_find_inaction=0;
 private:
     SolveAngle solve_angle_long_;
     AutoAttack auto_attack;
