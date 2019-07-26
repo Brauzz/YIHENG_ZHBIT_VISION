@@ -167,14 +167,7 @@ void ThreadControl::GetSTM32()
 void ThreadControl::ImageProcess()
 {
     cout << " ------ IMAGE PROCESS TASK ON !!! ------" << endl;
-    // 角度结算类声明
-    SolveAngle solve_angle(CAMERA0_FILEPATH, SHOR_X, SHOR_Y, SHOR_Z, PTZ_TO_BARREL);
-    SolveAngle solve_angle_long(CAMERA1_FILEPATH, LONG_X, LONG_Y, LONG_Z, PTZ_TO_BARREL);
-
-
-    // 预测类声明
-    ZeYuPredict zeyu_predict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
-    ArmorDetector armor_detector(solve_angle, solve_angle_long, zeyu_predict);
+    ArmorDetector armor_detector;
 #ifdef DEBUG_PLOT
     int argc;char **argv = nullptr;
     QApplication a(argc, argv);
@@ -187,7 +180,7 @@ void ThreadControl::ImageProcess()
 #endif
 
 #if(ROBOT_TYPE == INFANTRY)
-    BuffDetector buff_detector(solve_angle_long);
+    BuffDetector buff_detector;
 #ifdef DEBUG_PLOT
     buff_detector.DebugPlotInit(&w);
 #endif

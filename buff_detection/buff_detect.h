@@ -89,30 +89,38 @@ double calcDistanceFor2Point(Point2f p1, Point2f p2);
 class BuffDetector
 {
 public:
-    BuffDetector(){}
-    BuffDetector(SolveAngle solve_angle);
+    BuffDetector(){
+        solve_angle_long_ = SolveAngle(CAMERA1_FILEPATH, LONG_X, LONG_Y, LONG_Z, PTZ_TO_BARREL);
+    }
     ~BuffDetector(){}
     void DebugPlotInit(MainWindow *w){
         w_ = w;
     }
-    bool DetectBuff(Mat& img);
+
     int8_t BuffDetectTask(Mat& img, OtherParam param);
     void getAngle(float &yaw, float &pitch){
         yaw = angle_x_;
         pitch = angle_y_;
     }
-    float getDistance(){
-        return distance_;
-    }
+
     /**
      * @brief 辨别能量机关旋转方向
      * 根据每次识别得到的角度进行滤波，判断能量机关旋转方向
      */
+    float getDistance(){
+        return distance_;
+    }
+
+
+    int8_t getDirection(float angle);
+
+private:
+    bool DetectBuff(Mat& img);
     void setFilter(size_t buff_size, float filter_angle_threshold){
         history_size_=buff_size;
         max_filter_value_=filter_angle_threshold;
     }
-    int8_t getDirection(float angle);
+
 
 private:
     int color_;

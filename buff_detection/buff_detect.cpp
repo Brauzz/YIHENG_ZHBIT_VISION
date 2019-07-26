@@ -16,11 +16,6 @@
  ***************************************************************************/
 #include "buff_detect.h"
 
-BuffDetector::BuffDetector(SolveAngle solve_angle)
-{
-    solve_angle_long_ = solve_angle;
-}
-
 bool BuffDetector::DetectBuff(Mat& img)
 {
     // **预处理** -图像进行相应颜色的二值化
