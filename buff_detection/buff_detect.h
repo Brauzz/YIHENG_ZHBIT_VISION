@@ -155,3 +155,85 @@ private:
 };
 
 float Point_distance(Point2f p1,Point2f p2);
+
+#define DEFAULT -1
+#define FIRE 3
+#define RESET 6
+
+class AutoControl
+{
+  public:
+
+};
+
+class FireTask{
+    FireTask(){}
+public:
+    // 开火条件是当输出的角度趋近于０一段时间开火
+    int run(float current_yaw, float current_pit)
+    {
+        int command = DEFAULT;
+        if(current_yaw < limit_angle_x_
+                && current_pit < limit_anlge_y_)
+        {
+            // 满足小于一段时间计数
+            cnt ++;
+        }else {
+            // 不满足条件加速减时间
+            cnt -= 3;
+            if(cnt<0) cnt = 0;
+            // 获得一次开火的机会
+            shoot_chance = true;
+        }
+        // 控制发射条件
+        if(cnt > max_cnt_)
+        {
+            cnt = 0;
+            if(shoot_chance == true)
+            {
+                command = FIRE;
+                shoot_chance = 0;
+            }else {
+                command = DEFAULT;
+            }
+        }else{
+            command = DEFAULT;
+        }
+        return command;
+    }
+private:
+    int cnt = 0;
+    bool shoot_chance = true;
+
+    int max_cnt_ = 100;             // 满足条件次数
+    float limit_angle_x_ = 0.1f;    // 条件角度阈值
+    float limit_anlge_y_ = 0.1f;
+};
+
+class ResetTask{
+public:
+    ResetTask(){}
+    // 复位归中条件是，丢失目标超过几帧
+    int run(bool find_flag)
+    {
+        int command = DEFAULT;
+        if(find_flag = true){
+            cnt++;
+        }else{
+            cnt = 0;
+        }
+        // 判断归中条件
+        if(cnt > max_cnt_)
+        {
+            cnt = 0;
+            command = RESET;
+        }else{
+            command = DEFAULT;
+        }
+        return command;
+    }
+private:
+    int cnt = 0;
+    int max_cnt_ = 3;   // 最大丢失目标次数
+};
+
