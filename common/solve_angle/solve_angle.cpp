@@ -121,7 +121,15 @@ void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, 
 {
     // 姿态结算
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
-    tvec.at<double>(2,0)*=scale;
+    // 距离解算
+    float H = 800;
+    float h = 430;
+    float D = 7100;
+    float delta_h = H - h;
+    float buff_h = 800*sin(buff_angle *3.14/180)+800;
+    dist = sqrt(pow(delta_h+buff_h, 2) + pow(D, 2));
+
+    tvec.at<double>(2,0) = dist;
 
 
     // 坐标系转换 -摄像头坐标到云台坐标
@@ -133,19 +141,13 @@ void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, 
     Mat position_in_ptz;
     position_in_ptz = r_camera_ptz * tvec - t_camera_ptz;
 
-    // 距离解算
-    float H = 800;
-    float h = 430;
-    float D = 7100;
-    float delta_h = H - h;
-    float buff_h = 800*sin(buff_angle *3.14/180)+800;
-    dist = sqrt(pow(delta_h+buff_h, 2) + pow(D, 2));
+
 
     //计算子弹下坠补偿
     const double *_xyz = (const double *)position_in_ptz.data;
 
     // 计算角度
-    double xyz[3] = {_xyz[0], _xyz[1], _xyz[2]};
+    double xyz[3] = {_xyz[0], _xyz[1], dist};
 
     angle_x = static_cast<float>(atan2(xyz[0],xyz[2]));
     angle_x = static_cast<float>(angle_x) * 57.2957805f;
