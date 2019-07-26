@@ -90,7 +90,11 @@ void ThreadControl::GetGimbal() //give up
     cout << " ------GIMBAL DATA RECEVICE TASK ON !!! ------ " << endl;
     GimbalDataProcess GimDataPro;
     serial_gimbal_data gim_rx_data_;    // 陀螺仪接受数据格式
-    float raw_gimbal_yaw, dst_gimbal_yaw;
+    float raw_gimbal_yaw, dst_gimbal_yaw = 0.0;
+    Predictor predictor(20);
+    double t_start = getTickCount();
+    double t_tmp = t_start;
+    float predict = 0.0;
     while(1)
     {
         while(static_cast<int>(gimbal_data_index - consumption_index) >= BUFFER_SIZE)
@@ -100,8 +104,20 @@ void ThreadControl::GetGimbal() //give up
         {
             GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
             float gimbal_data = dst_gimbal_yaw;
+            t_tmp = getTickCount();
+            predictor.setRecord(gimbal_data, (t_tmp - t_start)*1000/getTickFrequency());
+            predict = predictor.predict(((t_tmp - t_start)*1000/getTickFrequency())+100);
         }
+
         gimbal_data_index++;
+#ifdef DEBUG_PLOT
+        if(debug_enable_flag == true)
+        {
+            w_->addPoint(dst_gimbal_yaw,0);
+            w_->addPoint(predict, 1);
+            w_->plot();
+        }
+#endif
         END_THREAD;
     }
 }
@@ -117,8 +133,9 @@ void ThreadControl::GetSTM32()
     float raw_gimbal_yaw, dst_gimbal_yaw;
     bool mode = 0;
     bool color = 0;
+    int cnt=0;
     while(1){
-        while(static_cast<int>(gimbal_data_index - consumption_index) >= 1)
+        while(static_cast<int>(gimbal_data_index - consumption_index) >= BUFFER_SIZE)
             END_THREAD;
 
         serial_.read_data(&rx_data, mode, color, raw_gimbal_yaw);
@@ -127,6 +144,19 @@ void ThreadControl::GetSTM32()
         GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
         float gimbal_data = dst_gimbal_yaw;
         other_param.gimbal_data = gimbal_data;
+
+        if((gimbal_data_index%50)==0)
+        {
+            printf("Id: %d, Mode: %d, Color: %d\r\n", gimbal_data_index, mode, color);
+        }
+
+#ifdef DEBUG_PLOT
+        if(debug_enable_flag == true)
+        {
+            w_->addPoint(cnt,0);
+            w_->plot();
+        }
+#endif
         gimbal_data_index++;
         END_THREAD;
     }
@@ -138,8 +168,9 @@ void ThreadControl::ImageProcess()
 {
     cout << " ------ IMAGE PROCESS TASK ON !!! ------" << endl;
     // 角度结算类声明
-    SolveAngle solve_angle(CAMERA0_FILEPATH, 57, 47.5f, -111.37f, 0);
-    SolveAngle solve_angle_long(CAMERA1_FILEPATH, 0, 40.7f, -123, 0);
+    SolveAngle solve_angle(CAMERA0_FILEPATH, SHOR_X, SHOR_Y, SHOR_Z, PTZ_TO_BARREL);
+    SolveAngle solve_angle_long(CAMERA1_FILEPATH, LONG_X, LONG_Y, LONG_Z, PTZ_TO_BARREL);
+
 
     // 预测类声明
     ZeYuPredict zeyu_predict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
@@ -149,14 +180,17 @@ void ThreadControl::ImageProcess()
     QApplication a(argc, argv);
     MainWindow w;
     w.show();
+    w_ = &w;
+    debug_enable_flag = true;
     armor_detector.DebugPlotInit(&w);
+
 #endif
 
 #if(ROBOT_TYPE == INFANTRY)
     BuffDetector buff_detector(solve_angle_long);
-   #ifdef DEBUG_PLOT
+#ifdef DEBUG_PLOT
     buff_detector.DebugPlotInit(&w);
-    #endif
+#endif
 #endif
     serial_transmit_data tx_data;       // 串口发送stm32数据结构
 
@@ -252,9 +286,9 @@ void ThreadControl::ImageProcess()
         armor_detector.getAngle(angle_x, angle_y);
 #endif
 
-        limit_angle(angle_x, 5);
+        limit_angle(angle_x, 90);
 #ifdef GET_STM32_THREAD
-        tx_data.get_xy_data(-angle_x*100, -angle_y*100,find_flag);
+        tx_data.get_xy_data(-angle_x*32767/90, -angle_y*32767/90,find_flag);
         serial_.send_data(tx_data);
 #endif
 

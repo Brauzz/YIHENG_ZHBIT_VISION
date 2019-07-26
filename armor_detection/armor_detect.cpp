@@ -77,7 +77,7 @@ void armor::max_match(vector<LED_Stick>& LED,size_t i,size_t j){
     //    cout << L.angle << " "<< R.angle << endl;
     if(angle_8 < 1e-3f)
         angle_8 = 0.0f;
-    float f = error_angle + angle_8;
+    float f = error_angle + 0.5 * angle_8;
     if(!LED.at(i).matched && !LED.at(j).matched )
     {
 
@@ -135,7 +135,8 @@ bool armor::is_suitable_size(void) const
     {
         float armor_width = fabs(Led_stick[0].rect.center.x - Led_stick[1].rect.center.x);
         if(armor_width > Led_stick[0].rect.size.width
-                && armor_width > Led_stick[1].rect.size.width)
+                && armor_width > Led_stick[1].rect.size.width
+                && armor_width > (Led_stick[0].rect.size.width+Led_stick[1].rect.size.width)*3)
         {
             float h_max = (Led_stick[0].rect.size.height + Led_stick[1].rect.size.height)/2.0f;
             // 两个灯条高度差不大
@@ -158,7 +159,9 @@ ArmorDetector::ArmorDetector(SolveAngle solve_short, SolveAngle solve_long, ZeYu
     solve_angle_ = solve_short;
     solve_angle_long_ = solve_long;
     zeyu_predict_ = zeyu_predict;
-
+    Predictor predict(30);
+    predict_ = predict;
+    t_start_ = getTickCount();
 }
 
 Rect ArmorDetector::GetRoi(const Mat &img)
@@ -181,14 +184,14 @@ Rect ArmorDetector::GetRoi(const Mat &img)
     else
     {
         float scale = 2;
-        if (lost_cnt_ < 3)
+        if (lost_cnt_ < 30)
             scale = 3;
-        else if(lost_cnt_ <= 6)
+        else if(lost_cnt_ <= 60)
             scale = 4;
-        else if(lost_cnt_ <= 12)
+        else if(lost_cnt_ <= 120)
             scale = 5;
 
-        int w = int(rect_tmp.width * 2*scale);
+        int w = int(rect_tmp.width * scale);
         int h = int(rect_tmp.height * scale);
         int x = int(rect_tmp.x - (w - rect_tmp.width)*0.5f);
         int y = int(rect_tmp.y - (h - rect_tmp.height)*0.5f);
@@ -291,7 +294,7 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
                 if(arm_tmp.is_suitable_size())
                 {
                     // TODO(cz): 推荐使用255值的面积进行判断
-                    if(arm_tmp.get_average_intensity(gray)< 150 )
+                    if(arm_tmp.get_average_intensity(gray)< 50 )
                     {
                         arm_tmp.max_match(LED_Stick_v, i, j);
                     }
@@ -327,8 +330,10 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
         dx = pow((final_armor_list.at(i).center.x - roi_center.x), 2.0f);
         dy = pow((final_armor_list.at(i).center.y - roi_center.y), 2.0f);
 #endif
-        if( dx + dy < dist)
+        if( dx + dy < dist){
             target = final_armor_list.at(i);
+            dist = dx + dy;
+        }
 #ifdef SHOW_DRAW_RECT
         final_armor_list.at(i).draw_rect(img, offset_roi_point);
 #endif
@@ -406,7 +411,6 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
 int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
 {
     //    double t1 = getTickCount();
-    float theta_y = 0;
     // 取外部参数的值
     color_ = other_param.color;
     cap_mode_ = other_param.cap_mode;
@@ -439,8 +443,9 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
         {
 #ifdef SIMPLE_SOLVE_ANGLE_FOR_ARMOR_DETECT
             short_simple_solve.getAngle(screen_point.x, screen_point.y, dh, angle_x_, angle_y_, distance_);
-            solve_angle_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
+
 #else
+            solve_angle_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
             solve_angle_.getAngle(points_2d_, 15,angle_x_,angle_y_,distance_);   // pnp姿态结算
 #endif
         }
@@ -453,18 +458,46 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
             solve_angle_long_.getAngle(points_2d_, 15,angle_x_, angle_y_ ,distance_);   // pnp姿态结算
 #endif
         }
+        angle_x_ = kalman.run(angle_x_);
+
 #ifdef DEBUG_PLOT //0紫 1橙
-        w_->addPoint(angle_x_, 0);
-        w_->addPoint(angle_y_, 1);
-        w_->plot();
+//        w_->addPoint(final_armor_type, 0);
+//        w_->addPoint(angle_y_, 1);
+//        w_->plot();
 #endif
 #ifdef PREDICT
+        // 间隔时间计算
+        double t_tmp = getTickCount();
+        double delta_t = (t_tmp - t_start_)*1000/getTickFrequency();
+        t_start_ = t_tmp;
+
         protectDate(km_Qp_, km_Qv_, km_Rp_, km_Rv_, km_t_, km_pt_);
-        float pre_time = distance_/10000*static_cast<float>(km_pt_)+10.0f;
-        zeyu_predict_.setQRT(km_Qp_,km_Qv_,km_Rp_,km_t_,pre_time);
+        //        float pre_time = distance_/10000*static_cast<float>(km_pt_)+10.0f;
+        zeyu_predict_.setQRT(km_Qp_,km_Qv_,km_Rp_,km_t_,km_pt_);
         float gim_and_pnp_angle_x = -other_param.gimbal_data + angle_x_;
+        // 速度计算
+        float angle_v = (gim_and_pnp_angle_x - last_angle)/delta_t;
+        last_angle = gim_and_pnp_angle_x;
+        // 加速度计算
+#if(0)
+        float u = (last_v - last_last_v)/delta_t;
+        last_last_v = last_v;
+        last_v = angle_v;
+#else
+        float u = (angle_v - last_v)/delta_t;
+        last_v = angle_v;
+#endif
+
         float predict_angle_x = zeyu_predict_.run_position(gim_and_pnp_angle_x);   // kalman滤波预测
-        predict_angle_x += other_param.gimbal_data;
+//        float predict_angle_x = zeyu_predict_.run_position(gim_and_pnp_angle_x, angle_v);   // kalman加入速度滤波预测
+//        float predict_angle_x = zeyu_predict_.run_position(gim_and_pnp_angle_x, angle_v, u);   // kalman加入加速度滤波预测
+        // ------ 二次拟合数据 ------
+        //        double t_tmp = getTickCount();
+        //        double detla_t = (t_tmp - t_start_) * 1000 / getTickFrequency();
+        //        predict_.setRecord(predict_angle_x, detla_t);
+        //        predict_angle_x = predict_.predict(detla_t + 10);
+        //        predict_angle_x += other_param.gimbal_data;
+        // ------ 二次拟合数据 ------
         angle_x_ = predict_angle_x;
 #endif
         return 1;
