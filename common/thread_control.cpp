@@ -221,7 +221,7 @@ void ThreadControl::ImageProcess()
 
     Mat image;
     float angle_x = 0.0, angle_y = 0.0, distance =  0.0;
-    int8_t find_flag = 0;
+    int find_flag = 0;
     while(1)
     {
 #ifndef DEBUG_VIDEO

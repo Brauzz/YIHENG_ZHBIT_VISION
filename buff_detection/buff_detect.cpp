@@ -176,7 +176,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     return find_flag;
 }
 
-int8_t BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
+int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 {
     color_ = other_param.color;
     gimbal=other_param.gimbal_data;
@@ -213,7 +213,7 @@ int8_t BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
     return 0;
 }
 
-int8_t BuffDetector::getDirection(float angle)
+int BuffDetector::getDirection(float angle)
 {
     float error_angle = last_angle_ - angle;
     //        cout << "error_angle" << error_angle << endl;
@@ -297,7 +297,7 @@ float Point_distance(Point2f p1,Point2f p2)
     return Dis;
 }
 
-int8_t AutoAttack::run(bool find_target_flag,float angle_x,float angle_y,int target_size,float gimbal,int move_static)
+int AutoAttack::run(bool find_target_flag,float angle_x,float angle_y,int target_size,float gimbal,int move_static)
 {
     if(find_target_flag)
     {

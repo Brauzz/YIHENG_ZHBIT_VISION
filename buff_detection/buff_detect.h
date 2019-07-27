@@ -50,7 +50,7 @@ public:
     vector<Point2f> points_2d_;
     float angle_;
     Point2f test_point_;
-    int8_t direction_ = 1; // 1shun -1ni 0stop
+    int direction_ = 1; // 1shun -1ni 0stop
 
     float length_scale_ = 3;
     float width_scale_ = -5.5;
@@ -73,10 +73,10 @@ class AutoAttack
 {
 public:
     AutoAttack(){}
-    int8_t run(bool find_target_flag, float angle_x, float angle_y,int target_size,float gimbal,int move_static);
+    int run(bool find_target_flag, float angle_x, float angle_y,int target_size,float gimbal,int move_static);
 private:
     int control_=restore_center;
-    int8_t buff_mode;
+    int buff_mode;
     int t_tocul=0; //0=little; 1=big
     int restore_count=0;
 };
@@ -99,7 +99,7 @@ public:
         w_ = w;
     }
 
-    int8_t BuffDetectTask(Mat& img, OtherParam param);
+    int BuffDetectTask(Mat& img, OtherParam param);
     void getAngle(float &yaw, float &pitch){
         yaw = angle_x_;
         pitch = angle_y_;
@@ -114,7 +114,7 @@ public:
     }
 
 
-    int8_t getDirection(float angle);
+    int getDirection(float angle);
 
 private:
     bool DetectBuff(Mat& img, OtherParam other_param);

@@ -43,7 +43,7 @@ public:
     }
     ~BaseDetector(){}
 
-    int8_t BaseDetectTask(Mat &img);
+    int BaseDetectTask(Mat &img);
     void getAngle(float &yaw, float &pitch)
     {
         yaw = angle_x_;
