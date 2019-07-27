@@ -28,6 +28,9 @@ using namespace std;
 #define DEBUG_PUT_TEST_TARGET
 #define DEBUG_PUT_TEST_ANGLE
 #define DEBUG_DRAW_TARGET
+#define TEST_OTSU
+#define AREA_LENGTH_ANGLE
+
 // ---- buff debug ----
 #endif
 
@@ -84,6 +87,8 @@ private:
     int buff_mode;
     int t_tocul=0; //0=little; 1=big
     int restore_count=0;
+    int center_buff=0;
+    int count_center=0;
 };
 
 

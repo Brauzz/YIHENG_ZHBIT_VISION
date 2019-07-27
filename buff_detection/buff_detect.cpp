@@ -34,15 +34,22 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
         subtract(bgr[0], bgr[2], result_img);
     }
     Mat binary_color_img;
+#ifdef TEST_OTSU
     double th = threshold(result_img, binary_color_img, 50, 255, CV_THRESH_BINARY|CV_THRESH_OTSU);
     if(th-25>0)
         threshold(result_img, binary_color_img, th-25, 255, CV_THRESH_BINARY);
+#endif
+#ifndef TEST_OTSU
+    threshold(result_img, binary_color_img, color_th_, 255, CV_THRESH_BINARY);
+#endif
+
     //        Mat element = getStructuringElement(MORPH_RECT, Size(5,5));
     //        morphologyEx(binary_color_img,binary_color_img,MORPH_CLOSE,element);
     //        dilate(img, img, element);
 #ifdef DEBUG_BUFF_DETECT
     imshow("mask", binary_color_img);
 #endif
+
     if(th < 20)
         return 0;
     // **寻找击打矩形目标** -通过几何关系
@@ -64,16 +71,22 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
             continue;
         // 小轮廓面积条件
         double small_rect_area = contourArea(contours[i]);
+        double small_rect_length=arcLength(contours[i],true);
+        if(small_rect_length < 50)
+            continue;
         if(small_rect_area < 50)
             continue;
         // 大轮廓面积条件
-        double big_rect_area = contourArea(contours[hierarchy[i][3]]);
+        double big_rect_area = contourArea(contours[static_cast<uint>(hierarchy[i][3])]);
+        double big_rect_length=arcLength(contours[static_cast<uint>(hierarchy[i][3])],true);
         if(big_rect_area < 80)
+            continue;
+        if(big_rect_length < 80)
             continue;
         // 能量机关扇叶进行拟合
         Object object;
         object.small_rect_ = fitEllipse(contours[i]);
-        object.big_rect_ = fitEllipse(contours[hierarchy[i][3]]);
+        object.big_rect_ = fitEllipse(contours[static_cast<uint>(hierarchy[i][3])]);
 #ifdef DEBUG_DRAW_CONTOURS
         Point2f small_point_tmp[4];
         object.small_rect_.points(small_point_tmp);
@@ -85,26 +98,51 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
             line(img, big_point_tmp[k],big_point_tmp[(k+1)%4], Scalar(0, 0, 255), 1);
         }
 #endif
+        float diff_angle=fabsf(object.big_rect_.angle-object.small_rect_.angle);
         if(object.small_rect_.size.height/object.small_rect_.size.width < 3)
         {
-            // 根据轮廓面积进行判断扇叶类型
-            if(small_rect_area * 30 >big_rect_area && small_rect_area*10<big_rect_area)
+            if(diff_angle<100 && diff_angle>80)
             {
-                object.type_ = ACTION;  // 已经激活类型
-            }else if(small_rect_area * 12>big_rect_area && small_rect_area *4 < big_rect_area)
-            {
-                object.type_ = INACTION;    // 未激活类型
-            }
-            // 更新世界坐标系顺序
-            Point2f buff_offset = Point2f(buff_offset_x_, buff_offset_y_);
-            object.UpdateOrder(buff_offset);
-            // 根据距离计算超预测点
-            object.UpdataPredictPoint();
-            circle(img , object.test_point_, 3, Scalar(22,255,25));
-            vec_target.push_back(object);
-            if(diff_data<2)
-            {
-                target_size=vec_target.size();
+                // 根据轮廓面积进行判断扇叶类型
+                if(small_rect_area * 30 >big_rect_area && small_rect_area*10<big_rect_area)
+                {
+                    object.type_ = ACTION;  // 已经激活类型
+                }else if(small_rect_area * 12>big_rect_area && small_rect_area *4 < big_rect_area)
+                {
+                    object.type_ = INACTION;    // 未激活类型
+                }
+
+#ifdef AREA_LENGTH_ANGLE
+                switch (3)
+                {
+                case 1:
+                {
+                    double multiple_area=fabs(big_rect_area/small_rect_area);
+                    putText(img, to_string(multiple_area), Point2f(5,5)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                }break;
+                case 2:
+                {
+                    double multiple_length=fabs(big_rect_length/small_rect_length);
+                    putText(img, to_string(multiple_length), Point2f(5,5)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                }break;
+                case 3:
+                {
+                    putText(img, to_string(diff_angle), Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                }break;
+
+                }
+#endif
+                // 更新世界坐标系顺序
+                Point2f buff_offset = Point2f(buff_offset_x_, buff_offset_y_);
+                object.UpdateOrder(buff_offset);
+                // 根据距离计算超预测点
+                object.UpdataPredictPoint();
+                circle(img , object.test_point_, 3, Scalar(22,255,25));
+                vec_target.push_back(object);
+                if(diff_data<2)
+                {
+                    target_size=vec_target.size();
+                }
             }
         }
     }
@@ -126,7 +164,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
             if(object_tmp.type_ == INACTION)
             {
 #ifdef DEBUG_PUT_TEST_TARGET
-                putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+//                putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 #endif
                 final_target = object_tmp;
                 points_2d = final_target.points_2d_;
@@ -208,9 +246,9 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
     }
     command = auto_control.run(angle_x_, angle_y_, find_flag);
 #ifdef DEBUG_PLOT //0紫 1橙
-        w_->addPoint(command, 0);
-                w_->addPoint(angle_y_, 1);
-        w_->plot();
+    w_->addPoint(command, 0);
+    w_->addPoint(angle_y_, 1);
+    w_->plot();
 #endif
     return command;
 }
@@ -326,6 +364,7 @@ int AutoAttack::run(bool find_target_flag, float angle_x, float angle_y, int tar
     case 0:
         if(find_target_flag)
         {
+            center_buff=0;
             if(fabs(angle_x) > 0.8f || fabs(angle_y) > 1.0f) // still not stable, wait
             {
                 buff_mode=follow;
@@ -351,7 +390,20 @@ int AutoAttack::run(bool find_target_flag, float angle_x, float angle_y, int tar
         }
         else if(find_target_flag==0) // if don't find the target, back to center
         {
-            buff_mode=restore_center;
+            if( center_buff==0)
+            {
+                count_center++;
+                if(count_center>=30)
+                    center_buff=1;
+            }
+            else if(center_buff==1)
+            {
+                count_center--;
+                buff_mode=restore_center;
+                if(count_center<0)
+                    count_center=0;
+            }
+
         }
         break;
 
@@ -362,7 +414,7 @@ int AutoAttack::run(bool find_target_flag, float angle_x, float angle_y, int tar
             if(fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count==0 )
             {
                 buff_mode=restore_center;
-                    ++restore_count;
+                ++restore_count;
 
             }
             else if (fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count!=0)
@@ -398,7 +450,20 @@ int AutoAttack::run(bool find_target_flag, float angle_x, float angle_y, int tar
             }
             else if(find_target_flag==0) // if don't find the target, back to center
             {
-                buff_mode=restore_center;
+                if( center_buff==0)
+                {
+                    count_center++;
+                    if(count_center>=30)
+                        center_buff=1;
+                }
+                else if(center_buff==1)
+                {
+                    count_center--;
+                    buff_mode=restore_center;
+                    if(count_center<0)
+                        count_center=0;
+                }
+
             }
         }
 
