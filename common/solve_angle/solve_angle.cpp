@@ -42,6 +42,9 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
 {
     // 姿态结算
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
+    float dh = ((image_point.at(3).y - image_point.at(0).y) + (image_point.at(2).y - image_point.at(1).y))/2;
+    float state_dist = height_world * f_ / dh; // Z
+    float final_distance = kalman.merge_run(state_dist, tvec.at<double>(2,0));
 //    tvec.at<double>(2,0)*=scale;
     //    cout << tvec << endl;
     // 估计装甲板y轴坐标旋转量2

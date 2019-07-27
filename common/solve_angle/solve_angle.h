@@ -17,6 +17,8 @@
 #pragma once
 #include <opencv2/opencv.hpp>
 #include "../../base.h"
+#include "../filter/predict.h"
+
 using namespace cv;
 using namespace std;
 class SolveAngle
@@ -51,6 +53,9 @@ public:
     float ptz_camera_y = 52.5;       // + camera is  ptz
     float ptz_camera_z = -135;//-225;     // - camera is front ptz
     float scale = 0.99f;              // is calc distance scale not use pnp ,test
+
+    Kalman1 kalman;
+    int f_ = 1500;
 };
 
 class SimpleSolveAngle{

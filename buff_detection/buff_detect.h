@@ -171,7 +171,7 @@ public:
         command = reset_task.run(find_flag);
         if(command != DEFAULT){
             // 复位绝对角度
-            current_pit = 10;
+            current_pit = -5;
             return command;
         }
 
