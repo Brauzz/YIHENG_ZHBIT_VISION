@@ -42,12 +42,12 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
 {
     // 姿态结算
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
-    tvec.at<double>(2,0)*=scale;
+//    tvec.at<double>(2,0)*=scale;
     //    cout << tvec << endl;
     // 估计装甲板y轴坐标旋转量2
-    double rm[3][3];
-    Mat rotMat(3, 3, CV_64FC1, rm);
-    Rodrigues(rvec, rotMat);
+//    double rm[3][3];
+//    Mat rotMat(3, 3, CV_64FC1, rm);
+//    Rodrigues(rvec, rotMat);
     //    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;
     //    float theta_y = atan2(static_cast<float>(rm[1][0]), static_cast<float>(rm[0][0])) * 57.2958f;//x
     //    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;//y

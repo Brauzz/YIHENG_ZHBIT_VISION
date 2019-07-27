@@ -96,7 +96,8 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                 object.type_ = INACTION;    // 未激活类型
             }
             // 更新世界坐标系顺序
-            object.UpdateOrder();
+            Point2f buff_offset = Point2f(buff_offset_x_, buff_offset_y_);
+            object.UpdateOrder(buff_offset);
             // 根据距离计算超预测点
             object.UpdataPredictPoint();
             circle(img , object.test_point_, 3, Scalar(22,255,25));
@@ -181,6 +182,7 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
     color_ = other_param.color;
     gimbal=other_param.gimbal_data;
     bool find_flag = DetectBuff(img,other_param);
+    int command = -1;
     if(find_flag)
     {
         bool direction_tmp = getDirection(buff_angle_);
@@ -189,28 +191,28 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 #ifdef DIRECTION_FILTER
         if(direction_tmp == 1)  // shun
             world_offset = Point2f(param_.world_offset_x  - 500, param_.world_offset_y - 500);
-        else // ni
+        else if(direction_tmp == -1)// ni
             world_offset = Point2f(-(param_.world_offset_x  - 500), -(param_.world_offset_y - 500));
+        else
+            world_offset = Point2f(world_offset_x_ - 500, world_offset_y_  - 500);
         cout << "direction " << direction_tmp << endl;
+
 #else
         world_offset = Point2f(world_offset_x_ - 500, world_offset_y_  - 500);
 #endif
 
         solve_angle_long_.Generate3DPoints(2, world_offset);
-        float distance;
         solve_angle_long_.getBuffAngle(points_2d, 28.5, buff_angle_, angle_x_, angle_y_, distance_);
-        angle_y_*=0.8;
 
-        attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,move_static);
-
+        //attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,move_static);
+    }
+    command = auto_control.run(angle_x_, angle_y_, find_flag);
 #ifdef DEBUG_PLOT //0紫 1橙
-        w_->addPoint(distance_, 0);
-        //        w_->addPoint(angle_y_, 1);
+        w_->addPoint(command, 0);
+                w_->addPoint(angle_y_, 1);
         w_->plot();
 #endif
-        return 1;
-    }
-    return 0;
+    return command;
 }
 
 int BuffDetector::getDirection(float angle)
@@ -245,7 +247,7 @@ int BuffDetector::getDirection(float angle)
 }
 
 
-void Object::UpdateOrder()
+void Object::UpdateOrder(Point2f offset_point)
 {
     points_2d_.clear();
     Point2f points[4];
@@ -257,13 +259,13 @@ void Object::UpdateOrder()
     if(up_distance > down_distance)
     {
         angle_ = small_rect_.angle;
-        points_2d_.push_back(points[0]);points_2d_.push_back(points[1]);
-        points_2d_.push_back(points[2]);points_2d_.push_back(points[3]);
+        points_2d_.push_back(points[0]+offset_point);points_2d_.push_back(points[1]+offset_point);
+        points_2d_.push_back(points[2]+offset_point);points_2d_.push_back(points[3]+offset_point);
     }else
     {
         angle_ = small_rect_.angle + 180;
-        points_2d_.push_back(points[2]);points_2d_.push_back(points[3]);
-        points_2d_.push_back(points[0]);points_2d_.push_back(points[1]);
+        points_2d_.push_back(points[2]+offset_point);points_2d_.push_back(points[3]+offset_point);
+        points_2d_.push_back(points[0]+offset_point);points_2d_.push_back(points[1]+offset_point);
     }
 }
 
@@ -297,7 +299,7 @@ float Point_distance(Point2f p1,Point2f p2)
     return Dis;
 }
 
-int AutoAttack::run(bool find_target_flag,float angle_x,float angle_y,int target_size)
+int AutoAttack::run(bool find_target_flag, float angle_x, float angle_y, int target_size, float gimbal, int move_static)
 {
     if(find_target_flag)
     {

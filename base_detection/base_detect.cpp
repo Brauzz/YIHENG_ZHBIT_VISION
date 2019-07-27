@@ -15,12 +15,7 @@ Mat BaseDetector::setImage(const Mat &src)
         int max_half_w = 1280;
         int max_half_h = 1024;
         float scale = 2.5;
-        //        if (lost_cnt < 3)
-        //            scale = 1.2;
-        //        else if(lost_cnt == 6)
-        //            scale = 1.5;
-        //        else if(lost_cnt == 12)
-        //            scale = 2.0;
+
         int exp_half_w = min(max_half_w / 2, int(rect.width * scale));
         int exp_half_h = min(max_half_h / 2, int(rect.height * 2* scale));
 

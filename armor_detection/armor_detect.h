@@ -181,9 +181,9 @@ public:
     float last_v = 0;
     float last_last_v = 0;
 public:
-    int short_offset_x_ = 120;
+    int short_offset_x_ = 100;
     int short_offset_y_ = 100;
-    int long_offset_x_ = 85;
+    int long_offset_x_ = 100;
     int long_offset_y_ = 100;
     int color_th_ = 20;
     int gray_th_ = 60;

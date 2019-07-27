@@ -376,6 +376,9 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
         {
             points_roi_tmp.push_back(point_2d[i] + offset_roi_point);
             points_2d_.push_back(point_2d[i] + offset_roi_point +offset_point);
+//            putText(img, to_string(i), points_2d_.at(i), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255), 1);
+//            circle(img, points_2d_.at(i), 5, Scalar(255, 255, 255), -1);
+//            circle(img, points_2d_.at(i), 3, Scalar(i*50, i*50, 255), -1);
         }
         // 计算当前装甲板类型，到后面task中还有滤波，可以有误差
         float armor_h = target.rect.height;
@@ -426,7 +429,7 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
         screen_point /= 4;
         float dh = points_2d_.at(2).y - points_2d_.at(1).y;
 #endif
-        DrawTarget(img);
+//        DrawTarget(img);
         bool final_armor_type = getTypeResult(is_small_);
         //                    float angle_x, angle_y, distance;
         if(cap_mode_ == 0) // close
@@ -451,8 +454,8 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
         angle_x_ = kalman.run(angle_x_);
 
 #ifdef DEBUG_PLOT //0紫 1橙
-        w_->addPoint(final_armor_type, 0);
-        w_->addPoint(angle_y_, 1);
+        w_->addPoint(distance_, 0);
+//        w_->addPoint(angle_y_, 1);
         w_->plot();
 #endif
 #ifdef PREDICT
