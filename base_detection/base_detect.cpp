@@ -208,9 +208,9 @@ bool BaseDetector::detectBase(Mat &img)
 
 
 
-int8_t BaseDetector::BaseDetectTask(Mat &img)
+int BaseDetector::BaseDetectTask(Mat &img)
 {
-    int8_t command = 0;
+    int command = 0;
     command = detectBase(img);
     if(command == 1)
     {

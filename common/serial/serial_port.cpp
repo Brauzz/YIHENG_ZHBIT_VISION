@@ -231,7 +231,7 @@ void SerialPort::restart_serial(void)
 
 }
 
-void serial_transmit_data::get_xy_data(int16_t x, int16_t y, int8_t found)
+void serial_transmit_data::get_xy_data(int16_t x, int16_t y, int found)
 {
     size = 7;
     raw_data[0] = head;

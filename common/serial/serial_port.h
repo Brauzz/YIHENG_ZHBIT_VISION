@@ -25,7 +25,7 @@ struct serial_transmit_data
     int size;
     unsigned char head = 0xaa;
     unsigned char end = 0xbb;
-    void get_xy_data(int16_t x, int16_t y, int8_t found);
+    void get_xy_data(int16_t x, int16_t y, int found);
 };
 
 struct serial_receive_data

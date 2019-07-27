@@ -36,7 +36,7 @@ public:
     float GetPitch_ICRA(float x, float y, float v);
     float BulletModel_ICRA(float x, float v, float angle);
     // ---------/ICRA-------------------
-    void Generate3DPoints(uint8_t mode, Point2f offset_point);
+    void Generate3DPoints(uint mode, Point2f offset_point);
     Mat cameraMatrix, distCoeffs;
     Mat object_point_mat;
     vector<Point3f> objectPoints;

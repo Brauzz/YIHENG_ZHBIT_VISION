@@ -81,7 +81,7 @@ public:
     int run(bool find_target_flag, float angle_x, float angle_y, int target_size, float gimbal, int move_static);
 private:
     int control_=restore_center;
-    int8_t buff_mode;
+    int buff_mode;
     int t_tocul=0; //0=little; 1=big
     int restore_count=0;
 };

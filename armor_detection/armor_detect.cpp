@@ -438,7 +438,7 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
             short_simple_solve.getAngle(screen_point.x, screen_point.y, dh, angle_x_, angle_y_, distance_);
 
 #else
-            solve_angle_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
+            solve_angle_.Generate3DPoints((uint)final_armor_type, Point2f());
             solve_angle_.getAngle(points_2d_, 15,angle_x_,angle_y_,distance_);   // pnp姿态结算
 #endif
         }
@@ -447,7 +447,7 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
 #ifdef SIMPLE_SOLVE_ANGLE_FOR_ARMOR_DETECT
             long_simple_solve.getAngle(screen_point.x, screen_point.y, dh, angle_x_, angle_y_, distance_);
 #else
-            solve_angle_long_.Generate3DPoints((uint8_t)final_armor_type, Point2f());
+            solve_angle_long_.Generate3DPoints((uint)final_armor_type, Point2f());
             solve_angle_long_.getAngle(points_2d_, 15,angle_x_, angle_y_ ,distance_);   // pnp姿态结算
 #endif
         }

@@ -208,7 +208,7 @@ float SolveAngle::getBuffPitch(float dist, float tvec_y, float ballet_speed)
 
 //--------------------------/ICRA------------------------------------
 
-void SolveAngle::Generate3DPoints(uint8_t mode, Point2f offset_point)
+void SolveAngle::Generate3DPoints(uint mode, Point2f offset_point)
 {
     objectPoints.clear();
     float x, y, z, width = 0.0, height = 0.0;
