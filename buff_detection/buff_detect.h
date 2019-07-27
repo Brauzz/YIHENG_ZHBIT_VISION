@@ -40,7 +40,7 @@ using namespace std;
 
 
 typedef enum{UNKOWN,INACTION,ACTION}ObjectType;
-typedef enum{restore_center,follow,shoot}mode_buff;
+typedef enum{restore_center=6,follow=-1,shoot=3}mode_buff;
 
 static int target_size=0;
 /**
@@ -82,6 +82,7 @@ class AutoAttack
 public:
     AutoAttack(){}
     int run(bool find_target_flag, float angle_x, float angle_y, int target_size, float gimbal, int move_static);
+    int adjust_control(bool find_target_flag, int move_static,int target_size);
 private:
     int control_=restore_center;
     int buff_mode;
@@ -179,8 +180,6 @@ public:
             current_pit = -5;
             return command;
         }
-
-
         return find_flag;
     }
 

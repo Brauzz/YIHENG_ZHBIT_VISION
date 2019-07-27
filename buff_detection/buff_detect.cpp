@@ -50,8 +50,10 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     imshow("mask", binary_color_img);
 #endif
 
+#ifdef TEST_OTSU
     if(th < 20)
         return 0;
+#endif
     // **寻找击打矩形目标** -通过几何关系
     // 寻找识别物体并分类到object
     vector<Object> vec_target;
@@ -164,7 +166,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
             if(object_tmp.type_ == INACTION)
             {
 #ifdef DEBUG_PUT_TEST_TARGET
-//                putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+                //                putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 #endif
                 final_target = object_tmp;
                 points_2d = final_target.points_2d_;
@@ -242,9 +244,10 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
         solve_angle_long_.Generate3DPoints(2, world_offset);
         solve_angle_long_.getBuffAngle(points_2d, 28.5, buff_angle_, angle_x_, angle_y_, distance_);
 
-        //attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,move_static);
+        attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,move_static);
     }
-    command = auto_control.run(angle_x_, angle_y_, find_flag);
+    attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,move_static);
+    //    command = auto_control.run(angle_x_, angle_y_, find_flag);
 #ifdef DEBUG_PLOT //0紫 1橙
     w_->addPoint(command, 0);
     w_->addPoint(angle_y_, 1);
@@ -339,32 +342,11 @@ float Point_distance(Point2f p1,Point2f p2)
 
 int AutoAttack::run(bool find_target_flag, float angle_x, float angle_y, int target_size, float gimbal, int move_static)
 {
-    if(find_target_flag)
-    {
-        if(move_static==0)
-        {
-            control_=0;
-        }
-        else if(move_static==1)
-        {
-            if(target_size<4 || target_size ==5)
-            {
-                control_=0;
-            }
-            else if(target_size==4)
-            {
-                control_=1;
-            }
-        }
-
-    }
-
+    float diff_gimbal=fabsf(gimbal-20);
+    adjust_control(find_target_flag,move_static,target_size);
     switch (control_)
     {
     case 0:
-        if(find_target_flag)
-        {
-            center_buff=0;
             if(fabs(angle_x) > 0.8f || fabs(angle_y) > 1.0f) // still not stable, wait
             {
                 buff_mode=follow;
@@ -387,34 +369,17 @@ int AutoAttack::run(bool find_target_flag, float angle_x, float angle_y, int tar
                     t_tocul=0;
                 }
             }
-        }
-        else if(find_target_flag==0) // if don't find the target, back to center
-        {
-            if( center_buff==0)
-            {
-                count_center++;
-                if(count_center>=30)
-                    center_buff=1;
-            }
-            else if(center_buff==1)
-            {
-                count_center--;
-                buff_mode=restore_center;
-                if(count_center<0)
-                    count_center=0;
-            }
 
-        }
         break;
 
     case 1:
         float diff=fabs(gimbal-20);
-        if(find_target_flag)
-        {
-            if(fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count==0 )
+
+            if(fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count==0)
             {
                 buff_mode=restore_center;
-                ++restore_count;
+                if(diff_gimbal<2)
+                {++restore_count;}
 
             }
             else if (fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count!=0)
@@ -448,27 +413,50 @@ int AutoAttack::run(bool find_target_flag, float angle_x, float angle_y, int tar
                     }
                 }
             }
-            else if(find_target_flag==0) // if don't find the target, back to center
-            {
-                if( center_buff==0)
-                {
-                    count_center++;
-                    if(count_center>=30)
-                        center_buff=1;
-                }
-                else if(center_buff==1)
-                {
-                    count_center--;
-                    buff_mode=restore_center;
-                    if(count_center<0)
-                        count_center=0;
-                }
-
-            }
-        }
-
         break;
     }
     return buff_mode;
+}
+
+int AutoAttack::adjust_control(bool find_target_flag, int move_static,int target_size)
+{
+    if(find_target_flag)  //如果找到目标，选择击打模式
+    {
+         center_buff=0;
+        if(move_static==0)
+        {
+            control_=0;
+        }
+        else if(abs(move_static)==1)
+        {
+             if(target_size==4)
+            {
+                control_=1;
+            }
+             else
+             {
+                 control_=0;
+             }
+        }
+
+    }
+    else if(find_target_flag==0) // if don't find the target, back to center
+    {
+        if( center_buff==0)   //避免某一帧丢失目标
+        {
+            count_center++;
+            if(count_center>=30)
+                center_buff=1;
+        }
+        else if(center_buff==1)
+        {
+            count_center--;
+            buff_mode=restore_center;
+            if(count_center<0)
+                count_center=0;
+        }
+
+    }
+    return control_;
 }
 
