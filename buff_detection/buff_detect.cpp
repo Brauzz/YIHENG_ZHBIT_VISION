@@ -74,16 +74,16 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
         // 小轮廓面积条件
         double small_rect_area = contourArea(contours[i]);
         double small_rect_length=arcLength(contours[i],true);
-        if(small_rect_length < 50)
+        if(small_rect_length < 100)
             continue;
-        if(small_rect_area < 50)
+        if(small_rect_area < 500)
             continue;
         // 大轮廓面积条件
         double big_rect_area = contourArea(contours[static_cast<uint>(hierarchy[i][3])]);
         double big_rect_length=arcLength(contours[static_cast<uint>(hierarchy[i][3])],true);
-        if(big_rect_area < 80)
+        if(big_rect_area < 600)
             continue;
-        if(big_rect_length < 80)
+        if(big_rect_length < 150)
             continue;
         // 能量机关扇叶进行拟合
         Object object;
@@ -115,7 +115,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                 }
 
 #ifdef AREA_LENGTH_ANGLE
-                switch (3)
+                switch (AREA_LENGTH_ANGLE)
                 {
                 case 1:
                 {
@@ -244,10 +244,10 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
         solve_angle_long_.Generate3DPoints(2, world_offset);
         solve_angle_long_.getBuffAngle(points_2d, 28.5, buff_angle_, angle_x_, angle_y_, distance_);
 
-        attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,move_static);
+//        attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,move_static);
     }
-    attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,move_static);
-    //    command = auto_control.run(angle_x_, angle_y_, find_flag);
+//    attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,move_static);
+        command = auto_control.run(angle_x_, angle_y_, find_flag);
 #ifdef DEBUG_PLOT //0紫 1橙
     w_->addPoint(command, 0);
     w_->addPoint(angle_y_, 1);
