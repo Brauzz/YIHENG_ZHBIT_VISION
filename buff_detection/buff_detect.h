@@ -24,12 +24,12 @@ using namespace std;
 #define BUFF_DETECT_DEBUG
 #ifdef BUFF_DETECT_DEBUG
 // ---- buff debug ----
-#define DEBUG_DRAW_CONTOURS
+//#define DEBUG_DRAW_CONTOURS
 #define DEBUG_PUT_TEST_TARGET
 #define DEBUG_PUT_TEST_ANGLE
 #define DEBUG_DRAW_TARGET
-#define TEST_OTSU
-#define AREA_LENGTH_ANGLE 3 // 1:area 2:length 3:diff_angle
+//#define TEST_OTSU
+#define AREA_LENGTH_ANGLE 2 // 1:area 2:length 3:diff_angle
 
 // ---- buff debug ----
 #endif
@@ -61,7 +61,7 @@ public:
     int direction_ = 1; // 1shun -1ni 0stop
 
     float length_scale_ = 3;
-    float width_scale_ = -5.5;
+    float width_scale_ = -3;
     void DrawTarget(Mat &img)
     {
         if(type_ == INACTION)
@@ -262,17 +262,17 @@ private:
         history_size_=buff_size;
         max_filter_value_=filter_angle_threshold;
     }
-
+    void trigger(int target_size,int move_static);
 
 private:
     int color_;
     float gimbal;
 public:
-    int buff_offset_x_ = 51;
-    int buff_offset_y_ = 0;
+    int buff_offset_x_ = 130;
+    int buff_offset_y_ = 135;
     int world_offset_x_ = 500;
     int world_offset_y_ = 500;
-    int color_th_ = 50;
+    int color_th_ = 11;
     int gray_th_ = 50;
     float buff_angle_ = 0;
     AutoAttack attack;
@@ -295,7 +295,7 @@ private:
     size_t history_size_ = 10;
     float last_angle_ = 0;
     float max_filter_value_ = 15;
-
+    int direction_tmp=0;
 };
 
 float Point_distance(Point2f p1,Point2f p2);

@@ -19,6 +19,7 @@
 bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 {
 
+
     float diff_data=fabs(other_param.gimbal_data-26);
     // **预处理** -图像进行相应颜色的二值化
     GaussianBlur(img, img, Size(3,3),0);
@@ -63,32 +64,29 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     findContours(binary_color_img,contours,hierarchy,CV_RETR_CCOMP,CHAIN_APPROX_SIMPLE);
     for(size_t i=0; i < contours.size();i++)
     {
-        // 用于超预测时比例扩展时矩形的判断
-        if(hierarchy[i][3]<0){
-            Rect rect = boundingRect(contours[i]);
-            vec_color_rect.push_back(rect);
-        }
         // 用于寻找小轮廓，没有父轮廓的跳过, 以及不满足6点拟合椭圆
         if(hierarchy[i][3]<0 || contours[i].size() < 6 || contours[static_cast<uint>(hierarchy[i][3])].size() < 6)
             continue;
         // 小轮廓面积条件
         double small_rect_area = contourArea(contours[i]);
         double small_rect_length=arcLength(contours[i],true);
-        if(small_rect_length < 100)
+        if(small_rect_length < 50)
             continue;
-        if(small_rect_area < 500)
+        if(small_rect_area < 400)
             continue;
         // 大轮廓面积条件
         double big_rect_area = contourArea(contours[static_cast<uint>(hierarchy[i][3])]);
         double big_rect_length=arcLength(contours[static_cast<uint>(hierarchy[i][3])],true);
-        if(big_rect_area < 600)
+        if(big_rect_area < 500)
             continue;
-        if(big_rect_length < 150)
+        if(big_rect_length < 80)
             continue;
         // 能量机关扇叶进行拟合
         Object object;
         object.small_rect_ = fitEllipse(contours[i]);
         object.big_rect_ = fitEllipse(contours[static_cast<uint>(hierarchy[i][3])]);
+
+        //        drawContours(img,contours,i,Scalar(0,0,255),3);
 #ifdef DEBUG_DRAW_CONTOURS
         Point2f small_point_tmp[4];
         object.small_rect_.points(small_point_tmp);
@@ -103,13 +101,18 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
         float diff_angle=fabsf(object.big_rect_.angle-object.small_rect_.angle);
         if(object.small_rect_.size.height/object.small_rect_.size.width < 3)
         {
+
             if(diff_angle<100 && diff_angle>80)
             {
+                // 用于超预测时比例扩展时矩形的判断
+                Rect rect = boundingRect(contours[static_cast<uint>(hierarchy[i][3])]);
+                vec_color_rect.push_back(rect);
+
                 // 根据轮廓面积进行判断扇叶类型
-                if(small_rect_area * 30 >big_rect_area && small_rect_area*10<big_rect_area)
+                if(small_rect_area * 12 >big_rect_area && small_rect_area* 6<big_rect_area)
                 {
                     object.type_ = ACTION;  // 已经激活类型
-                }else if(small_rect_area * 12>big_rect_area && small_rect_area *4 < big_rect_area)
+                }else if(small_rect_area * 5>big_rect_area && small_rect_area *3 < big_rect_area)
                 {
                     object.type_ = INACTION;    // 未激活类型
                 }
@@ -135,7 +138,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                 }
 #endif
                 // 更新世界坐标系顺序
-                Point2f buff_offset = Point2f(buff_offset_x_, buff_offset_y_);
+                Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
                 object.UpdateOrder(buff_offset);
                 // 根据距离计算超预测点
                 object.UpdataPredictPoint();
@@ -152,16 +155,13 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     //     TODO(cz): 超预测写了一版基础，未加入识别到5个激活目标后再进入超预测的逻辑，仅供参考
     Object final_target;
     bool find_flag = false;
-    if(target_size==4 && move_static==1)
-    {
-        do_you_find_inaction+=1;
-    }
     // 你需要击打的能量机关类型 1(true)击打未激活 0(false)击打激活
     for(int i=0; i < vec_target.size(); i++)
     {
         Object object_tmp = vec_target.at(i);
         if(do_you_find_inaction==0)
         {
+            trigger(target_size,direction_tmp);
             // 普通模式击打未激活机关
             if(object_tmp.type_ == INACTION)
             {
@@ -182,6 +182,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
             }
         }else if(do_you_find_inaction>=1)
         {
+            trigger(target_size,direction_tmp);
             // 超预测模式击打目标选择
             bool is_contain = false;
             for(int j=0; j < vec_color_rect.size(); j++)
@@ -217,6 +218,18 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     return find_flag;
 }
 
+void BuffDetector::trigger(int target_size, int move_static)
+{
+    if(target_size==4 && abs(move_static)==1)
+    {
+        do_you_find_inaction++;
+    }
+    else if(target_size==5 && abs(move_static)==1)
+    {
+        do_you_find_inaction=0;
+    }
+    return ;
+}
 int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 {
     color_ = other_param.color;
@@ -225,7 +238,7 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
     int command = -1;
     if(find_flag)
     {
-        bool direction_tmp = getDirection(buff_angle_);
+        direction_tmp = getDirection(buff_angle_);
         Point2f world_offset;
         //#define DIRECTION_FILTER
 #ifdef DIRECTION_FILTER
@@ -244,10 +257,9 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
         solve_angle_long_.Generate3DPoints(2, world_offset);
         solve_angle_long_.getBuffAngle(points_2d, 28.5, buff_angle_, angle_x_, angle_y_, distance_);
 
-//        attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,move_static);
     }
-//    attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,move_static);
-        command = auto_control.run(angle_x_, angle_y_, find_flag);
+    //    attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,direction_tmp);
+    command = auto_control.run(angle_x_, angle_y_, find_flag);
 #ifdef DEBUG_PLOT //0紫 1橙
     w_->addPoint(command, 0);
     w_->addPoint(angle_y_, 1);
@@ -347,72 +359,72 @@ int AutoAttack::run(bool find_target_flag, float angle_x, float angle_y, int tar
     switch (control_)
     {
     case 0:
-            if(fabs(angle_x) > 0.8f || fabs(angle_y) > 1.0f) // still not stable, wait
+        if(fabs(angle_x) > 0.8f || fabs(angle_y) > 1.0f) // still not stable, wait
+        {
+            buff_mode=follow;
+            t_tocul=0;
+        }
+        else if(fabs(angle_x) < 0.8f && fabs(angle_y) < 1.0f)
+        {
+            if(t_tocul==0) //stable, shoot
             {
+                buff_mode=shoot;
+                t_tocul++;
+            }
+            else if(t_tocul>0 && t_tocul <20) //only shoot once, then wait
+            {
+                t_tocul++;
                 buff_mode=follow;
+            }
+            else if(t_tocul>20)  // when out of the time, back to center
+            {
                 t_tocul=0;
             }
-            else if(fabs(angle_x) < 0.8f && fabs(angle_y) < 1.0f)
-            {
-                if(t_tocul==0) //stable, shoot
-                {
-                    buff_mode=shoot;
-                    t_tocul++;
-                }
-                else if(t_tocul>0 && t_tocul <20) //only shoot once, then wait
-                {
-                    t_tocul++;
-                    buff_mode=follow;
-                }
-                else if(t_tocul>20)  // when out of the time, back to center
-                {
-                    t_tocul=0;
-                }
-            }
+        }
 
         break;
 
     case 1:
         float diff=fabs(gimbal-20);
 
-            if(fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count==0)
-            {
-                buff_mode=restore_center;
-                if(diff_gimbal<2)
-                {++restore_count;}
+        if(fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count==0)
+        {
+            buff_mode=restore_center;
+            if(diff_gimbal<2)
+            {++restore_count;}
 
-            }
-            else if (fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count!=0)
+        }
+        else if (fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count!=0)
+        {
+            if(fabs(angle_x) > 0.8f || fabs(angle_y) > 1.0f)
             {
-                if(fabs(angle_x) > 0.8f || fabs(angle_y) > 1.0f)
+                buff_mode=follow;
+                t_tocul=0;
+            }
+            else if(fabs(angle_x) < 0.8f && fabs(angle_y) < 1.0f)
+            {
+                restore_count=0;
+                if(t_tocul==0)
                 {
+                    buff_mode=shoot;
+                    t_tocul++;
+                }
+                else if(t_tocul>0 && t_tocul <20)
+                {
+                    t_tocul++;
                     buff_mode=follow;
+                }
+                else if(t_tocul>20 && diff>2)
+                {
+                    buff_mode=restore_center;
+                }
+                else if(t_tocul>20 && diff <2)
+                {
+                    buff_mode=restore_center;
                     t_tocul=0;
                 }
-                else if(fabs(angle_x) < 0.8f && fabs(angle_y) < 1.0f)
-                {
-                    restore_count=0;
-                    if(t_tocul==0)
-                    {
-                        buff_mode=shoot;
-                        t_tocul++;
-                    }
-                    else if(t_tocul>0 && t_tocul <20)
-                    {
-                        t_tocul++;
-                        buff_mode=follow;
-                    }
-                    else if(t_tocul>20 && diff>2)
-                    {
-                        buff_mode=restore_center;
-                    }
-                    else if(t_tocul>20 && diff <2)
-                    {
-                        buff_mode=restore_center;
-                        t_tocul=0;
-                    }
-                }
             }
+        }
         break;
     }
     return buff_mode;
@@ -422,21 +434,21 @@ int AutoAttack::adjust_control(bool find_target_flag, int move_static,int target
 {
     if(find_target_flag)  //如果找到目标，选择击打模式
     {
-         center_buff=0;
+        center_buff=0;
         if(move_static==0)
         {
             control_=0;
         }
         else if(abs(move_static)==1)
         {
-             if(target_size==4)
+            if(target_size==4)
             {
                 control_=1;
             }
-             else
-             {
-                 control_=0;
-             }
+            else
+            {
+                control_=0;
+            }
         }
 
     }

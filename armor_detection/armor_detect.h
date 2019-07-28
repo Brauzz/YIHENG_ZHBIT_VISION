@@ -185,7 +185,7 @@ public:
     int short_offset_y_ = 100;
     int long_offset_x_ = 100;
     int long_offset_y_ = 100;
-    int color_th_ = 20;
+    int color_th_ = 16;
     int gray_th_ = 60;
 
 private:
