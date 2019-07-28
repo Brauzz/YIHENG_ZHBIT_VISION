@@ -260,6 +260,13 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
     }
     //    attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,direction_tmp);
     command = auto_control.run(angle_x_, angle_y_, find_flag);
+//    INFO(command);
+    int fire_flag = (command >> 1)&0x01;
+    int reset_flag = (command >> 2) & 0x01;
+    int follow_flag = (command) & 0x01;
+    INFO(fire_flag);
+    INFO(follow_flag);
+    INFO(reset_flag);
 #ifdef DEBUG_PLOT //0紫 1橙
     w_->addPoint(command, 0);
     w_->addPoint(angle_y_, 1);

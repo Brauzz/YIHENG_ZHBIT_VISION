@@ -24,17 +24,17 @@ using namespace std;
 #define BUFF_DETECT_DEBUG
 #ifdef BUFF_DETECT_DEBUG
 // ---- buff debug ----
-//#define DEBUG_DRAW_CONTOURS
+#define DEBUG_DRAW_CONTOURS
 #define DEBUG_PUT_TEST_TARGET
 #define DEBUG_PUT_TEST_ANGLE
 #define DEBUG_DRAW_TARGET
 //#define TEST_OTSU
-#define AREA_LENGTH_ANGLE 2 // 1:area 2:length 3:diff_angle
+#define AREA_LENGTH_ANGLE 3 // 1:area 2:length 3:diff_angle
 
 // ---- buff debug ----
 #endif
 
-#define DEFAULT -1
+#define DEFAULT 0
 #define FIRE 3
 #define RESET 4
 
@@ -160,7 +160,7 @@ public:
     }
 private:
     int cnt = 0;
-    int max_cnt_ = 3;   // 最大丢失目标次数
+    int max_cnt_ = 10;   // 最大丢失目标次数
 };
 
 
@@ -169,45 +169,50 @@ class AutoControl
 public:
     AutoControl(){}
     int run(float current_yaw, float &current_pit,int find_flag){
-        int command = DEFAULT;
-        command = fire_task.run(current_yaw, current_pit);
-        if(command != DEFAULT){
-            set_fire(command);
-            return command;
+        int command_tmp = DEFAULT;
+        command_tmp = fire_task.run(current_yaw, current_pit);
+        if(command_tmp != DEFAULT){
+            set_fire(command_);
+            printf("fire\r\n");
+//            INFO(command_);
+            return command_;
         }
-        command = reset_task.run(find_flag);
-        if(command != DEFAULT){
+        command_tmp = reset_task.run(find_flag);
+        if(command_tmp != DEFAULT){
             // 复位绝对角度
-            set_reset(command);
+            set_reset(command_);
             current_pit = -5;
-            return command;
+            return command_;
         }
         // 通过上面开火任务及复位任务还是得到默认指令，则判断跟随还是不跟随
-        if(command == DEFAULT)
+        if(command_tmp == DEFAULT)
         {
-           if(find_flag == 1)
-           {
-               set_follow(command);
-           }else
-           {
-               set_follow(command);
-           }
+            if(find_flag == 1)
+            {
+                set_follow(command_);
+            }else
+            {
+                set_no_follow(command_);
+            }
         }
-        return command;
+        return command_;
     }
 
 private:
     // 设置命令相关函数
     // 置1用 |    清零用&   跟随位0x01 开火位0x02 复位位0x04
     void set_follow(int &command){
-        command |= 0x01;
         command &= ~0x04;
+        command |= 0x01;
+
     }
     void set_no_follow(int &command){
-        command &= ~0x01;
         command &= ~0x04;
+        command &= ~0x01;
+
     }
     void set_fire(int &command){
+        command |= 0x01;
         command ^= 0x02;
     }
 
@@ -218,6 +223,7 @@ private:
 public:
     FireTask fire_task;
     ResetTask reset_task;
+    int command_ = 0;
 };
 
 

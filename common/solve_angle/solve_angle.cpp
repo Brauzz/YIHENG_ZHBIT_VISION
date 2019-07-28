@@ -154,8 +154,8 @@ void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, 
 
     angle_x = static_cast<float>(atan2(xyz[0],xyz[2]));
     angle_x = static_cast<float>(angle_x) * 57.2957805f;
-    angle_y = static_cast<float>(atan2(xyz[1],xyz[2]));
-//    angle_y = getBuffPitch(dist/1000, xyz[1]/1000, ballet_speed);
+//    angle_y = static_cast<float>(atan2(xyz[1],xyz[2]));
+    angle_y = -getBuffPitch(dist/1000, -xyz[1]/1000, ballet_speed);
     angle_y = static_cast<float>(angle_y) * 57.2957805f ;
 }
 
@@ -201,7 +201,7 @@ float SolveAngle::getBuffPitch(float dist, float tvec_y, float ballet_speed)
         t = dist / (ballet_speed * cos(a));
         y_actual = ballet_speed * sin(a) * t - GRAVITY * t * t / 2;
         dy = tvec_y - y_actual;
-        y_temp = y_temp - dy;
+        y_temp = y_temp + dy;
         // 当枪口抬升角度与实际落点误差较小时退出
         if (fabsf(dy) < 0.01) {
             break;
