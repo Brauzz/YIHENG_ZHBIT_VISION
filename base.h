@@ -5,15 +5,16 @@
 #define ROBOT_TYPE INFANTRY // INFANTRY HERO PLANE
 
 // ****** 整个系统的调试  ******//
-#define WAITKEY 100
+#define WAITKEY 1
 #define IMAGESHOW
 #define GALAXY
 #define DEBUG_PLOT
 //****** 线程使能 *****
-#define SHORT_CAMERA_ENABLE 0
+#define SHORT_CAMERA_ENABLE 1
 #define LONG_CAMERA_ENABLE  0
 //#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
+//#define SAVE_VIDEO_THREAD
 
 //****** 装甲板识别配置 *****
 #define DEBUG_ARMOR_DETECT
@@ -53,7 +54,7 @@ galaxy_1.xml"
 #define PTZ_TO_BARREL 0.0f   // 补兵激光在２３ｍｍ下方
 
 //****** 笔记本调试相关参数 *****
-#define DEBUG_VIDEO 1
+//#define DEBUG_VIDEO 1
 #define FORCE_CHANGE_CAMERA
 struct OtherParam
 {

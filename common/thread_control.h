@@ -23,6 +23,7 @@
 #include "fstream"
 
 #include "../camera/camera_device.h"
+#include "../camera/save_video.h"
 #include "../armor_detection/armor_detect.h"
 #include "../buff_detection/buff_detect.h"
 #include "./serial/serial_port.h"
@@ -57,7 +58,7 @@ public:
     void ImageProcess();      // 图像处理线程，用于自瞄，能量机关识别
     void GetGimbal();         // 用于获取云台陀螺仪数据
     void GetSTM32();          // 用于接收电控发来的数据
-
+    void ImageWrite();        // 用于图像保存线程
 private:
     Mat image_;
     OtherParam other_param;

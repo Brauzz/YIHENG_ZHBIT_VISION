@@ -20,6 +20,7 @@
 static volatile unsigned int produce_index;     // 图像生成序号，用于线程之间逻辑
 static volatile unsigned int gimbal_data_index;     // gimbal data 生成序号，用于线程之间逻辑
 static volatile unsigned int consumption_index; // 图像消耗序号
+static volatile unsigned int save_image_index;  // 保存图像序号
 
 #ifdef GET_STM32_THREAD
 SerialPort serial_(SERIAL_PATH,SERIAL_BAUD);                 // pc与stm32之间的串口通信
@@ -303,6 +304,28 @@ void ThreadControl::ImageProcess()
 #endif
     }
 }
+
+#ifdef SAVE_VIDEO_THREAD
+void ThreadControl::ImageWrite()
+{
+    cout << " ------ IMAGE WRITE TASK ON !!! ------" << endl;
+    SaveVideo writer;
+    INFO(writer.getState());
+    while(writer.getState()){
+        while(static_cast<int>(produce_index - save_image_index) <= 0){
+            END_THREAD;
+        }
+        Mat img_tmp;
+        image_.copyTo(img_tmp);
+        if(img_tmp.rows == 360)
+            copyMakeBorder(img_tmp, img_tmp, 0, 120, 0, 0, BORDER_CONSTANT, Scalar::all(0));
+        writer.updateImage(img_tmp);
+        save_image_index++;
+    }
+}
+#endif
+
+
 
 void protectDate(int& a, int &b, int &c, int& d, int& e, int& f)
 {

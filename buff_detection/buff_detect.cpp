@@ -69,7 +69,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
             vec_color_rect.push_back(rect);
         }
         // 用于寻找小轮廓，没有父轮廓的跳过, 以及不满足6点拟合椭圆
-        if(hierarchy[i][3]<0 || contours[i].size() < 6)
+        if(hierarchy[i][3]<0 || contours[i].size() < 6 || contours[static_cast<uint>(hierarchy[i][3])].size() < 6)
             continue;
         // 小轮廓面积条件
         double small_rect_area = contourArea(contours[i]);

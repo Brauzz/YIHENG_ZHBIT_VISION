@@ -38,6 +38,9 @@ int main()
 #ifdef GET_STM32_THREAD
     std::thread stm32_task(&ThreadControl::GetSTM32, &ImageControl);
 #endif
+#ifdef SAVE_VIDEO_THREAD
+    std::thread write_task(&ThreadControl::ImageWrite, &ImageControl);
+#endif
 
     produce_task.join();
     process_task.join();
@@ -46,6 +49,9 @@ int main()
 #endif
 #ifdef GET_STM32_THREAD
     stm32_task.detach();
+#endif
+#ifdef SAVE_VIDEO_THREAD
+    write_task.join();
 #endif
     return 1;
 }
