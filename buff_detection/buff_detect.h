@@ -29,7 +29,7 @@ using namespace std;
 #define DEBUG_PUT_TEST_ANGLE
 #define DEBUG_DRAW_TARGET
 //#define TEST_OTSU
-#define AREA_LENGTH_ANGLE 3 // 1:area 2:length 3:diff_angle
+#define AREA_LENGTH_ANGLE 1 // 1:area 2:length 3:diff_angle
 
 // ---- buff debug ----
 #endif
@@ -109,6 +109,10 @@ public:
             // 不满足条件加速减时间
             cnt -= 3;
             if(cnt<0) cnt = 0;
+        }
+        if(current_yaw > 2*limit_angle_x_
+                || current_pit > 2*limit_anlge_y_)
+        {
             // 获得一次开火的机会
             shoot_chance = true;
         }
@@ -133,8 +137,8 @@ private:
     bool shoot_chance = true;
 
     int max_cnt_ = 100;             // 满足条件次数
-    float limit_angle_x_ = 0.1f;    // 条件角度阈值
-    float limit_anlge_y_ = 0.1f;
+    float limit_angle_x_ = 0.2f;    // 条件角度阈值
+    float limit_anlge_y_ = 0.2f;
 };
 
 class ResetTask{
@@ -278,7 +282,7 @@ public:
     int buff_offset_y_ = 135;
     int world_offset_x_ = 500;
     int world_offset_y_ = 500;
-    int color_th_ = 11;
+    int color_th_ = 18;
     int gray_th_ = 50;
     float buff_angle_ = 0;
     AutoAttack attack;
@@ -302,6 +306,8 @@ private:
     float last_angle_ = 0;
     float max_filter_value_ = 15;
     int direction_tmp=0;
+
+    int command = 0;
 };
 
 float Point_distance(Point2f p1,Point2f p2);

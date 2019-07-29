@@ -19,10 +19,10 @@
 bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 {
 
-
+        GaussianBlur(img, img, Size(3,3),0);
     float diff_data=fabs(other_param.gimbal_data-26);
     // **预处理** -图像进行相应颜色的二值化
-    GaussianBlur(img, img, Size(3,3),0);
+
     points_2d.clear();
     vector<cv::Mat> bgr;
     split(img, bgr);
@@ -83,10 +83,14 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
             continue;
         // 能量机关扇叶进行拟合
         Object object;
+#ifdef FIT
         object.small_rect_ = fitEllipse(contours[i]);
         object.big_rect_ = fitEllipse(contours[static_cast<uint>(hierarchy[i][3])]);
-
-        //        drawContours(img,contours,i,Scalar(0,0,255),3);
+#else
+        object.small_rect_ = minAreaRect(contours[i]);
+        object.big_rect_ = minAreaRect(contours[static_cast<uint>(hierarchy[i][3])]);
+#endif
+        //                drawContours(img,contours,i,Scalar(0,0,255),3);
 #ifdef DEBUG_DRAW_CONTOURS
         Point2f small_point_tmp[4];
         object.small_rect_.points(small_point_tmp);
@@ -99,57 +103,74 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
         }
 #endif
         float diff_angle=fabsf(object.big_rect_.angle-object.small_rect_.angle);
-        if(object.small_rect_.size.height/object.small_rect_.size.width < 3)
+        //        if(object.small_rect_.size.height/object.small_rect_.size.width < 3)
+        //        {
+
+        //            if(diff_angle<100 && diff_angle>80)
+        //            {
+        // 用于超预测时比例扩展时矩形的判断
+        Rect rect = boundingRect(contours[static_cast<uint>(hierarchy[i][3])]);
+        vec_color_rect.push_back(rect);
+
+        float small_rect_size_ratio;
+        if(object.small_rect_.size.width > object.small_rect_.size.height)
+        {
+            small_rect_size_ratio = object.small_rect_.size.width/object.small_rect_.size.height;
+        }else {
+            small_rect_size_ratio = object.small_rect_.size.height/object.small_rect_.size.width;
+        }
+
+        // 根据轮廓面积进行判断扇叶类型
+        if(small_rect_area * 10 >big_rect_area && small_rect_area* 6<big_rect_area
+                && small_rect_size_ratio > 1 && small_rect_size_ratio < 2)
         {
 
-            if(diff_angle<100 && diff_angle>80)
-            {
-                // 用于超预测时比例扩展时矩形的判断
-                Rect rect = boundingRect(contours[static_cast<uint>(hierarchy[i][3])]);
-                vec_color_rect.push_back(rect);
-
-                // 根据轮廓面积进行判断扇叶类型
-                if(small_rect_area * 12 >big_rect_area && small_rect_area* 6<big_rect_area)
-                {
-                    object.type_ = ACTION;  // 已经激活类型
-                }else if(small_rect_area * 5>big_rect_area && small_rect_area *3 < big_rect_area)
-                {
-                    object.type_ = INACTION;    // 未激活类型
-                }
-
-#ifdef AREA_LENGTH_ANGLE
-                switch (AREA_LENGTH_ANGLE)
-                {
-                case 1:
-                {
-                    double multiple_area=fabs(big_rect_area/small_rect_area);
-                    putText(img, to_string(multiple_area), Point2f(5,5)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-                }break;
-                case 2:
-                {
-                    double multiple_length=fabs(big_rect_length/small_rect_length);
-                    putText(img, to_string(multiple_length), Point2f(5,5)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-                }break;
-                case 3:
-                {
-                    putText(img, to_string(diff_angle), Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-                }break;
-
-                }
-#endif
-                // 更新世界坐标系顺序
-                Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
-                object.UpdateOrder(buff_offset);
-                // 根据距离计算超预测点
-                object.UpdataPredictPoint();
-                circle(img , object.test_point_, 3, Scalar(22,255,25));
-                vec_target.push_back(object);
-                if(diff_data<2)
-                {
-                    target_size=vec_target.size();
-                }
-            }
+            object.type_ = ACTION;  // 已经激活类型
+        }else if(small_rect_area * 4>big_rect_area && small_rect_area *3 < big_rect_area
+                 && small_rect_size_ratio > 1 && small_rect_size_ratio < 2)
+        {
+            object.type_ = INACTION;    // 未激活类型
+        }else
+        {
+            object.type_ = UNKOWN;    // 未激活类型
         }
+
+        if(object.type_!=UNKOWN)
+        {
+#ifdef AREA_LENGTH_ANGLE
+            switch (AREA_LENGTH_ANGLE)
+            {
+            case 1:
+            {
+                double multiple_area=fabs(big_rect_area/small_rect_area);
+                putText(img, to_string(multiple_area), Point2f(5,5)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+            }break;
+            case 2:
+            {
+                double multiple_length=fabs(big_rect_length/small_rect_length);
+                putText(img, to_string(multiple_length), Point2f(5,5)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+            }break;
+            case 3:
+            {
+                putText(img, to_string(diff_angle), Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+            }break;
+
+            }
+#endif
+        }
+        // 更新世界坐标系顺序
+        Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
+        object.UpdateOrder(buff_offset);
+        // 根据距离计算超预测点
+        object.UpdataPredictPoint();
+        circle(img , object.test_point_, 3, Scalar(22,255,25));
+        vec_target.push_back(object);
+        if(diff_data<2)
+        {
+            target_size=vec_target.size();
+        }
+        //            }
+        //        }
     }
     // 遍历所有结果并处理\选择需要击打的目标
     //     TODO(cz): 超预测写了一版基础，未加入识别到5个激活目标后再进入超预测的逻辑，仅供参考
@@ -235,7 +256,7 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
     color_ = other_param.color;
     gimbal=other_param.gimbal_data;
     bool find_flag = DetectBuff(img,other_param);
-    int command = -1;
+    int command = 0;
     if(find_flag)
     {
         direction_tmp = getDirection(buff_angle_);
@@ -261,14 +282,21 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
     //    attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,direction_tmp);
     command = auto_control.run(angle_x_, angle_y_, find_flag);
 //    INFO(command);
-    int fire_flag = (command >> 1)&0x01;
-    int reset_flag = (command >> 2) & 0x01;
-    int follow_flag = (command) & 0x01;
-    INFO(fire_flag);
-    INFO(follow_flag);
-    INFO(reset_flag);
+//    int fire_flag = (command >> 1)&0x01;
+//    int reset_flag = (command >> 2) & 0x01;
+//    int follow_flag = (command) & 0x01;
+//    INFO(fire_flag);
+
+    //    char key = waitKey(1);
+    //    if(key=='s')
+    //    {
+    //        command^=0x02;
+    //    }
+    //    INFO(command);
+    //    INFO(follow_flag);
+    //    INFO(reset_flag);
 #ifdef DEBUG_PLOT //0紫 1橙
-    w_->addPoint(command, 0);
+    w_->addPoint(angle_x_, 0);
     w_->addPoint(angle_y_, 1);
     w_->plot();
 #endif
@@ -310,6 +338,7 @@ int BuffDetector::getDirection(float angle)
 void Object::UpdateOrder(Point2f offset_point)
 {
     points_2d_.clear();
+#ifdef FIT
     Point2f points[4];
     small_rect_.points(points);
     Point2f point_up_center = (points[0] + points[1])/2;
@@ -327,6 +356,49 @@ void Object::UpdateOrder(Point2f offset_point)
         points_2d_.push_back(points[2]+offset_point);points_2d_.push_back(points[3]+offset_point);
         points_2d_.push_back(points[0]+offset_point);points_2d_.push_back(points[1]+offset_point);
     }
+#else
+    float width = small_rect_.size.width;
+    float height = small_rect_.size.height;
+    Point2f points[4];
+    small_rect_.points(points);
+    if(width >= height)
+    {
+        Point2f point_up_center = (points[0] + points[3])/2;
+        Point2f point_down_center = (points[1] + points[2])/2;
+        double up_distance = Point_distance(point_up_center, big_rect_.center);
+        double down_distance = Point_distance(point_down_center, big_rect_.center);
+        if(up_distance <= down_distance)
+        {
+            angle_ = 90 - small_rect_.angle;
+            points_2d_.push_back(points[1]+offset_point);points_2d_.push_back(points[2]+offset_point);
+            points_2d_.push_back(points[3]+offset_point);points_2d_.push_back(points[0]+offset_point);
+
+        }else
+        {
+            angle_ = 270 - small_rect_.angle;
+            points_2d_.push_back(points[3]+offset_point);points_2d_.push_back(points[0]+offset_point);
+            points_2d_.push_back(points[1]+offset_point);points_2d_.push_back(points[2]+offset_point);
+        }
+    }else
+    {
+        Point2f point_up_center = (points[0] + points[1])/2;
+        Point2f point_down_center = (points[2] + points[3])/2;
+        double up_distance = Point_distance(point_up_center, big_rect_.center);
+        double down_distance = Point_distance(point_down_center, big_rect_.center);
+        if(up_distance <= down_distance)
+        {
+            angle_ = - small_rect_.angle;
+            points_2d_.push_back(points[2]+offset_point);points_2d_.push_back(points[3]+offset_point);
+            points_2d_.push_back(points[0]+offset_point);points_2d_.push_back(points[1]+offset_point);
+
+        }else
+        {
+            angle_ = 180 - small_rect_.angle;
+            points_2d_.push_back(points[0]+offset_point);points_2d_.push_back(points[1]+offset_point);
+            points_2d_.push_back(points[2]+offset_point);points_2d_.push_back(points[3]+offset_point);
+        }
+    }
+#endif
 }
 
 void Object::UpdataPredictPoint()
