@@ -19,7 +19,7 @@
 bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 {
 
-        GaussianBlur(img, img, Size(3,3),0);
+    GaussianBlur(img, img, Size(3,3),0);
     float diff_data=fabs(other_param.gimbal_data-26);
     // **预处理** -图像进行相应颜色的二值化
 
@@ -64,9 +64,16 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     findContours(binary_color_img,contours,hierarchy,CV_RETR_CCOMP,CHAIN_APPROX_SIMPLE);
     for(size_t i=0; i < contours.size();i++)
     {
+
+
         // 用于寻找小轮廓，没有父轮廓的跳过, 以及不满足6点拟合椭圆
         if(hierarchy[i][3]<0 || contours[i].size() < 6 || contours[static_cast<uint>(hierarchy[i][3])].size() < 6)
             continue;
+
+        // 用于超预测时比例扩展时矩形的判断
+        Rect rect = boundingRect(contours[static_cast<uint>(hierarchy[i][3])]);
+        vec_color_rect.push_back(rect);
+
         // 小轮廓面积条件
         double small_rect_area = contourArea(contours[i]);
         double small_rect_length=arcLength(contours[i],true);
@@ -102,75 +109,55 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
             line(img, big_point_tmp[k],big_point_tmp[(k+1)%4], Scalar(0, 0, 255), 1);
         }
 #endif
+#ifdef FIT
         float diff_angle=fabsf(object.big_rect_.angle-object.small_rect_.angle);
-        //        if(object.small_rect_.size.height/object.small_rect_.size.width < 3)
-        //        {
 
-        //            if(diff_angle<100 && diff_angle>80)
-        //            {
-        // 用于超预测时比例扩展时矩形的判断
-        Rect rect = boundingRect(contours[static_cast<uint>(hierarchy[i][3])]);
-        vec_color_rect.push_back(rect);
-
-        float small_rect_size_ratio;
-        if(object.small_rect_.size.width > object.small_rect_.size.height)
-        {
-            small_rect_size_ratio = object.small_rect_.size.width/object.small_rect_.size.height;
-        }else {
-            small_rect_size_ratio = object.small_rect_.size.height/object.small_rect_.size.width;
-        }
-
-        // 根据轮廓面积进行判断扇叶类型
-        if(small_rect_area * 10 >big_rect_area && small_rect_area* 6<big_rect_area
-                && small_rect_size_ratio > 1 && small_rect_size_ratio < 2)
+        if(object.small_rect_.size.height/object.small_rect_.size.width < 3)
         {
 
-            object.type_ = ACTION;  // 已经激活类型
-        }else if(small_rect_area * 4>big_rect_area && small_rect_area *3 < big_rect_area
-                 && small_rect_size_ratio > 1 && small_rect_size_ratio < 2)
-        {
-            object.type_ = INACTION;    // 未激活类型
-        }else
-        {
-            object.type_ = UNKOWN;    // 未激活类型
-        }
-
-        if(object.type_!=UNKOWN)
-        {
-#ifdef AREA_LENGTH_ANGLE
-            switch (AREA_LENGTH_ANGLE)
+            if(diff_angle<100 && diff_angle>80)
             {
-            case 1:
-            {
-                double multiple_area=fabs(big_rect_area/small_rect_area);
-                putText(img, to_string(multiple_area), Point2f(5,5)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-            }break;
-            case 2:
-            {
-                double multiple_length=fabs(big_rect_length/small_rect_length);
-                putText(img, to_string(multiple_length), Point2f(5,5)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-            }break;
-            case 3:
-            {
-                putText(img, to_string(diff_angle), Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-            }break;
-
-            }
 #endif
+                float small_rect_size_ratio;
+                if(object.small_rect_.size.width > object.small_rect_.size.height)
+                {
+                    small_rect_size_ratio = object.small_rect_.size.width/object.small_rect_.size.height;
+                }else {
+                    small_rect_size_ratio = object.small_rect_.size.height/object.small_rect_.size.width;
+                }
+
+                // 根据轮廓面积进行判断扇叶类型
+                if(small_rect_area * 10 >big_rect_area && small_rect_area* 6<big_rect_area
+                        && small_rect_size_ratio > 1 && small_rect_size_ratio < 2.0f)
+                {
+                    object.type_ = ACTION;  // 已经激活类型
+                    //            putText(img, "ACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                }else if(small_rect_area * 6>big_rect_area && small_rect_area *3 < big_rect_area
+                         && small_rect_size_ratio > 1 && small_rect_size_ratio < 2.0f)
+                {
+                    object.type_ = INACTION;    // 未激活类型
+                    //            putText(img, "INACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                }else
+                {
+                    object.type_ = UNKOWN;    // 未激活类型
+                    //            putText(img, "UNKOWN", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                }
+
+                // 更新世界坐标系顺序
+                Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
+                object.UpdateOrder(buff_offset);
+                // 根据距离计算超预测点
+                object.UpdataPredictPoint();
+                circle(img , object.test_point_, 3, Scalar(22,255,25));
+                vec_target.push_back(object);
+                if(diff_data<2)
+                {
+                    target_size=vec_target.size();
+                }
+#ifdef FIT
+            }
         }
-        // 更新世界坐标系顺序
-        Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
-        object.UpdateOrder(buff_offset);
-        // 根据距离计算超预测点
-        object.UpdataPredictPoint();
-        circle(img , object.test_point_, 3, Scalar(22,255,25));
-        vec_target.push_back(object);
-        if(diff_data<2)
-        {
-            target_size=vec_target.size();
-        }
-        //            }
-        //        }
+#endif
     }
     // 遍历所有结果并处理\选择需要击打的目标
     //     TODO(cz): 超预测写了一版基础，未加入识别到5个激活目标后再进入超预测的逻辑，仅供参考
@@ -280,12 +267,13 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 
     }
     //    attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,direction_tmp);
+
     command = auto_control.run(angle_x_, angle_y_, find_flag);
-//    INFO(command);
-//    int fire_flag = (command >> 1)&0x01;
-//    int reset_flag = (command >> 2) & 0x01;
-//    int follow_flag = (command) & 0x01;
-//    INFO(fire_flag);
+    //    INFO(command);
+    //    int fire_flag = (command >> 1)&0x01;
+    //    int reset_flag = (command >> 2) & 0x01;
+    //    int follow_flag = (command) & 0x01;
+    //    INFO(fire_flag);
 
     //    char key = waitKey(1);
     //    if(key=='s')

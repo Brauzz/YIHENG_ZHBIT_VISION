@@ -15,10 +15,12 @@
  *  along with this program. If not, see <http://www.gnu.org/licenses/>.
  ***************************************************************************/
 #pragma once
+#include "iostream"
 #include "../common/thread_control.h"
 #include "../common/solve_angle/solve_angle.h"
 #include "../base.h"
 #include "../mainwindow.h"
+
 using namespace cv;
 using namespace std;
 #define BUFF_DETECT_DEBUG
@@ -97,33 +99,48 @@ class FireTask{
 public:
     FireTask(){}
     // 开火条件是当输出的角度趋近于０一段时间开火
-    int run(float current_yaw, float current_pit)
+    int run(Point2f current_angle)
     {
+        // 获得发射机会的条件
+        Point2f d_angle = Point2f(fabs(last_angle_.x - current_angle.x)
+                                  , fabs(last_angle_.y - current_angle.y));
+        if(d_angle.x > limit_chance_angle || d_angle.y > limit_chance_angle)
+        {
+            filter_chance_cnt++;
+            if(filter_chance_cnt == limit_filter_chance)
+            {
+                if(shoot_chance_ == false){
+                    printf("获得一次开火机会\r\n");
+                }
+                shoot_chance_ = true;
+                filter_chance_cnt = 0;
+            }
+        }else{
+            filter_chance_cnt = 0;
+            last_angle_ = current_angle;
+        }
+
+        // 控制发射条件
         int command = DEFAULT;
-        if(current_yaw < limit_angle_x_
-                && current_pit < limit_anlge_y_)
+        if(fabs(current_angle.x) < limit_angle_x_
+                && fabs(current_angle.y) < limit_anlge_y_)
         {
             // 满足小于一段时间计数
-            cnt ++;
+            cnt_ ++;
         }else {
             // 不满足条件加速减时间
-            cnt -= 3;
-            if(cnt<0) cnt = 0;
+            cnt_ -= 3;
+            if(cnt_<0) cnt_ = 0;
         }
-        if(current_yaw > 2*limit_angle_x_
-                || current_pit > 2*limit_anlge_y_)
+        if(cnt_ > max_cnt_)
         {
-            // 获得一次开火的机会
-            shoot_chance = true;
-        }
-        // 控制发射条件
-        if(cnt > max_cnt_)
-        {
-            cnt = 0;
-            if(shoot_chance == true)
+            cnt_ = 0;
+            if(shoot_chance_ == true)
             {
                 command = FIRE;
-                shoot_chance = 0;
+                fire_cnt++;
+                printf("开火:%d\r\n", fire_cnt);
+                shoot_chance_ = 0;
             }else {
                 command = DEFAULT;
             }
@@ -133,12 +150,19 @@ public:
         return command;
     }
 private:
-    int cnt = 0;
-    bool shoot_chance = true;
+    // 获得发射机会的参数
+    Point2f last_angle_;
+    int filter_chance_cnt = 0;
+    int limit_filter_chance = 5;
+    int limit_chance_angle = 1;
+    bool shoot_chance_ = true;
 
+    // 控制开火的参数
+    int cnt_ = 0;
+    int fire_cnt = 0;
     int max_cnt_ = 100;             // 满足条件次数
-    float limit_angle_x_ = 0.2f;    // 条件角度阈值
-    float limit_anlge_y_ = 0.2f;
+    float limit_angle_x_ = 1.0f;    // 条件角度阈值
+    float limit_anlge_y_ = 1.0f;
 };
 
 class ResetTask{
@@ -174,11 +198,12 @@ public:
     AutoControl(){}
     int run(float current_yaw, float &current_pit,int find_flag){
         int command_tmp = DEFAULT;
-        command_tmp = fire_task.run(current_yaw, current_pit);
+        command_tmp = fire_task.run(Point2f(current_yaw, current_pit));
         if(command_tmp != DEFAULT){
             set_fire(command_);
-            printf("fire\r\n");
-//            INFO(command_);
+            fire_cnt++;
+            //            printf("fire:%d\r\n", fire_cnt);
+            //            INFO(command_);
             return command_;
         }
         command_tmp = reset_task.run(find_flag);
@@ -228,6 +253,7 @@ public:
     FireTask fire_task;
     ResetTask reset_task;
     int command_ = 0;
+    int fire_cnt = 0;
 };
 
 
