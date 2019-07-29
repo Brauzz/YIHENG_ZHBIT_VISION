@@ -48,7 +48,9 @@ public:
     Mat tvec;
     float height_world = 60.0;
     float overlap_dist = 100000.0;
+        float barrel_ptz_offset_x = -0;
     float barrel_ptz_offset_y = -0; // mm   + ptz is up barrel
+
     float ptz_camera_x = 0;       // +left
     float ptz_camera_y = 52.5;       // + camera is  ptz
     float ptz_camera_z = -135;//-225;     // - camera is front ptz
