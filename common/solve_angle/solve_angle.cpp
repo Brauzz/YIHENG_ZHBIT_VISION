@@ -105,12 +105,12 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
         alpha = asin(static_cast<double>(barrel_ptz_offset_x)/sqrt(xyz[0]*xyz[0] + xyz[2]*xyz[2]));
         if(xyz[0] > 0)
         {
-            Beta = atan(xyz[0]/xyz[2]);
-            angle_x = static_cast<float>(alpha+Beta); //camera coordinate
+            Beta = atan(-xyz[0]/xyz[2]);
+            angle_x = static_cast<float>(-(alpha+Beta)); //camera coordinate
         }else if(xyz[0] < static_cast<double>(barrel_ptz_offset_x))
         {
             Beta = atan(xyz[0]/xyz[2]);
-            angle_x = static_cast<float>(alpha - Beta);
+            angle_x = static_cast<float>(-(alpha - Beta));
         }else
         {
             Beta = atan(xyz[0]/xyz[2]);
