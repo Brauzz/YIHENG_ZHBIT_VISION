@@ -55,6 +55,8 @@ class Object
 public:
     Object(){}
 
+    RotatedRect fitEllipse_rect;
+    RotatedRect minArea_rect;
     RotatedRect small_rect_;
     RotatedRect big_rect_;
     vector<Point2f> points_2d_;
@@ -74,6 +76,7 @@ public:
             circle(img, small_rect_.center, 3, Scalar(255, 255, 255), 1);
     }
 
+    void Indeed_smallrect(RotatedRect minArearect,RotatedRect fitEllipserect);
     void UpdateOrder(Point2f offset_point);
     void UpdataPredictPoint();
     int type_ = UNKOWN;

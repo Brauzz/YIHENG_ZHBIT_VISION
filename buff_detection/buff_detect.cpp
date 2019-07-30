@@ -94,8 +94,11 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
         object.small_rect_ = fitEllipse(contours[i]);
         object.big_rect_ = fitEllipse(contours[static_cast<uint>(hierarchy[i][3])]);
 #else
-        object.small_rect_ = minAreaRect(contours[i]);
+        object.fitEllipse_rect=fitEllipse(contours[i]);
+        object.minArea_rect = minAreaRect(contours[i]);
+        object.Indeed_smallrect(object.minArea_rect, object.fitEllipse_rect);
         object.big_rect_ = minAreaRect(contours[static_cast<uint>(hierarchy[i][3])]);
+
 #endif
         //                drawContours(img,contours,i,Scalar(0,0,255),3);
 #ifdef DEBUG_DRAW_CONTOURS
@@ -210,7 +213,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 #ifdef DEBUG_PUT_TEST_TARGET
                 putText(img, "<<---attack advance here", Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 #endif
-                final_target = object_tmp;
+//                final_target object_tmp;
                 points_2d=final_target.points_2d_;
                 find_flag = true;
                 break;
@@ -322,6 +325,21 @@ int BuffDetector::getDirection(float angle)
         return 0;
 }
 
+
+void Object::Indeed_smallrect(RotatedRect minArearect, RotatedRect fitEllipserect)
+{
+    if(minArearect.size.width>=minArearect.size.height)
+    {
+        float temp=minArearect.size.width;
+        minArearect.size.width=minArearect.size.height;
+        minArearect.size.height=temp;
+    }
+    small_rect_.size.width=minArearect.size.width;
+    small_rect_.size.height=minArearect.size.height;
+    small_rect_.center=fitEllipserect.center;
+    small_rect_.angle=fitEllipserect.angle;
+
+}
 
 void Object::UpdateOrder(Point2f offset_point)
 {
