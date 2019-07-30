@@ -56,6 +56,8 @@ class Object
 public:
     Object(){}
 
+    RotatedRect fitEllipse_rect;
+    RotatedRect minArea_rect;
     RotatedRect small_rect_;
     RotatedRect big_rect_;
     vector<Point2f> points_2d_;
@@ -76,6 +78,7 @@ public:
     }
 
     void UpdateOrder();
+    void Indeed_smallrect(RotatedRect minArearect,RotatedRect fitEllipserect);
     void UpdataPredictPoint();
 
     int type_ = UNKOWN;
