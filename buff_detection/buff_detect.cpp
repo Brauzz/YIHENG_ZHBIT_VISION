@@ -458,7 +458,7 @@ void Object::Indeed_smallrect(RotatedRect minArearect, RotatedRect fitEllipserec
 
 }
 
-void Object::UpdateOrder(Point2f offset_point)
+void Object::UpdateOrder()
 {
     points_2d_.clear();
 #ifdef FIT
