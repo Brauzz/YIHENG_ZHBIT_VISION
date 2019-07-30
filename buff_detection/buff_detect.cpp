@@ -20,7 +20,6 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 {
 
     GaussianBlur(img, img, Size(3,3),0);
-    float diff_data=fabs(other_param.gimbal_data-26);
     // **预处理** -图像进行相应颜色的二值化
 
     points_2d.clear();
@@ -64,35 +63,36 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     findContours(binary_color_img,contours,hierarchy,CV_RETR_CCOMP,CHAIN_APPROX_SIMPLE);
     for(size_t i=0; i < contours.size();i++)
     {
-
-
         // 用于寻找小轮廓，没有父轮廓的跳过, 以及不满足6点拟合椭圆
         if(hierarchy[i][3]<0 || contours[i].size() < 6 || contours[static_cast<uint>(hierarchy[i][3])].size() < 6)
             continue;
 
+        // 小轮廓面积条件
+        double small_rect_area = contourArea(contours[i]);
+        double small_rect_length = arcLength(contours[i],true);
+        if(small_rect_length < 10)
+            continue;
         // 用于超预测时比例扩展时矩形的判断
         Rect rect = boundingRect(contours[static_cast<uint>(hierarchy[i][3])]);
         vec_color_rect.push_back(rect);
 
-        // 小轮廓面积条件
-        double small_rect_area = contourArea(contours[i]);
-        double small_rect_length=arcLength(contours[i],true);
-        if(small_rect_length < 50)
-            continue;
-        if(small_rect_area < 400)
+
+
+
+        if(small_rect_area < 200)
             continue;
         // 大轮廓面积条件
         double big_rect_area = contourArea(contours[static_cast<uint>(hierarchy[i][3])]);
-        double big_rect_length=arcLength(contours[static_cast<uint>(hierarchy[i][3])],true);
-        if(big_rect_area < 500)
+        double big_rect_length = arcLength(contours[static_cast<uint>(hierarchy[i][3])],true);
+        if(big_rect_area < 300)
             continue;
-        if(big_rect_length < 80)
+        if(big_rect_length < 50)
             continue;
         // 能量机关扇叶进行拟合
         Object object;
 #ifdef FIT
-        object.small_rect_ = fitEllipse(contours[i]);
-        object.big_rect_ = fitEllipse(contours[static_cast<uint>(hierarchy[i][3])]);
+        object.small_rect_ = fitEllipseDirect(contours[i]);
+        object.big_rect_ = fitEllipseDirect(contours[static_cast<uint>(hierarchy[i][3])]);
 #else
         object.small_rect_ = minAreaRect(contours[i]);
         object.big_rect_ = minAreaRect(contours[static_cast<uint>(hierarchy[i][3])]);
@@ -127,32 +127,30 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                 }
 
                 // 根据轮廓面积进行判断扇叶类型
-                if(small_rect_area * 10 >big_rect_area && small_rect_area* 6<big_rect_area
-                        && small_rect_size_ratio > 1 && small_rect_size_ratio < 2.0f)
+                if(small_rect_area * 8 >big_rect_area && small_rect_area* 5.0f<big_rect_area
+                        && small_rect_size_ratio > 1 && small_rect_size_ratio < 2.3f)
                 {
                     object.type_ = ACTION;  // 已经激活类型
-                    //            putText(img, "ACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-                }else if(small_rect_area * 6>big_rect_area && small_rect_area *3 < big_rect_area
-                         && small_rect_size_ratio > 1 && small_rect_size_ratio < 2.0f)
+                    putText(img, "ACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                }else if(small_rect_area * 5.0f>=big_rect_area && small_rect_area *2 < big_rect_area
+                         && small_rect_size_ratio > 1 && small_rect_size_ratio < 2.3f)
                 {
                     object.type_ = INACTION;    // 未激活类型
-                    //            putText(img, "INACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                    putText(img, "INACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }else
                 {
                     object.type_ = UNKOWN;    // 未激活类型
-                    //            putText(img, "UNKOWN", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                    putText(img, "UNKOWN", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }
 
                 // 更新世界坐标系顺序
-                Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
-                object.UpdateOrder(buff_offset);
-                // 根据距离计算超预测点
-                object.UpdataPredictPoint();
-                circle(img , object.test_point_, 3, Scalar(22,255,25));
-                vec_target.push_back(object);
-                if(diff_data<2)
-                {
-                    target_size=vec_target.size();
+                if(object.type_ != UNKOWN){
+
+                    object.UpdateOrder();
+                    // 根据距离计算超预测点
+                    //                    object.UpdataPredictPoint();
+                    circle(img , object.test_point_, 3, Scalar(22,255,25));
+                    vec_target.push_back(object);
                 }
 #ifdef FIT
             }
@@ -162,38 +160,33 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     // 遍历所有结果并处理\选择需要击打的目标
     //     TODO(cz): 超预测写了一版基础，未加入识别到5个激活目标后再进入超预测的逻辑，仅供参考
     Object final_target;
+    vector<Object> inaction_target;
     bool find_flag = false;
+    bool do_you_find_inaction = 1;
     // 你需要击打的能量机关类型 1(true)击打未激活 0(false)击打激活
-    for(int i=0; i < vec_target.size(); i++)
+    for(size_t i=0; i < vec_target.size(); i++)
     {
         Object object_tmp = vec_target.at(i);
-        if(do_you_find_inaction==0)
+        if(do_you_find_inaction==1)
         {
-            trigger(target_size,direction_tmp);
+            //            trigger(target_size,direction_tmp);
             // 普通模式击打未激活机关
             if(object_tmp.type_ == INACTION)
             {
 #ifdef DEBUG_PUT_TEST_TARGET
                 //                putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 #endif
-                final_target = object_tmp;
-                points_2d = final_target.points_2d_;
-                buff_angle_ = object_tmp.angle_;
-#ifdef DEBUG_PUT_TEST_ANGLE
-                for(int j = 0; j < 4; j++)
-                {
-                    putText(img, to_string(j), Point2f(5,5)+ final_target.points_2d_[j], FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-                }
-#endif
+                inaction_target.push_back(object_tmp);
+
+
                 find_flag = true;
-                break;
             }
         }else if(do_you_find_inaction>=1)
         {
-            trigger(target_size,direction_tmp);
+            //            trigger(target_size,direction_tmp);
             // 超预测模式击打目标选择
             bool is_contain = false;
-            for(int j=0; j < vec_color_rect.size(); j++)
+            for(size_t j=0; j < vec_color_rect.size(); j++)
             {
                 //                Object other_object_tmp = vec_target.at(j);
                 //                Rect bound_rect_tmp = other_object_tmp.big_rect_.boundingRect();
@@ -219,9 +212,48 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 
         //        putText(img, to_string(object_tmp.angle_), Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
     }
+
+    //    for(size_t j=0; j < vec_color_rect.size(); j++)
+    //    {
+    //        Rect bound_rect_tmp = vec_color_rect.at(j);
+    //        rectangle(img, bound_rect_tmp, Scalar(128,0,128));
+    //    }
+    if(find_flag == true){
+        float dist = 1e8;
+        float dx, dy;
+//        INFO(inaction_target.size());
+        for(size_t i = 0; i< inaction_target.size(); i++)
+        {
+            // 计算补偿值
+
+            dx = fabs(inaction_target.at(i).small_rect_.center.x - 320);
+            dy = fabs(inaction_target.at(i).small_rect_.center.y - 240);
+            if(dx + dy < dist)
+            {
+                final_target = inaction_target.at(i);
+                dist = dx + dy;
+            }
+        }
+        Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
+        vector<Point2f> vec_points_2d_tmp;
+        for(size_t k=0; k < 4; k++)
+        {
+            vec_points_2d_tmp.push_back( final_target.points_2d_.at(k) + buff_offset);
+        }
+        points_2d = vec_points_2d_tmp;
+        buff_angle_ = final_target.angle_;
+#ifdef DEBUG_PUT_TEST_ANGLE
+        for(size_t j = 0; j < 4; j++)
+        {
+            putText(img, to_string(j), Point2f(5,5)+ final_target.points_2d_[j], FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+        }
+#endif
+
 #ifdef DEBUG_DRAW_TARGET
-    if(find_flag)
+
         final_target.DrawTarget(img);
+        //        action_cnt_ = GetIndex(img, final_target, vec_color_rect);
+    }
 #endif
     return find_flag;
 }
@@ -237,6 +269,91 @@ void BuffDetector::trigger(int target_size, int move_static)
         do_you_find_inaction=0;
     }
     return ;
+}
+
+void makePointSafe(Point2f &point){
+    if(point.x > 640)
+        point.x = 640;
+    else if(point.x < 0)
+        point.x = 0;
+    if(point.y > 480)  //industrial 480
+        point.y = 480;
+    else if(point.y < 0)
+        point.y = 0;
+}
+
+int BuffDetector::GetIndex(Mat &img, Object object, vector<Rect> all_rect)
+{
+    if(object.angle_>45 && object.angle_<135)
+    {
+        return action_cnt_;
+    }
+    Point2f center = object.small_rect_.center;
+
+    float length_scale = 1.1f;
+    float width_scale = -5.5f;
+    vector<Point2f> vec_point;
+
+    Point2f length = object.points_2d_.at(0) - object.points_2d_.at(1);
+    Point2f width = object.points_2d_.at(0) - object.points_2d_.at(3);
+    Point2f test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
+                                  , center.y + length.y * length_scale + width.y * width_scale);
+    circle(img, test_point_, 5, Scalar(0,255,0),-1);
+    putText(img, "1", test_point_, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+    vec_point.push_back(test_point_);
+
+    length_scale = -1.1f;
+    width_scale = -5.5f;
+    length = object.points_2d_.at(0) - object.points_2d_.at(1);
+    width = object.points_2d_.at(0) - object.points_2d_.at(3);
+    test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
+                          , center.y + length.y * length_scale + width.y * width_scale);
+    circle(img, test_point_, 5, Scalar(0,255,0),-1);
+    putText(img, "2", test_point_, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+    vec_point.push_back(test_point_);
+
+    length_scale = -0.8f;
+    width_scale = -8.0f;
+    length = object.points_2d_.at(0) - object.points_2d_.at(1);
+    width = object.points_2d_.at(0) - object.points_2d_.at(3);
+    test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
+                          , center.y + length.y * length_scale + width.y * width_scale);
+    circle(img, test_point_, 5, Scalar(0,255,0),-1);
+    putText(img, "3", test_point_, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+    vec_point.push_back(test_point_);
+
+    length_scale = 0.8f;
+    width_scale = -8.0f;
+    length = object.points_2d_.at(0) - object.points_2d_.at(1);
+    width = object.points_2d_.at(0) - object.points_2d_.at(3);
+    test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
+                          , center.y + length.y * length_scale + width.y * width_scale);
+    circle(img, test_point_, 5, Scalar(0,255,0),-1);
+    putText(img, "4", test_point_, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+    vec_point.push_back(test_point_);
+
+    int cnt = 0;
+
+    for(size_t i = 0; i < vec_point.size(); i++)
+    {
+        for(size_t j = 0; j < all_rect.size(); j++)
+        {
+            if(all_rect.at(j).contains(vec_point.at(i)) == true)
+            {
+                cnt ++;
+                break;
+            }
+        }
+    }
+    //    INFO(cnt);
+    if(action_cnt_ > cnt && action_cnt_ -2 < cnt){
+        return action_cnt_;
+    }
+    else{
+        return cnt;
+    }
+
+
 }
 int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 {
@@ -284,8 +401,8 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
     //    INFO(follow_flag);
     //    INFO(reset_flag);
 #ifdef DEBUG_PLOT //0紫 1橙
-    w_->addPoint(angle_x_, 0);
-    w_->addPoint(angle_y_, 1);
+    w_->addPoint(action_cnt_, 0);
+    //    w_->addPoint(angle_y_, 1);
     w_->plot();
 #endif
     return command;
@@ -314,16 +431,16 @@ int BuffDetector::getDirection(float angle)
     sum /= history_.size();
     //        cout << "sum " << sum << endl;
 
-    if(sum >= 0.5)
+    if(sum >= 0.5f)
         return 1;   // shun
-    else if(sum <= 0.5)
+    else if(sum <= 0.5f)
         return -1;   // ni
     else
         return 0;
 }
 
 
-void Object::UpdateOrder(Point2f offset_point)
+void Object::UpdateOrder()
 {
     points_2d_.clear();
 #ifdef FIT
@@ -336,13 +453,13 @@ void Object::UpdateOrder(Point2f offset_point)
     if(up_distance > down_distance)
     {
         angle_ = small_rect_.angle;
-        points_2d_.push_back(points[0]+offset_point);points_2d_.push_back(points[1]+offset_point);
-        points_2d_.push_back(points[2]+offset_point);points_2d_.push_back(points[3]+offset_point);
+        points_2d_.push_back(points[0]);points_2d_.push_back(points[1]);
+        points_2d_.push_back(points[2]);points_2d_.push_back(points[3]);
     }else
     {
         angle_ = small_rect_.angle + 180;
-        points_2d_.push_back(points[2]+offset_point);points_2d_.push_back(points[3]+offset_point);
-        points_2d_.push_back(points[0]+offset_point);points_2d_.push_back(points[1]+offset_point);
+        points_2d_.push_back(points[2]);points_2d_.push_back(points[3]);
+        points_2d_.push_back(points[0]);points_2d_.push_back(points[1]);
     }
 #else
     float width = small_rect_.size.width;
@@ -353,37 +470,37 @@ void Object::UpdateOrder(Point2f offset_point)
     {
         Point2f point_up_center = (points[0] + points[3])/2;
         Point2f point_down_center = (points[1] + points[2])/2;
-        double up_distance = Point_distance(point_up_center, big_rect_.center);
-        double down_distance = Point_distance(point_down_center, big_rect_.center);
+        float up_distance = Point_distance(point_up_center, big_rect_.center);
+        float down_distance = Point_distance(point_down_center, big_rect_.center);
         if(up_distance <= down_distance)
         {
             angle_ = 90 - small_rect_.angle;
-            points_2d_.push_back(points[1]+offset_point);points_2d_.push_back(points[2]+offset_point);
-            points_2d_.push_back(points[3]+offset_point);points_2d_.push_back(points[0]+offset_point);
+            points_2d_.push_back(points[1]);points_2d_.push_back(points[2]);
+            points_2d_.push_back(points[3]);points_2d_.push_back(points[0]);
 
         }else
         {
             angle_ = 270 - small_rect_.angle;
-            points_2d_.push_back(points[3]+offset_point);points_2d_.push_back(points[0]+offset_point);
-            points_2d_.push_back(points[1]+offset_point);points_2d_.push_back(points[2]+offset_point);
+            points_2d_.push_back(points[3]);points_2d_.push_back(points[0]);
+            points_2d_.push_back(points[1]);points_2d_.push_back(points[2]);
         }
     }else
     {
         Point2f point_up_center = (points[0] + points[1])/2;
         Point2f point_down_center = (points[2] + points[3])/2;
-        double up_distance = Point_distance(point_up_center, big_rect_.center);
-        double down_distance = Point_distance(point_down_center, big_rect_.center);
+        float up_distance = Point_distance(point_up_center, big_rect_.center);
+        float down_distance = Point_distance(point_down_center, big_rect_.center);
         if(up_distance <= down_distance)
         {
             angle_ = - small_rect_.angle;
-            points_2d_.push_back(points[2]+offset_point);points_2d_.push_back(points[3]+offset_point);
-            points_2d_.push_back(points[0]+offset_point);points_2d_.push_back(points[1]+offset_point);
+            points_2d_.push_back(points[2]);points_2d_.push_back(points[3]);
+            points_2d_.push_back(points[0]);points_2d_.push_back(points[1]);
 
         }else
         {
             angle_ = 180 - small_rect_.angle;
-            points_2d_.push_back(points[0]+offset_point);points_2d_.push_back(points[1]+offset_point);
-            points_2d_.push_back(points[2]+offset_point);points_2d_.push_back(points[3]+offset_point);
+            points_2d_.push_back(points[0]);points_2d_.push_back(points[1]);
+            points_2d_.push_back(points[2]);points_2d_.push_back(points[3]);
         }
     }
 #endif
@@ -407,8 +524,8 @@ void Object::UpdataPredictPoint()
         test_point_.x = 640;
     else if(test_point_.x < 0)
         test_point_.x = 0;
-    if(test_point_.y > 360)  //industrial 480
-        test_point_.y = 360;
+    if(test_point_.y > 480)  //industrial 480
+        test_point_.y = 480;
     else if(test_point_.y < 0)
         test_point_.y = 0;
 }
