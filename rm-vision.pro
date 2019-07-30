@@ -94,3 +94,6 @@ DISTFILES += \
     camera/camera_param/galaxy_1024.xml \
     camera/camera_param/galaxy_2.xml \
     camera/camera_param/galaxy_3.xml
+
+SUBDIRS += \
+    galaxy/galaxy.pro
