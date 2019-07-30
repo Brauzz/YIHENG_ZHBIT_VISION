@@ -32,6 +32,7 @@ using namespace std;
 #define DEBUG_DRAW_TARGET
 //#define TEST_OTSU
 #define AREA_LENGTH_ANGLE 1 // 1:area 2:length 3:diff_angle
+//#define FIT
 
 // ---- buff debug ----
 #endif
@@ -74,8 +75,9 @@ public:
             circle(img, small_rect_.center, 3, Scalar(255, 255, 255), 1);
     }
 
-    void UpdateOrder(Point2f offset_point);
+    void UpdateOrder();
     void UpdataPredictPoint();
+
     int type_ = UNKOWN;
 };
 
@@ -111,9 +113,16 @@ public:
             {
                 if(shoot_chance_ == false){
                     printf("获得一次开火机会\r\n");
+                    get_change_time = getTickCount();
                 }
-                shoot_chance_ = true;
-                filter_chance_cnt = 0;
+//                double t = getTickCount();
+//                if((t-get_change_time)*1000/getTickFrequency() > 100)
+//                {
+                    shoot_chance_ = true;
+                    filter_chance_cnt = 0;
+//                    get_change_time = t;
+//                }
+
             }
         }else{
             filter_chance_cnt = 0;
@@ -137,7 +146,11 @@ public:
             cnt_ = 0;
             if(shoot_chance_ == true)
             {
+#ifndef NO_FIRE
                 command = FIRE;
+#else
+                command = DEFAULT;
+#endif
                 fire_cnt++;
                 printf("开火:%d\r\n", fire_cnt);
                 shoot_chance_ = 0;
@@ -154,7 +167,8 @@ private:
     Point2f last_angle_;
     int filter_chance_cnt = 0;
     int limit_filter_chance = 5;
-    int limit_chance_angle = 1;
+    int limit_chance_angle = 4.0;
+    double get_change_time;
     bool shoot_chance_ = true;
 
     // 控制开火的参数
@@ -188,7 +202,7 @@ public:
     }
 private:
     int cnt = 0;
-    int max_cnt_ = 10;   // 最大丢失目标次数
+    int max_cnt_ = 30;   // 最大丢失目标次数
 };
 
 
@@ -299,16 +313,17 @@ private:
         max_filter_value_=filter_angle_threshold;
     }
     void trigger(int target_size,int move_static);
+    int GetIndex(Mat &img, Object object, vector<Rect> all_rect);
 
 private:
     int color_;
     float gimbal;
 public:
-    int buff_offset_x_ = 130;
-    int buff_offset_y_ = 135;
+    int buff_offset_x_ = 69;// id:2 130;
+    int buff_offset_y_ = 100;// id:2 135;
     int world_offset_x_ = 500;
     int world_offset_y_ = 500;
-    int color_th_ = 18;
+    int color_th_ = 30;
     int gray_th_ = 50;
     float buff_angle_ = 0;
     AutoAttack attack;
@@ -325,6 +340,7 @@ private:
     float angle_y_ = 0;
     float distance_ = 0;
     vector<Point2f> points_2d;
+    int action_cnt_ = 0;
 
 private:
     vector<float> history_;
