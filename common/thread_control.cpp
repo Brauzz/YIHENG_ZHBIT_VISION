@@ -140,7 +140,7 @@ void ThreadControl::GetSTM32()
             END_THREAD;
 
         serial_.read_data(&rx_data, mode, color, raw_gimbal_yaw);
-        other_param.mode = mode;
+//        other_param.mode = mode;
         other_param.color = color;
         GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
         float gimbal_data = dst_gimbal_yaw;

@@ -105,12 +105,12 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
         alpha = asin(static_cast<double>(barrel_ptz_offset_x)/sqrt(xyz[0]*xyz[0] + xyz[2]*xyz[2]));
         if(xyz[0] > 0)
         {
-            Beta = atan(xyz[0]/xyz[2]);
-            angle_x = static_cast<float>(alpha+Beta); //camera coordinate
+            Beta = atan(-xyz[0]/xyz[2]);
+            angle_x = static_cast<float>(-(alpha+Beta)); //camera coordinate
         }else if(xyz[0] < static_cast<double>(barrel_ptz_offset_x))
         {
             Beta = atan(xyz[0]/xyz[2]);
-            angle_x = static_cast<float>(alpha - Beta);
+            angle_x = static_cast<float>(-(alpha - Beta));
         }else
         {
             Beta = atan(xyz[0]/xyz[2]);
@@ -159,7 +159,6 @@ void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, 
 
     tvec.at<double>(2,0) = dist;
 
-
     // 坐标系转换 -摄像头坐标到云台坐标
     double theta = -atan(static_cast<double>(ptz_camera_y + barrel_ptz_offset_y))/static_cast<double>(overlap_dist);
     double r_data[] = {1,0,0,0,cos(theta),sin(theta),0,-sin(theta),cos(theta)};
@@ -169,8 +168,6 @@ void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, 
     Mat position_in_ptz;
     position_in_ptz = r_camera_ptz * tvec - t_camera_ptz;
 
-
-
     //计算子弹下坠补偿
     const double *_xyz = (const double *)position_in_ptz.data;
 
@@ -179,8 +176,11 @@ void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, 
 
     angle_x = static_cast<float>(atan2(xyz[0],xyz[2]));
     angle_x = static_cast<float>(angle_x) * 57.2957805f;
-//    angle_y = static_cast<float>(atan2(xyz[1],xyz[2]));
+#ifdef SET_ZEROS_GRAVITY
+    angle_y = static_cast<float>(atan2(xyz[1],xyz[2]));
+#else
     angle_y = -getBuffPitch(dist/1000, -xyz[1]/1000, ballet_speed);
+#endif
     angle_y = static_cast<float>(angle_y) * 57.2957805f ;
 }
 
