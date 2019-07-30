@@ -36,8 +36,8 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     Mat binary_color_img;
 #ifdef TEST_OTSU
     double th = threshold(result_img, binary_color_img, 50, 255, CV_THRESH_BINARY|CV_THRESH_OTSU);
-    if(th-25>0)
-        threshold(result_img, binary_color_img, th-25, 255, CV_THRESH_BINARY);
+        if(th-10>0)
+            threshold(result_img, binary_color_img, th-10, 255, CV_THRESH_BINARY);
 #endif
 #ifndef TEST_OTSU
     threshold(result_img, binary_color_img, color_th_, 255, CV_THRESH_BINARY);
@@ -63,6 +63,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     findContours(binary_color_img,contours,hierarchy,CV_RETR_CCOMP,CHAIN_APPROX_SIMPLE);
     for(size_t i=0; i < contours.size();i++)
     {
+
         // 用于寻找小轮廓，没有父轮廓的跳过, 以及不满足6点拟合椭圆
         if(hierarchy[i][3]<0 || contours[i].size() < 6 || contours[static_cast<uint>(hierarchy[i][3])].size() < 6)
             continue;
@@ -90,16 +91,17 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
             continue;
         // 能量机关扇叶进行拟合
         Object object;
-#ifdef FIT
-        object.small_rect_ = fitEllipseDirect(contours[i]);
-        object.big_rect_ = fitEllipseDirect(contours[static_cast<uint>(hierarchy[i][3])]);
-#else
-        object.fitEllipse_rect=fitEllipse(contours[i]);
+#ifdef FUSION_MINAREA_ELLIPASE
+
+        object.fitEllipse_rect=fitEllipseDirect(contours[i]);
         object.minArea_rect = minAreaRect(contours[i]);
         object.Indeed_smallrect(object.minArea_rect, object.fitEllipse_rect);
+        object.big_rect_ = fitEllipseDirect(contours[static_cast<uint>(hierarchy[i][3])]);
+#else
+        object.small_rect_=minAreaRect(contours[i]);
         object.big_rect_ = minAreaRect(contours[static_cast<uint>(hierarchy[i][3])]);
-
 #endif
+
         //                drawContours(img,contours,i,Scalar(0,0,255),3);
 #ifdef DEBUG_DRAW_CONTOURS
         Point2f small_point_tmp[4];
@@ -108,19 +110,23 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
         object.big_rect_.points(big_point_tmp);
         for(int k=0;k<4;k++)
         {
+
             line(img, small_point_tmp[k],small_point_tmp[(k+1)%4], Scalar(0, 255, 255), 1);
             line(img, big_point_tmp[k],big_point_tmp[(k+1)%4], Scalar(0, 0, 255), 1);
         }
+
 #endif
-#ifdef FIT
+#ifdef FUSION_MINAREA_ELLIPASE
         float diff_angle=fabsf(object.big_rect_.angle-object.small_rect_.angle);
 
         if(object.small_rect_.size.height/object.small_rect_.size.width < 3)
         {
 
+
             if(diff_angle<100 && diff_angle>80)
             {
 #endif
+#ifndef  FUSION_MINAREA_ELLIPASE
                 float small_rect_size_ratio;
                 if(object.small_rect_.size.width > object.small_rect_.size.height)
                 {
@@ -128,16 +134,22 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                 }else {
                     small_rect_size_ratio = object.small_rect_.size.height/object.small_rect_.size.width;
                 }
+#endif
 
+#ifdef FUSION_MINAREA_ELLIPASE
+                float small_rect_size_ratio;
+                small_rect_size_ratio = object.small_rect_.size.height/object.small_rect_.size.width;
+#endif
                 // 根据轮廓面积进行判断扇叶类型
-                if(small_rect_area * 8 >big_rect_area && small_rect_area* 5.0f<big_rect_area
-                        && small_rect_size_ratio > 1 && small_rect_size_ratio < 2.3f)
+                if(small_rect_area * 10 >big_rect_area && small_rect_area* 6<big_rect_area
+                        && small_rect_size_ratio > 1 && small_rect_size_ratio < 3.0f)
                 {
                     object.type_ = ACTION;  // 已经激活类型
-                    putText(img, "ACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-                }else if(small_rect_area * 5.0f>=big_rect_area && small_rect_area *2 < big_rect_area
-                         && small_rect_size_ratio > 1 && small_rect_size_ratio < 2.3f)
+                    //            putText(img, "ACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                }else if(small_rect_area * 5>big_rect_area && small_rect_area *2 < big_rect_area
+                         && small_rect_size_ratio > 1 && small_rect_size_ratio < 3.0f)
                 {
+
                     object.type_ = INACTION;    // 未激活类型
                     putText(img, "INACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }else
@@ -146,16 +158,36 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                     putText(img, "UNKOWN", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }
 
-                // 更新世界坐标系顺序
-                if(object.type_ != UNKOWN){
+#ifdef AREA_LENGTH_ANGLE
+                switch (AREA_LENGTH_ANGLE)
+                {
+                case 1:
+                {
+                    double multiple_area=fabs(big_rect_area/small_rect_area);
+                    putText(img, to_string(multiple_area), Point2f(5,5)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                }break;
+                case 2:
+                {
+                    double multiple_length=fabs(big_rect_length/small_rect_length);
+                    putText(img, to_string(multiple_length), Point2f(5,5)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                }break;
+                case 3:
+                {
+                    putText(img, to_string(diff_angle), Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                }break;
+                }
 
+#endif
+
+                    // 更新世界坐标系顺序
+                    Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
                     object.UpdateOrder();
                     // 根据距离计算超预测点
-                    //                    object.UpdataPredictPoint();
+                    object.UpdataPredictPoint();
                     circle(img , object.test_point_, 3, Scalar(22,255,25));
                     vec_target.push_back(object);
-                }
-#ifdef FIT
+
+#ifdef FUSION_MINAREA_ELLIPASE
             }
         }
 #endif
@@ -169,6 +201,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     // 你需要击打的能量机关类型 1(true)击打未激活 0(false)击打激活
     for(size_t i=0; i < vec_target.size(); i++)
     {
+
         Object object_tmp = vec_target.at(i);
         if(do_you_find_inaction==1)
         {
@@ -176,6 +209,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
             // 普通模式击打未激活机关
             if(object_tmp.type_ == INACTION)
             {
+
 #ifdef DEBUG_PUT_TEST_TARGET
                 //                putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 #endif
@@ -206,7 +240,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 #ifdef DEBUG_PUT_TEST_TARGET
                 putText(img, "<<---attack advance here", Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 #endif
-//                final_target object_tmp;
+                //                final_target object_tmp;
                 points_2d=final_target.points_2d_;
                 find_flag = true;
                 break;
@@ -461,7 +495,7 @@ void Object::Indeed_smallrect(RotatedRect minArearect, RotatedRect fitEllipserec
 void Object::UpdateOrder()
 {
     points_2d_.clear();
-#ifdef FIT
+#ifdef FUSION_MINAREA_ELLIPASE
     Point2f points[4];
     small_rect_.points(points);
     Point2f point_up_center = (points[0] + points[1])/2;

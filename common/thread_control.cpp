@@ -216,8 +216,8 @@ void ThreadControl::ImageProcess()
 #if(DEBUG_VIDEO == 0)
     VideoCapture cap("../Videos/test.avi");
 #else
-    VideoCapture cap("../Videos/buff_video1.avi");
-//    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
+    VideoCapture cap("../Videos/test_2.avi");
+    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
 #endif
 #endif
 

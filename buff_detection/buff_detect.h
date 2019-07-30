@@ -30,10 +30,9 @@ using namespace std;
 #define DEBUG_PUT_TEST_TARGET
 #define DEBUG_PUT_TEST_ANGLE
 #define DEBUG_DRAW_TARGET
-//#define TEST_OTSU
+#define TEST_OTSU
 #define AREA_LENGTH_ANGLE 1 // 1:area 2:length 3:diff_angle
-//#define FIT
-
+#define FUSION_MINAREA_ELLIPASE
 // ---- buff debug ----
 #endif
 
