@@ -181,16 +181,11 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 
                     // 更新世界坐标系顺序
                     Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
-                    object.UpdateOrder(buff_offset);
+                    object.UpdateOrder();
                     // 根据距离计算超预测点
                     object.UpdataPredictPoint();
                     circle(img , object.test_point_, 3, Scalar(22,255,25));
                     vec_target.push_back(object);
-                    if(diff_data<2)
-                    {
-                        target_size=vec_target.size();
-                    }
-
 
 #ifdef FUSION_MINAREA_ELLIPASE
             }
