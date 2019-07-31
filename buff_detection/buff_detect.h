@@ -31,7 +31,7 @@ using namespace std;
 #define DEBUG_PUT_TEST_ANGLE
 #define DEBUG_DRAW_TARGET
 #define TEST_OTSU
-#define AREA_LENGTH_ANGLE 1 // 1:area 2:length 3:diff_angle
+#define AREA_LENGTH_ANGLE 2 // 1:area 2:length 3:diff_angle
 #define FUSION_MINAREA_ELLIPASE
 // ---- buff debug ----
 #endif
@@ -60,6 +60,7 @@ public:
     vector<Point2f> points_2d_;
     float angle_;
     Point2f test_point_;
+    float diff_angle;
     int direction_ = 1; // 1shun -1ni 0stop
 
     float length_scale_ = 3;

@@ -19,7 +19,7 @@
 bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 {
 
-    //    GaussianBlur(img, img, Size(3,3),0);
+    GaussianBlur(img, img, Size(3,3),0);
     // **预处理** -图像进行相应颜色的二值化
     points_2d.clear();
     vector<cv::Mat> bgr;
@@ -89,8 +89,8 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 #ifdef FUSION_MINAREA_ELLIPASE
 
         object.small_rect_=fitEllipse(contours[i]);
-//        object.minArea_rect = minAreaRect(contours[i]);
-//        object.Indeed_smallrect();
+        //        object.minArea_rect = minAreaRect(contours[i]);
+        //        object.Indeed_smallrect();
         object.big_rect_ = fitEllipse(contours[static_cast<uint>(hierarchy[i][3])]);
 #else
         object.small_rect_=minAreaRect(contours[i]);
@@ -111,11 +111,11 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 
 #endif
 #ifdef FUSION_MINAREA_ELLIPASE
-        float diff_angle=fabsf(object.big_rect_.angle-object.small_rect_.angle);
+        object.diff_angle=fabsf(object.big_rect_.angle-object.small_rect_.angle);
 
         if(object.small_rect_.size.height/object.small_rect_.size.width < 3)
         {
-            if(diff_angle<100 && diff_angle>80)
+            if(object.diff_angle<100 && object.diff_angle>80)
             {
 #endif
 #ifndef  FUSION_MINAREA_ELLIPASE
@@ -140,7 +140,8 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                     object.type_ = ACTION;  // 已经激活类型
                     //            putText(img, "ACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }else if(small_rect_area * area_ratio>=big_rect_area && small_rect_area *2 < big_rect_area
-                         && small_rect_size_ratio > 1 && small_rect_size_ratio < 3.0f)
+                         && small_rect_size_ratio > 1 && small_rect_size_ratio < 3.0f
+                         && big_rect_length/small_rect_length <4 &&big_rect_length/small_rect_length >2.5 )
                 {
 
                     object.type_ = INACTION;    // 未激活类型
@@ -150,6 +151,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                     object.type_ = UNKOWN;    // 未激活类型
                     putText(img, "UNKOWN", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }
+
 
 #ifdef AREA_LENGTH_ANGLE
                 switch (AREA_LENGTH_ANGLE)
@@ -166,7 +168,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                 }break;
                 case 3:
                 {
-//                    putText(img, to_string(diff_angle), Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                    putText(img, to_string(object.diff_angle), Point2f(-20,-20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }break;
                 }
 
@@ -246,21 +248,26 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     //        Rect bound_rect_tmp = vec_color_rect.at(j);
     //        rectangle(img, bound_rect_tmp, Scalar(128,0,128));
     //    }
-    if(find_flag == true){
-        float dist = 1e8;
-        float dx, dy;
+    if(find_flag == true)
+    {
+        float diff_angle = 1e8;
+        float ang;
         //        INFO(inaction_target.size());
+        if(inaction_target.size()>1)
+        {
+             waitKey(0);
+        }
+
         for(size_t i = 0; i< inaction_target.size(); i++)
         {
-            // 计算补偿值
-
-            dx = fabs(inaction_target.at(i).small_rect_.center.x - 320);
-            dy = fabs(inaction_target.at(i).small_rect_.center.y - 240);
-            if(dx + dy < dist)
+            ang = fabs(inaction_target[i].diff_angle-90.0f);
+            if(ang < diff_angle)
             {
                 final_target = inaction_target.at(i);
-                dist = dx + dy;
+                diff_angle = ang;
             }
+            putText(img, "final_target", Point2f(10,-50)+ final_target.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+
         }
         Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
         vector<Point2f> vec_points_2d_tmp;
