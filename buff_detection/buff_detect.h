@@ -66,6 +66,7 @@ public:
 
     float length_scale_ = 3;
     float width_scale_ = -3;
+
     void DrawTarget(Mat &img)
     {
         if(type_ == INACTION)
@@ -77,7 +78,7 @@ public:
     }
 
     void UpdateOrder();
-    void Indeed_smallrect(RotatedRect minArearect,RotatedRect fitEllipserect);
+    void Indeed_smallrect();
     void UpdataPredictPoint();
 
     int type_ = UNKOWN;
@@ -350,11 +351,10 @@ private:
     float last_angle_ = 0;
     float max_filter_value_ = 15;
     int direction_tmp=0;
-
     int command = 0;
 };
 
-float Point_distance(Point2f p1,Point2f p2);
+double Point_distance(Point2f p1,Point2f p2);
 
 
 
