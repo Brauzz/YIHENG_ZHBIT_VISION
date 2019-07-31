@@ -40,11 +40,9 @@ using namespace std;
 #define FIRE 3
 #define RESET 4
 
-
 typedef enum{UNKOWN,INACTION,ACTION}ObjectType;
 typedef enum{restore_center=6,follow=-1,shoot=3}mode_buff;
 
-static int target_size=0;
 /**
  * @brief 矩形类物体属性
  * 在逻辑识别部分需要修改原有旋转矩形属性
@@ -118,13 +116,13 @@ public:
                     printf("获得一次开火机会\r\n");
                     get_change_time = getTickCount();
                 }
-//                double t = getTickCount();
-//                if((t-get_change_time)*1000/getTickFrequency() > 100)
-//                {
-                    shoot_chance_ = true;
-                    filter_chance_cnt = 0;
-//                    get_change_time = t;
-//                }
+                //                double t = getTickCount();
+                //                if((t-get_change_time)*1000/getTickFrequency() > 100)
+                //                {
+                shoot_chance_ = true;
+                filter_chance_cnt = 0;
+                //                    get_change_time = t;
+                //                }
 
             }
         }else{
@@ -308,6 +306,8 @@ public:
 
 
     int getDirection(float angle);
+    int getSimpleDirection(float angle);
+
 
 private:
     bool DetectBuff(Mat& img, OtherParam other_param);
@@ -318,9 +318,12 @@ private:
     void trigger(int target_size,int move_static);
     int GetIndex(Mat &img, Object object, vector<Rect> all_rect);
 
+    // 外部参数
 private:
     int color_;
     float gimbal;
+
+    // debug参数
 public:
     int buff_offset_x_ = 69;// id:2 130;
     int buff_offset_y_ = 100;// id:2 135;
@@ -329,15 +332,16 @@ public:
     int color_th_ = 30;
     int gray_th_ = 50;
     float buff_angle_ = 0;
-    AutoAttack attack;
-    int target_size;
-    int move_static;
-    int do_you_find_inaction=0;
+    int area_ratio_ = 500;
+
+    //相关类申明
 private:
     SolveAngle solve_angle_long_;
     AutoAttack auto_attack;
     AutoControl auto_control;
+    AutoAttack attack;
     MainWindow *w_;
+
 private:
     float angle_x_ = 0;
     float angle_y_ = 0;
@@ -346,11 +350,15 @@ private:
     int action_cnt_ = 0;
 
 private:
+    float d_angle_ = 0;
+    float r = 0.1;
+    int find_cnt = 0;
     vector<float> history_;
     size_t history_size_ = 10;
     float last_angle_ = 0;
     float max_filter_value_ = 15;
     int direction_tmp=0;
+
     int command = 0;
 };
 

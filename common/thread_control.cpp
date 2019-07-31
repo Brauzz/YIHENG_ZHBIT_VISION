@@ -177,7 +177,6 @@ void ThreadControl::ImageProcess()
     w_ = &w;
     debug_enable_flag = true;
     armor_detector.DebugPlotInit(&w);
-
 #endif
 
 #if(ROBOT_TYPE == INFANTRY)
@@ -205,6 +204,7 @@ void ThreadControl::ImageProcess()
 #endif
 #if(ROBOT_TYPE == INFANTRY)
     namedWindow("BuffParam");
+    createTrackbar("buff_area_ratio", "BuffParam", &buff_detector.area_ratio_, 1000);
     createTrackbar("buff_gray_th", "BuffParam", &buff_detector.gray_th_, 255);
     createTrackbar("buff_color_th", "BuffParam", &buff_detector.color_th_, 255);
     createTrackbar("buff_offset_x_","BuffParam",&buff_detector.buff_offset_x_,200);
@@ -216,7 +216,7 @@ void ThreadControl::ImageProcess()
 #if(DEBUG_VIDEO == 0)
     VideoCapture cap("../Videos/test.avi");
 #else
-    VideoCapture cap("../Videos/test_2.avi");
+    VideoCapture cap("../Videos/buff_video0.avi");
     cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
 #endif
 #endif
@@ -224,6 +224,8 @@ void ThreadControl::ImageProcess()
     Mat image;
     float angle_x = 0.0, angle_y = 0.0, distance =  0.0;
     int command = 0;
+    char key;
+    bool dir = false;
     while(1)
     {
 #ifndef DEBUG_VIDEO
@@ -235,6 +237,11 @@ void ThreadControl::ImageProcess()
         image_.copyTo(image);//        image_.copyTo(image);
 #else
         cap.read(image);
+        if(key == 'f'){
+           dir = !dir;
+        }
+        if(dir)
+            flip(image, image, ROTATE_180);
 #endif
 #if(ROBOT_TYPE == INFANTRY)
         if(other_param.mode == 0)
@@ -291,7 +298,7 @@ void ThreadControl::ImageProcess()
 #ifdef IMAGESHOW
         imshow("image", image);
 #endif
-        char key = waitKey(WAITKEY);
+        key = waitKey(WAITKEY);
         if(key == 'q')
             end_thread_flag = true;
         if(key == 'c')

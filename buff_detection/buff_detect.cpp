@@ -19,9 +19,8 @@
 bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 {
 
-    GaussianBlur(img, img, Size(3,3),0);
+    //    GaussianBlur(img, img, Size(3,3),0);
     // **预处理** -图像进行相应颜色的二值化
-
     points_2d.clear();
     vector<cv::Mat> bgr;
     split(img, bgr);
@@ -36,13 +35,12 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     Mat binary_color_img;
 #ifdef TEST_OTSU
     double th = threshold(result_img, binary_color_img, 50, 255, CV_THRESH_BINARY|CV_THRESH_OTSU);
-        if(th-10>0)
-            threshold(result_img, binary_color_img, th-10, 255, CV_THRESH_BINARY);
+    if(th-10>0)
+        threshold(result_img, binary_color_img, th-10, 255, CV_THRESH_BINARY);
 #endif
 #ifndef TEST_OTSU
     threshold(result_img, binary_color_img, color_th_, 255, CV_THRESH_BINARY);
 #endif
-
     //        Mat element = getStructuringElement(MORPH_RECT, Size(5,5));
     //        morphologyEx(binary_color_img,binary_color_img,MORPH_CLOSE,element);
     //        dilate(img, img, element);
@@ -60,7 +58,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     vector<Rect> vec_color_rect;
     vector<vector<Point>> contours;
     vector<Vec4i> hierarchy;
-    findContours(binary_color_img,contours,hierarchy,CV_RETR_CCOMP,CHAIN_APPROX_SIMPLE);
+    findContours(binary_color_img,contours,hierarchy,CV_RETR_CCOMP,CHAIN_APPROX_NONE);
     for(size_t i=0; i < contours.size();i++)
     {
 
@@ -77,9 +75,6 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
         Rect rect = boundingRect(contours[static_cast<uint>(hierarchy[i][3])]);
         vec_color_rect.push_back(rect);
 
-
-
-
         if(small_rect_area < 200)
             continue;
         // 大轮廓面积条件
@@ -93,10 +88,10 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
         Object object;
 #ifdef FUSION_MINAREA_ELLIPASE
 
-        object.fitEllipse_rect=fitEllipseDirect(contours[i]);
-        object.minArea_rect = minAreaRect(contours[i]);
-        object.Indeed_smallrect();
-        object.big_rect_ = fitEllipseDirect(contours[static_cast<uint>(hierarchy[i][3])]);
+        object.small_rect_=fitEllipse(contours[i]);
+//        object.minArea_rect = minAreaRect(contours[i]);
+//        object.Indeed_smallrect();
+        object.big_rect_ = fitEllipse(contours[static_cast<uint>(hierarchy[i][3])]);
 #else
         object.small_rect_=minAreaRect(contours[i]);
         object.big_rect_ = minAreaRect(contours[static_cast<uint>(hierarchy[i][3])]);
@@ -110,7 +105,6 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
         object.big_rect_.points(big_point_tmp);
         for(int k=0;k<4;k++)
         {
-
             line(img, small_point_tmp[k],small_point_tmp[(k+1)%4], Scalar(0, 255, 255), 1);
             line(img, big_point_tmp[k],big_point_tmp[(k+1)%4], Scalar(0, 0, 255), 1);
         }
@@ -121,8 +115,6 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 
         if(object.small_rect_.size.height/object.small_rect_.size.width < 3)
         {
-
-
             if(diff_angle<100 && diff_angle>80)
             {
 #endif
@@ -141,12 +133,13 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                 small_rect_size_ratio = object.small_rect_.size.height/object.small_rect_.size.width;
 #endif
                 // 根据轮廓面积进行判断扇叶类型
-                if(small_rect_area * 10 >big_rect_area && small_rect_area* 6<big_rect_area
+                float area_ratio = area_ratio_/100;
+                if(small_rect_area * 12 >big_rect_area && small_rect_area* area_ratio<big_rect_area
                         && small_rect_size_ratio > 1 && small_rect_size_ratio < 3.0f)
                 {
                     object.type_ = ACTION;  // 已经激活类型
                     //            putText(img, "ACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-                }else if(small_rect_area * 5>big_rect_area && small_rect_area *2 < big_rect_area
+                }else if(small_rect_area * area_ratio>=big_rect_area && small_rect_area *2 < big_rect_area
                          && small_rect_size_ratio > 1 && small_rect_size_ratio < 3.0f)
                 {
 
@@ -173,20 +166,18 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                 }break;
                 case 3:
                 {
-                    putText(img, to_string(diff_angle), Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+//                    putText(img, to_string(diff_angle), Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }break;
                 }
 
 #endif
-
-                    // 更新世界坐标系顺序
-                    Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
-                    object.UpdateOrder();
-                    // 根据距离计算超预测点
-                    object.UpdataPredictPoint();
-                    circle(img , object.test_point_, 3, Scalar(22,255,25));
-                    vec_target.push_back(object);
-
+                // 更新世界坐标系顺序
+                Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
+                object.UpdateOrder();
+                // 根据距离计算超预测点
+                object.UpdataPredictPoint();
+                circle(img , object.test_point_, 3, Scalar(22,255,25));
+                vec_target.push_back(object);
 #ifdef FUSION_MINAREA_ELLIPASE
             }
         }
@@ -258,7 +249,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     if(find_flag == true){
         float dist = 1e8;
         float dx, dy;
-//        INFO(inaction_target.size());
+        //        INFO(inaction_target.size());
         for(size_t i = 0; i< inaction_target.size(); i++)
         {
             // 计算补偿值
@@ -275,7 +266,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
         vector<Point2f> vec_points_2d_tmp;
         for(size_t k=0; k < 4; k++)
         {
-            vec_points_2d_tmp.push_back( final_target.points_2d_.at(k) + buff_offset);
+            vec_points_2d_tmp.push_back(final_target.points_2d_.at(k) + buff_offset);
         }
         points_2d = vec_points_2d_tmp;
         buff_angle_ = final_target.angle_;
@@ -295,18 +286,6 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     return find_flag;
 }
 
-void BuffDetector::trigger(int target_size, int move_static)
-{
-    if(target_size==4 && abs(move_static)==1)
-    {
-        do_you_find_inaction++;
-    }
-    else if(target_size==5 && abs(move_static)==1)
-    {
-        do_you_find_inaction=0;
-    }
-    return ;
-}
 
 void makePointSafe(Point2f &point){
     if(point.x > 640)
@@ -382,7 +361,6 @@ int BuffDetector::GetIndex(Mat &img, Object object, vector<Rect> all_rect)
             }
         }
     }
-    //    INFO(cnt);
     if(action_cnt_ > cnt && action_cnt_ -2 < cnt){
         return action_cnt_;
     }
@@ -394,13 +372,20 @@ int BuffDetector::GetIndex(Mat &img, Object object, vector<Rect> all_rect)
 }
 int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 {
+    TIME_START(tt);
     color_ = other_param.color;
     gimbal=other_param.gimbal_data;
     bool find_flag = DetectBuff(img,other_param);
     int command = 0;
     if(find_flag)
     {
-        direction_tmp = getDirection(buff_angle_);
+        find_cnt ++;
+        if(find_cnt % 10==0)
+        {
+            //            direction_tmp = getDirection(buff_angle_);
+            direction_tmp = getSimpleDirection(buff_angle_);
+        }
+
         Point2f world_offset;
         //#define DIRECTION_FILTER
 #ifdef DIRECTION_FILTER
@@ -415,7 +400,6 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 #else
         world_offset = Point2f(world_offset_x_ - 500, world_offset_y_  - 500);
 #endif
-
         solve_angle_long_.Generate3DPoints(2, world_offset);
         solve_angle_long_.getBuffAngle(points_2d, 28.5, buff_angle_, angle_x_, angle_y_, distance_);
 
@@ -423,34 +407,21 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
     //    attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,direction_tmp);
 
     command = auto_control.run(angle_x_, angle_y_, find_flag);
-    //    INFO(command);
-    //    int fire_flag = (command >> 1)&0x01;
-    //    int reset_flag = (command >> 2) & 0x01;
-    //    int follow_flag = (command) & 0x01;
-    //    INFO(fire_flag);
-
-    //    char key = waitKey(1);
-    //    if(key=='s')
-    //    {
-    //        command^=0x02;
-    //    }
-    //    INFO(command);
-    //    INFO(follow_flag);
-    //    INFO(reset_flag);
 #ifdef DEBUG_PLOT //0紫 1橙
-    w_->addPoint(action_cnt_, 0);
-    //    w_->addPoint(angle_y_, 1);
+    w_->addPoint(direction_tmp, 0);
+    w_->addPoint(d_angle_, 1);
     w_->plot();
 #endif
+
     return command;
 }
 
 int BuffDetector::getDirection(float angle)
 {
-    float error_angle = last_angle_ - angle;
-    //        cout << "error_angle" << error_angle << endl;
+    float error_angle =  angle - last_angle_;
+    //            cout << "error_angle" << error_angle << endl;
     last_angle_ = angle;
-    if(fabs(error_angle) < max_filter_value_ && fabs(error_angle) < 1e-6f)
+    if(fabs(error_angle) < max_filter_value_ && fabs(error_angle) > 1e-6f)
     {
         if(history_.size() < history_size_)
         {
@@ -466,12 +437,29 @@ int BuffDetector::getDirection(float angle)
         sum += *iter;
     }
     sum /= history_.size();
-    //        cout << "sum " << sum << endl;
+    cout << "sum " << sum << endl;
 
     if(sum >= 0.5f)
         return 1;   // shun
     else if(sum <= 0.5f)
         return -1;   // ni
+    else
+        return 0;
+}
+
+int BuffDetector::getSimpleDirection(float angle)
+{
+    float error_angle = angle - last_angle_;
+    last_angle_ = angle;
+    if(fabs(error_angle) < 10 && fabs(error_angle) > 1e-6)
+    {
+        d_angle_ = (1 - r) * d_angle_ + r * error_angle;
+    }
+
+    if(d_angle_ > 2)
+        return 1;
+    else if(d_angle_ < -2)
+        return -1;
     else
         return 0;
 }
@@ -686,7 +674,6 @@ int AutoAttack::adjust_control(bool find_target_flag, int move_static,int target
                 control_=0;
             }
         }
-
     }
     else if(find_target_flag==0) // if don't find the target, back to center
     {
