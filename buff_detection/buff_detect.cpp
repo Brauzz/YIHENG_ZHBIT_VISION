@@ -95,7 +95,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 
         object.fitEllipse_rect=fitEllipseDirect(contours[i]);
         object.minArea_rect = minAreaRect(contours[i]);
-        object.Indeed_smallrect(object.minArea_rect, object.fitEllipse_rect);
+        object.Indeed_smallrect();
         object.big_rect_ = fitEllipseDirect(contours[static_cast<uint>(hierarchy[i][3])]);
 #else
         object.small_rect_=minAreaRect(contours[i]);
@@ -477,18 +477,18 @@ int BuffDetector::getDirection(float angle)
 }
 
 
-void Object::Indeed_smallrect(RotatedRect minArearect, RotatedRect fitEllipserect)
+void Object::Indeed_smallrect()
 {
-    if(minArearect.size.width>=minArearect.size.height)
+    if(minArea_rect.size.width>=minArea_rect.size.height)
     {
-        float temp=minArearect.size.width;
-        minArearect.size.width=minArearect.size.height;
-        minArearect.size.height=temp;
+        float temp=minArea_rect.size.width;
+        minArea_rect.size.width=minArea_rect.size.height;
+        minArea_rect.size.height=temp;
     }
-    small_rect_.size.width=minArearect.size.width;
-    small_rect_.size.height=minArearect.size.height;
-    small_rect_.center=fitEllipserect.center;
-    small_rect_.angle=fitEllipserect.angle;
+    small_rect_.size.width=minArea_rect.size.width;
+    small_rect_.size.height=minArea_rect.size.height;
+    small_rect_.center=fitEllipse_rect.center;
+    small_rect_.angle=fitEllipse_rect.angle;
 
 }
 
@@ -582,9 +582,9 @@ void Object::UpdataPredictPoint()
         test_point_.y = 0;
 }
 
-float Point_distance(Point2f p1,Point2f p2)
+double Point_distance(Point2f p1,Point2f p2)
 {
-    float Dis=pow(pow((p1.x-p2.x),2)+pow((p1.y-p2.y),2),0.5);
+    double Dis=pow(pow((p1.x-p2.x),2)+pow((p1.y-p2.y),2),0.5);
     return Dis;
 }
 
