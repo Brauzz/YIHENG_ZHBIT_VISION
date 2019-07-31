@@ -31,7 +31,7 @@ using namespace std;
 #define DEBUG_PUT_TEST_ANGLE
 #define DEBUG_DRAW_TARGET
 #define TEST_OTSU
-#define AREA_LENGTH_ANGLE 2 // 1:area 2:length 3:diff_angle
+//#define AREA_LENGTH_ANGLE 2 // 1:area 2:length 3:diff_angle
 #define FUSION_MINAREA_ELLIPASE
 // ---- buff debug ----
 #endif
@@ -77,6 +77,7 @@ public:
     }
 
     void UpdateOrder();
+    void KnowYourself(Mat &img);
     void Indeed_smallrect();
     void UpdataPredictPoint();
 

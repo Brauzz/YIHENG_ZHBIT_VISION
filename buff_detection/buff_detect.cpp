@@ -89,15 +89,12 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 #ifdef FUSION_MINAREA_ELLIPASE
 
         object.small_rect_=fitEllipse(contours[i]);
-        //        object.minArea_rect = minAreaRect(contours[i]);
-        //        object.Indeed_smallrect();
         object.big_rect_ = fitEllipse(contours[static_cast<uint>(hierarchy[i][3])]);
 #else
         object.small_rect_=minAreaRect(contours[i]);
         object.big_rect_ = minAreaRect(contours[static_cast<uint>(hierarchy[i][3])]);
 #endif
 
-        //                drawContours(img,contours,i,Scalar(0,0,255),3);
 #ifdef DEBUG_DRAW_CONTOURS
         Point2f small_point_tmp[4];
         object.small_rect_.points(small_point_tmp);
@@ -133,26 +130,22 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                 small_rect_size_ratio = object.small_rect_.size.height/object.small_rect_.size.width;
 #endif
                 // 根据轮廓面积进行判断扇叶类型
+
                 float area_ratio = area_ratio_/100;
                 if(small_rect_area * 12 >big_rect_area && small_rect_area* area_ratio<big_rect_area
                         && small_rect_size_ratio > 1 && small_rect_size_ratio < 3.0f)
                 {
                     object.type_ = ACTION;  // 已经激活类型
-                    //            putText(img, "ACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }else if(small_rect_area * area_ratio>=big_rect_area && small_rect_area *2 < big_rect_area
                          && small_rect_size_ratio > 1 && small_rect_size_ratio < 3.0f
-                         && big_rect_length/small_rect_length <4 &&big_rect_length/small_rect_length >2.5 )
+                         /*&& big_rect_length/small_rect_length <4 &&big_rect_length/small_rect_length >1*/)
                 {
-
+                    // 更新世界坐标系顺序
                     object.type_ = INACTION;    // 未激活类型
-                    putText(img, "INACTION", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }else
                 {
                     object.type_ = UNKOWN;    // 未激活类型
-                    putText(img, "UNKOWN", Point2f(20,20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }
-
-
 #ifdef AREA_LENGTH_ANGLE
                 switch (AREA_LENGTH_ANGLE)
                 {
@@ -171,15 +164,17 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                     putText(img, to_string(object.diff_angle), Point2f(-20,-20)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }break;
                 }
-
 #endif
-                // 更新世界坐标系顺序
-                Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
-                object.UpdateOrder();
+                if(object.type_!= UNKOWN)
+                {
+                    object.UpdateOrder();
+                    object.KnowYourself(binary_color_img);
+                    vec_target.push_back(object);
+                }
+
                 // 根据距离计算超预测点
-                object.UpdataPredictPoint();
-                circle(img , object.test_point_, 3, Scalar(22,255,25));
-                vec_target.push_back(object);
+                //                object.UpdataPredictPoint();
+                //                circle(img , object.test_point_, 3, Scalar(22,255,25));
 #ifdef FUSION_MINAREA_ELLIPASE
             }
         }
@@ -188,86 +183,44 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
     // 遍历所有结果并处理\选择需要击打的目标
     //     TODO(cz): 超预测写了一版基础，未加入识别到5个激活目标后再进入超预测的逻辑，仅供参考
     Object final_target;
-    vector<Object> inaction_target;
+    vector<Object> vec_target_tmp;
     bool find_flag = false;
-    bool do_you_find_inaction = 1;
     // 你需要击打的能量机关类型 1(true)击打未激活 0(false)击打激活
     for(size_t i=0; i < vec_target.size(); i++)
     {
-
-        Object object_tmp = vec_target.at(i);
-        if(do_you_find_inaction==1)
-        {
-            //            trigger(target_size,direction_tmp);
-            // 普通模式击打未激活机关
-            if(object_tmp.type_ == INACTION)
-            {
-
-#ifdef DEBUG_PUT_TEST_TARGET
-                //                putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
-#endif
-                inaction_target.push_back(object_tmp);
-
-
-                find_flag = true;
-            }
-        }else if(do_you_find_inaction>=1)
-        {
-            //            trigger(target_size,direction_tmp);
-            // 超预测模式击打目标选择
-            bool is_contain = false;
-            for(size_t j=0; j < vec_color_rect.size(); j++)
-            {
-                //                Object other_object_tmp = vec_target.at(j);
-                //                Rect bound_rect_tmp = other_object_tmp.big_rect_.boundingRect();
-                Rect bound_rect_tmp = vec_color_rect.at(j);
-                rectangle(img, bound_rect_tmp, Scalar(255,0,255));
-                if(bound_rect_tmp.contains(object_tmp.test_point_)==true)
-                {
-                    is_contain = true;
-                    break;
-                }
-            }
-            if(is_contain == false)
-            {
-#ifdef DEBUG_PUT_TEST_TARGET
-                putText(img, "<<---attack advance here", Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
-#endif
-                //                final_target object_tmp;
-                points_2d=final_target.points_2d_;
-                find_flag = true;
-                break;
-            }
+        if(vec_target.at(i).type_ == INACTION){
+            putText(img, "INACTION", Point2f(20,20)+ vec_target.at(i).small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+        }else if(vec_target.at(i).type_ == ACTION){
+            putText(img, "ACTION", Point2f(20,20)+ vec_target.at(i).small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+        }else{
+            putText(img, "UNKOWN", Point2f(20,20)+ vec_target.at(i).small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
         }
 
-        //        putText(img, to_string(object_tmp.angle_), Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+        if(vec_target.at(i).type_ == INACTION)
+        {
+            Object object_tmp = vec_target.at(i);
+            // 普通模式击打未激活机关
+#ifdef DEBUG_PUT_TEST_TARGET
+            //                putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+#endif
+            vec_target_tmp.push_back(object_tmp);
+            find_flag = true;
+        }
     }
-
-    //    for(size_t j=0; j < vec_color_rect.size(); j++)
-    //    {
-    //        Rect bound_rect_tmp = vec_color_rect.at(j);
-    //        rectangle(img, bound_rect_tmp, Scalar(128,0,128));
-    //    }
     if(find_flag == true)
     {
         float diff_angle = 1e8;
         float ang;
         //        INFO(inaction_target.size());
-        if(inaction_target.size()>1)
+        for(size_t i = 0; i< vec_target_tmp.size(); i++)
         {
-             waitKey(0);
-        }
-
-        for(size_t i = 0; i< inaction_target.size(); i++)
-        {
-            ang = fabs(inaction_target[i].diff_angle-90.0f);
+            ang = fabs(vec_target_tmp[i].diff_angle-90.0f);
             if(ang < diff_angle)
             {
-                final_target = inaction_target.at(i);
+                final_target = vec_target_tmp.at(i);
                 diff_angle = ang;
             }
             putText(img, "final_target", Point2f(10,-50)+ final_target.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
-
         }
         Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
         vector<Point2f> vec_points_2d_tmp;
@@ -285,9 +238,8 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 #endif
 
 #ifdef DEBUG_DRAW_TARGET
-
         final_target.DrawTarget(img);
-        //        action_cnt_ = GetIndex(img, final_target, vec_color_rect);
+        action_cnt_ = GetIndex(img, final_target, vec_color_rect);
     }
 #endif
     return find_flag;
@@ -392,7 +344,6 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
             //            direction_tmp = getDirection(buff_angle_);
             direction_tmp = getSimpleDirection(buff_angle_);
         }
-
         Point2f world_offset;
         //#define DIRECTION_FILTER
 #ifdef DIRECTION_FILTER
@@ -415,8 +366,8 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 
     command = auto_control.run(angle_x_, angle_y_, find_flag);
 #ifdef DEBUG_PLOT //0紫 1橙
-    w_->addPoint(direction_tmp, 0);
-    w_->addPoint(d_angle_, 1);
+        w_->addPoint(action_cnt_, 0);
+    //    w_->addPoint(d_angle_, 1);
     w_->plot();
 #endif
 
@@ -553,6 +504,64 @@ void Object::UpdateOrder()
 #endif
 }
 
+void MakePointSafe(Point2f &point, int width, int height){
+    if(point.x > width)
+        point.x = width;
+    else if(point.x < 0)
+        point.x = 0;
+    if(point.y > height)  //industrial 480
+        point.y = height;
+    else if(point.y < 0)
+        point.y = 0;
+}
+
+int GetRectIntensity(const Mat &img, Rect rect){
+    if(rect.width < 1 || rect.height < 1 || rect.x < 1 || rect.y < 1
+            || rect.width + rect.x > img.cols || rect.height + rect.y > img.rows)
+        return 255;
+    Mat roi = img(Range(rect.y, rect.y + rect.height), Range(rect.x, rect.x + rect.width) );
+    //        imshow("roi ", roi);
+    int average_intensity = static_cast<int>(mean(roi).val[0]);
+    return average_intensity;
+}
+
+void Object::KnowYourself(Mat &img)
+{
+    Point2f vector_height = points_2d_.at(0) - points_2d_.at(3);
+    //    vector_height = Point2f(vector_height.x * 0.5 , vector_height.y * 0.5);
+    Point left_center = points_2d_.at(3) - vector_height;
+    Point right_center = points_2d_.at(2) - vector_height;
+    //        circle(img, left_center, 3, Scalar(255), -1);
+    //        circle(img, right_center, 3, Scalar(255), 1);
+
+    int width = 5;
+    int height = 5;
+
+    Point left1 = Point(left_center.x - width, left_center.y - height);
+    Point left2 = Point(left_center.x + width, left_center.y + height);
+
+    Point right1 = Point(right_center.x - width, right_center.y - height);
+    Point right2 = Point(right_center.x + width, right_center.y + height);
+
+    Rect left_rect(left1, left2);
+    Rect right_rect(right1, right2);
+
+    //    rectangle(img, left_rect, Scalar(255), 1);
+    //    rectangle(img, right_rect, Scalar(255), 1);
+
+    int left_intensity = GetRectIntensity(img, left_rect);
+    int right_intensity = GetRectIntensity(img, right_rect);
+    if(left_intensity > 50 && right_intensity > 50)
+    {
+        type_ = ACTION;
+    }else{
+        type_ = INACTION;
+    }
+    putText(img, to_string(left_intensity), left_center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255));
+    putText(img, to_string(right_intensity), right_center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255));
+    imshow("test", img);
+}
+
 void Object::UpdataPredictPoint()
 {
     float length_scale;
@@ -567,14 +576,7 @@ void Object::UpdataPredictPoint()
     Point2f vector_width = points_2d_.at(0) - points_2d_.at(3);
     test_point_ = Point2f(points_2d_.at(1).x + vector_length.x * length_scale + vector_width.x * width_scale
                           , points_2d_.at(1).y + vector_length.y * length_scale + vector_width.y * width_scale);
-    if(test_point_.x > 640)
-        test_point_.x = 640;
-    else if(test_point_.x < 0)
-        test_point_.x = 0;
-    if(test_point_.y > 480)  //industrial 480
-        test_point_.y = 480;
-    else if(test_point_.y < 0)
-        test_point_.y = 0;
+    MakePointSafe(test_point_, 640, 480);
 }
 
 double Point_distance(Point2f p1,Point2f p2)

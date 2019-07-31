@@ -217,7 +217,7 @@ void ThreadControl::ImageProcess()
     VideoCapture cap("../Videos/test.avi");
 #else
     VideoCapture cap("../Videos/buff_video1.avi");
-//    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
+    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
 #endif
 #endif
 
@@ -270,7 +270,6 @@ void ThreadControl::ImageProcess()
                 buff_detector.getAngle(angle_x, angle_y);
                 distance = buff_detector.getDistance();
             }
-
         }
 
 #elif(ROBOT_TYPE == HERO)
