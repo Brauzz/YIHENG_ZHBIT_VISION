@@ -107,53 +107,28 @@ public:
     // 开火条件是当输出的角度趋近于０一段时间开火
     int run(Point2f current_angle, bool is_change_target)
     {
-
         // 获得发射机会的条件
-        get_change_time ++;
-        Point2f d_angle = Point2f(fabs(last_angle_.x - current_angle.x)
-                                  , fabs(last_angle_.y - current_angle.y));
-        if(d_angle.x > 5 || d_angle.y > 5
-                || d_angle.x + d_angle.y > 6 ||
-                d_angle.x > 2 && d_angle.y > 2)
-        {
-            filter_chance_cnt++;
-            if(filter_chance_cnt == limit_filter_chance)
-            {
-                if(shoot_chance_ == false){
-                    wait_action_flag = true;    // 等待激活，用于重复发射
-                    change_time = getTickCount();
-                    printf("获得一次开火机会\r\n");
-                    get_change_time = 0;
-                }
-                shoot_chance_ = true;
-                filter_chance_cnt = 0;
-
-            }
-        }else{
-            filter_chance_cnt = 0;
-            last_angle_ = current_angle;
-        }
-
-        if(is_change_target){
-            wait_action_flag = true;    // 等待激活，用于重复发射
-            printf("获得一次开火机会\r\n");
-            shoot_chance_ = true;
-        }
-        if(wait_action_flag == true){// 重复激活
+        if(wait_action_flag == true ){// 重复激活
             if(!is_change_target){
                 double t2 = getTickCount();
                 double t = (t2 - change_time)*1000 / getTickFrequency();
-
-                if(t > 300000){
+                if(t > 1000){
                     printf("重复激活\r\n");
                     change_time = getTickCount();
+#ifndef NO_REPEAT_FIRE
                     shoot_chance_ = true;
+#endif
                 }
             }else{
                 wait_action_flag = false;
             }
         }
 
+        if(is_change_target && wait_action_flag== false){
+            shoot_chance_ = true;
+            change_time = getTickCount();
+            wait_action_flag = true;
+        }
         // 控制发射条件
         int command = DEFAULT;
         if(fabs(current_angle.x) < limit_angle_x_
@@ -177,7 +152,7 @@ public:
                 command = DEFAULT;
 #endif
                 fire_cnt++;
-                printf("开火:%d\r\n", fire_cnt);
+//                printf("开火:%d\r\n", fire_cnt);
                 shoot_chance_ = 0;
             }else {
                 command = DEFAULT;
@@ -187,15 +162,17 @@ public:
         }
         return command;
     }
+
+    void set_fire_chance(){
+        shoot_chance_ = true;
+        change_time = getTickCount();
+        wait_action_flag = true;
+    }
 private:
     // 获得发射机会的参数
     Point2f last_angle_;
     bool wait_action_flag = true;
-    int filter_chance_cnt = 0;
-    int limit_filter_chance = 5;
-    int limit_chance_angle = 4.0;
     double change_time;
-    int get_change_time;
     bool shoot_chance_ = true;
 
 
@@ -223,6 +200,7 @@ public:
         if(cnt > max_cnt_)
         {
             command = RESET;
+
         }else{
             command = DEFAULT;
         }
@@ -282,21 +260,27 @@ class AutoControl
 {
 public:
     AutoControl(){}
-    int run(float current_yaw, float &current_pit,int find_flag, float buff_angle){
+    int run(float current_yaw, float &current_pit,int find_flag, float diff_buff_angle){
         int command_tmp = DEFAULT;
         // 开火任务启动
         bool is_change_target = false;
-        float diff_angle = fabs(last_buff_angle_ - buff_angle);
-        if(diff_angle > 15  && diff_angle < 350){
-            is_change_target = true;
+        if(fabs(diff_buff_angle) > 40  && fabs(diff_buff_angle) < 350){
+            filter_flag = true;
+        }else{
+            if(filter_flag == true){
+                printf("change\r\n");
+                is_change_target = true;
+                filter_flag = false;
+            }
         }
-        last_buff_angle_ = buff_angle;
+
         command_tmp = fire_task.run(Point2f(current_yaw, current_pit), is_change_target);
         if(command_tmp != DEFAULT){
             set_fire(command_);
             fire_cnt++;
             //            printf("fire:%d\r\n", fire_cnt);
             //            INFO(command_);
+            debug = false;
             return command_;
         }
         // 复位任务启动
@@ -304,7 +288,12 @@ public:
         if(command_tmp != DEFAULT){
             // 复位绝对角度
             set_reset(command_);
+            if(debug == false){
+                printf("reset!!!\r\n");
+            }
+            debug = true;
             current_pit = -5;
+            fire_task.set_fire_chance();// 复位获得一次开火机会
             return command_;
         }
         // 通过上面开火任务及复位任务还是得到默认指令，则判断跟随还是不跟随
@@ -354,10 +343,15 @@ public:
     ProPrediceTask pro_predict_task;
 
 
-    float last_buff_angle_;
+    float last_diff_buff_angle_;
+    int diff_angle_cnt_ = 0;
+    bool filter_flag = false;
+
     bool pro_predict_flag_ = false;
     int command_ = 0;
     int fire_cnt = 0;
+
+    bool debug = false;
 };
 
 
@@ -417,12 +411,12 @@ public:
     int buff_offset_x_ =130;//id:3 69;// id:2 130;
     int buff_offset_y_ =83;//id:3 100;// id:2 135;
     int world_offset_x_ = 750;
-    int world_offset_y_ = 480;
+    int world_offset_y_ = 450;
     int color_th_ = 15;
     int gray_th_ = 50;
     float buff_angle_ = 0;
+    float diff_angle_ = 0;
     int area_ratio_ = 500;
-
     //相关类申明
 private:
     SolveAngle solve_angle_long_;
@@ -434,9 +428,12 @@ private:
 private:
     float angle_x_ = 0;
     float angle_y_ = 0;
+    float last_angle_x_ = 0;
+    float last_angle_y_ = 0;
     float distance_ = 0;
     vector<Point2f> points_2d;
     int action_cnt_ = 0;
+    vector<float> vec_diff_angle;
 
 private:
     float d_angle_ = 0;

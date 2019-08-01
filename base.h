@@ -8,11 +8,11 @@
 #define WAITKEY 1
 //#define IMAGESHOW
 #define GALAXY
-#define DEBUG_PLOT
+//#define DEBUG_PLOT
 //****** 线程使能 *****
 #define SHORT_CAMERA_ENABLE 0
 #define LONG_CAMERA_ENABLE  1
-//#define GET_STM32_THREAD
+#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
 //#define SAVE_VIDEO_THREAD
 
@@ -24,6 +24,8 @@
 //****** 能量机关识别信息 *****
 #define DEBUG_BUFF_DETECT
 //#define NO_FIRE
+#define NO_REPEAT_FIRE
+
 //****** 摄像头信息 *****
 #define VIDEO_WIDTH 640
 #define VIDEO_HEIGHT 360
@@ -54,7 +56,7 @@ galaxy_1.xml"
 #define PTZ_TO_BARREL 0.0f   // 补兵激光在２３ｍｍ下方
 
 //****** 笔记本调试相关参数 *****
-#define DEBUG_VIDEO 1
+//#define DEBUG_VIDEO 1
 #define FORCE_CHANGE_CAMERA
 struct OtherParam
 {

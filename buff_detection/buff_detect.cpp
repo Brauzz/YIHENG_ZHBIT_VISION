@@ -239,7 +239,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 
 #ifdef DEBUG_DRAW_TARGET
         final_target.DrawTarget(img);
-//        action_cnt_ = GetIndex(img, final_target, vec_color_rect);
+        //        action_cnt_ = GetIndex(img, final_target, vec_color_rect);
     }
 #endif
     return find_flag;
@@ -351,7 +351,7 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
     if(find_flag)
     {
         find_cnt ++;
-        if(find_cnt % 30==0)
+        if(find_cnt % 10==0)
         {
             //            direction_tmp = getDirection(buff_angle_);
             direction_tmp = getSimpleDirection(buff_angle_);
@@ -376,15 +376,16 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 
     }
     //    attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,direction_tmp);
-    command = auto_control.run(angle_x_, angle_y_, find_flag, is_change);
-//    pro_predict_mode_flag = auto_control.GetProPredictFlag();
+    command = auto_control.run(angle_x_, angle_y_, find_flag, diff_angle_);
+
+
+    //    pro_predict_mode_flag = auto_control.GetProPredictFlag();
 
 #ifdef DEBUG_PLOT //0紫 1橙
-    w_->addPoint(angle_x_, 0);
-        w_->addPoint(angle_y_, 1);
+    w_->addPoint((auto_control.fire_cnt%2==0)*100+100, 0);
+    w_->addPoint(fabs(diff_angle_), 1);
     w_->plot();
 #endif
-
     return command;
 }
 
@@ -421,11 +422,11 @@ int BuffDetector::getDirection(float angle)
 
 int BuffDetector::getSimpleDirection(float angle)
 {
-    float error_angle = angle - last_angle_;
+    diff_angle_ = angle - last_angle_;
     last_angle_ = angle;
-    if(fabs(error_angle) < 10 && fabs(error_angle) > 1e-6)
+    if(fabs(diff_angle_) < 10 && fabs(diff_angle_) > 1e-6)
     {
-        d_angle_ = (1 - r) * d_angle_ + r * error_angle;
+        d_angle_ = (1 - r) * d_angle_ + r * diff_angle_;
     }
 
     if(d_angle_ > 2)

@@ -199,25 +199,20 @@ void ThreadControl::ImageProcess()
     createTrackbar("Qv","ArmorParam",&armor_detector.km_Qv_,1000);
     createTrackbar("rp","ArmorParam",&armor_detector.km_Rp_,1000);
     createTrackbar("rv","ArmorParam",&armor_detector.km_Rv_,1000);
-    createTrackbar("t","ArmorParam",&armor_detector.km_t_,10);
-    createTrackbar("pt","ArmorParam",&armor_detector.km_pt_,500);
 #endif
-#if(ROBOT_TYPE == INFANTRY)
     namedWindow("BuffParam");
-    createTrackbar("buff_area_ratio", "BuffParam", &buff_detector.area_ratio_, 1000);
     createTrackbar("buff_gray_th", "BuffParam", &buff_detector.gray_th_, 255);
     createTrackbar("buff_color_th", "BuffParam", &buff_detector.color_th_, 255);
     createTrackbar("buff_offset_x_","BuffParam",&buff_detector.buff_offset_x_,200);
     createTrackbar("buff_offset_y_","BuffParam",&buff_detector.buff_offset_y_,200);
     createTrackbar("world_offset_x","BuffParam",&buff_detector.world_offset_x_,1000);
     createTrackbar("world_offset_y","BuffParam",&buff_detector.world_offset_y_,1000);
-#endif
+
 #ifdef DEBUG_VIDEO
 #if(DEBUG_VIDEO == 0)
     VideoCapture cap("../Videos/test.avi");
 #else
     VideoCapture cap("../Videos/buff_video3.avi");
-//    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
 //    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
 #endif
 #endif
