@@ -239,7 +239,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 
 #ifdef DEBUG_DRAW_TARGET
         final_target.DrawTarget(img);
-        action_cnt_ = GetIndex(img, final_target, vec_color_rect);
+//        action_cnt_ = GetIndex(img, final_target, vec_color_rect);
     }
 #endif
     return find_flag;
@@ -264,21 +264,25 @@ int BuffDetector::GetIndex(Mat &img, Object object, vector<Rect> all_rect)
         return action_cnt_;
     }
     Point2f center = object.small_rect_.center;
-
-    float length_scale = 1.1f;
-    float width_scale = -5.5f;
+    float length_scale;
+    float width_scale;
+    Point2f length;
+    Point2f width;
+    Point2f test_point_;
     vector<Point2f> vec_point;
 
-    Point2f length = object.points_2d_.at(0) - object.points_2d_.at(1);
-    Point2f width = object.points_2d_.at(0) - object.points_2d_.at(3);
-    Point2f test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
-                                  , center.y + length.y * length_scale + width.y * width_scale);
+    length_scale = -1.1f;
+    width_scale = -5.0f;
+    length = object.points_2d_.at(0) - object.points_2d_.at(1);
+    width = object.points_2d_.at(0) - object.points_2d_.at(3);
+    test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
+                          , center.y + length.y * length_scale + width.y * width_scale);
     circle(img, test_point_, 5, Scalar(0,255,0),-1);
     putText(img, "1", test_point_, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
     vec_point.push_back(test_point_);
 
-    length_scale = -1.1f;
-    width_scale = -5.5f;
+    length_scale = -0.8f;
+    width_scale = -7.5f;
     length = object.points_2d_.at(0) - object.points_2d_.at(1);
     width = object.points_2d_.at(0) - object.points_2d_.at(3);
     test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
@@ -287,8 +291,8 @@ int BuffDetector::GetIndex(Mat &img, Object object, vector<Rect> all_rect)
     putText(img, "2", test_point_, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
     vec_point.push_back(test_point_);
 
-    length_scale = -0.8f;
-    width_scale = -8.0f;
+    length_scale = 0.8f;
+    width_scale = -7.5f;
     length = object.points_2d_.at(0) - object.points_2d_.at(1);
     width = object.points_2d_.at(0) - object.points_2d_.at(3);
     test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
@@ -297,8 +301,8 @@ int BuffDetector::GetIndex(Mat &img, Object object, vector<Rect> all_rect)
     putText(img, "3", test_point_, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
     vec_point.push_back(test_point_);
 
-    length_scale = 0.8f;
-    width_scale = -8.0f;
+    length_scale = 1.1f;
+    width_scale = -5.0f;
     length = object.points_2d_.at(0) - object.points_2d_.at(1);
     width = object.points_2d_.at(0) - object.points_2d_.at(3);
     test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
@@ -308,7 +312,7 @@ int BuffDetector::GetIndex(Mat &img, Object object, vector<Rect> all_rect)
     vec_point.push_back(test_point_);
 
     int cnt = 0;
-
+    int lost_index = 0;
     for(size_t i = 0; i < vec_point.size(); i++)
     {
         for(size_t j = 0; j < all_rect.size(); j++)
@@ -317,29 +321,37 @@ int BuffDetector::GetIndex(Mat &img, Object object, vector<Rect> all_rect)
             {
                 cnt ++;
                 break;
+            }else{
+                lost_index = i;
             }
         }
     }
+
+    int return_value;
     if(action_cnt_ > cnt && action_cnt_ -2 < cnt){
-        return action_cnt_;
+        return_value =  action_cnt_;
     }
     else{
-        return cnt;
+        return_value =  cnt;
     }
 
-
+    if(return_value == 3)
+    {
+        INFO(lost_index);
+    }
+    return return_value;
 }
 int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 {
-    TIME_START(tt);
     color_ = other_param.color;
     gimbal=other_param.gimbal_data;
     bool find_flag = DetectBuff(img,other_param);
     int command = 0;
+    bool is_change = false;
     if(find_flag)
     {
         find_cnt ++;
-        if(find_cnt % 10==0)
+        if(find_cnt % 30==0)
         {
             //            direction_tmp = getDirection(buff_angle_);
             direction_tmp = getSimpleDirection(buff_angle_);
@@ -347,27 +359,29 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
         Point2f world_offset;
         //#define DIRECTION_FILTER
 #ifdef DIRECTION_FILTER
-        if(direction_tmp == 1)  // shun
-            world_offset = Point2f(param_.world_offset_x  - 500, param_.world_offset_y - 500);
-        else if(direction_tmp == -1)// ni
-            world_offset = Point2f(-(param_.world_offset_x  - 500), -(param_.world_offset_y - 500));
+        if(direction_tmp == -1)  // shun
+            world_offset = Point2f(world_offset_x_  - 500, world_offset_y_ - 500);
+        else if(direction_tmp == 1)// ni
+            world_offset = Point2f(-(world_offset_x_  - 500), -(world_offset_y_ - 500));
         else
-            world_offset = Point2f(world_offset_x_ - 500, world_offset_y_  - 500);
-        cout << "direction " << direction_tmp << endl;
+            world_offset = Point2f(0, 0);
+        //        cout << "direction " << direction_tmp << endl;
 
 #else
         world_offset = Point2f(world_offset_x_ - 500, world_offset_y_  - 500);
 #endif
         solve_angle_long_.Generate3DPoints(2, world_offset);
-        solve_angle_long_.getBuffAngle(points_2d, 28.5, buff_angle_, angle_x_, angle_y_, distance_);
+        solve_angle_long_.getBuffAngle(points_2d, 28, buff_angle_, angle_x_, angle_y_, distance_);
+
 
     }
     //    attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,direction_tmp);
+    command = auto_control.run(angle_x_, angle_y_, find_flag, is_change);
+//    pro_predict_mode_flag = auto_control.GetProPredictFlag();
 
-    command = auto_control.run(angle_x_, angle_y_, find_flag);
 #ifdef DEBUG_PLOT //0紫 1橙
-        w_->addPoint(action_cnt_, 0);
-    //    w_->addPoint(d_angle_, 1);
+    w_->addPoint(angle_x_, 0);
+        w_->addPoint(angle_y_, 1);
     w_->plot();
 #endif
 
@@ -551,7 +565,7 @@ void Object::KnowYourself(Mat &img)
 
     int left_intensity = GetRectIntensity(img, left_rect);
     int right_intensity = GetRectIntensity(img, right_rect);
-    if(left_intensity > 50 && right_intensity > 50)
+    if(left_intensity > 10 && right_intensity > 10)
     {
         type_ = ACTION;
     }else{

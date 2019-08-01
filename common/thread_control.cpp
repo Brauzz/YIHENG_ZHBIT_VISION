@@ -114,9 +114,9 @@ void ThreadControl::GetGimbal() //give up
 #ifdef DEBUG_PLOT
         if(debug_enable_flag == true)
         {
-            w_->addPoint(dst_gimbal_yaw,0);
-            w_->addPoint(predict, 1);
-            w_->plot();
+//            w_->addPoint(dst_gimbal_yaw,0);
+//            w_->addPoint(predict, 1);
+//            w_->plot();
         }
 #endif
         END_THREAD;
@@ -154,8 +154,8 @@ void ThreadControl::GetSTM32()
 #ifdef DEBUG_PLOT
         if(debug_enable_flag == true)
         {
-            w_->addPoint(cnt,0);
-            w_->plot();
+//            w_->addPoint(cnt,0);
+//            w_->plot();
         }
 #endif
         gimbal_data_index++;
@@ -216,8 +216,9 @@ void ThreadControl::ImageProcess()
 #if(DEBUG_VIDEO == 0)
     VideoCapture cap("../Videos/test.avi");
 #else
-    VideoCapture cap("../Videos/buff_video1.avi");
-    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
+    VideoCapture cap("../Videos/buff_video3.avi");
+//    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
+//    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
 #endif
 #endif
 

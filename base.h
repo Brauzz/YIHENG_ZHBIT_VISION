@@ -6,12 +6,12 @@
 
 // ****** 整个系统的调试  ******//
 #define WAITKEY 1
-#define IMAGESHOW
+//#define IMAGESHOW
 #define GALAXY
 #define DEBUG_PLOT
 //****** 线程使能 *****
 #define SHORT_CAMERA_ENABLE 0
-#define LONG_CAMERA_ENABLE  0
+#define LONG_CAMERA_ENABLE  1
 //#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
 //#define SAVE_VIDEO_THREAD
@@ -39,7 +39,7 @@
 #define CAMERA0_FILEPATH "../rm-vision/camera/camera_param/\
 camera4mm_5.xml"
 #define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
-galaxy_0.xml"
+galaxy_1.xml"
 
 //****** 角度解算配置 *****
 //#define SET_ZEROS_GRAVITY

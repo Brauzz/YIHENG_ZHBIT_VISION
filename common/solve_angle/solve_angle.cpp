@@ -152,7 +152,7 @@ void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, 
     // 距离解算
     float H = 100;
     float h = 430;
-    float D = 7100;
+    float D = 7400;
     float delta_h = H - h;
     float buff_h = 800*sin(buff_angle *3.14/180)+800;
     dist = sqrt(pow(delta_h+buff_h, 2) + pow(D, 2));

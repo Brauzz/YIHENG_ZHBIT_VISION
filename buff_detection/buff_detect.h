@@ -30,9 +30,10 @@ using namespace std;
 #define DEBUG_PUT_TEST_TARGET
 #define DEBUG_PUT_TEST_ANGLE
 #define DEBUG_DRAW_TARGET
-#define TEST_OTSU
+//#define TEST_OTSU
 //#define AREA_LENGTH_ANGLE 2 // 1:area 2:length 3:diff_angle
 #define FUSION_MINAREA_ELLIPASE
+#define DIRECTION_FILTER
 // ---- buff debug ----
 #endif
 
@@ -104,32 +105,53 @@ class FireTask{
 public:
     FireTask(){}
     // 开火条件是当输出的角度趋近于０一段时间开火
-    int run(Point2f current_angle)
+    int run(Point2f current_angle, bool is_change_target)
     {
+
         // 获得发射机会的条件
+        get_change_time ++;
         Point2f d_angle = Point2f(fabs(last_angle_.x - current_angle.x)
                                   , fabs(last_angle_.y - current_angle.y));
-        if(d_angle.x > limit_chance_angle || d_angle.y > limit_chance_angle)
+        if(d_angle.x > 5 || d_angle.y > 5
+                || d_angle.x + d_angle.y > 6 ||
+                d_angle.x > 2 && d_angle.y > 2)
         {
             filter_chance_cnt++;
             if(filter_chance_cnt == limit_filter_chance)
             {
                 if(shoot_chance_ == false){
+                    wait_action_flag = true;    // 等待激活，用于重复发射
+                    change_time = getTickCount();
                     printf("获得一次开火机会\r\n");
-                    get_change_time = getTickCount();
+                    get_change_time = 0;
                 }
-                //                double t = getTickCount();
-                //                if((t-get_change_time)*1000/getTickFrequency() > 100)
-                //                {
                 shoot_chance_ = true;
                 filter_chance_cnt = 0;
-                //                    get_change_time = t;
-                //                }
 
             }
         }else{
             filter_chance_cnt = 0;
             last_angle_ = current_angle;
+        }
+
+        if(is_change_target){
+            wait_action_flag = true;    // 等待激活，用于重复发射
+            printf("获得一次开火机会\r\n");
+            shoot_chance_ = true;
+        }
+        if(wait_action_flag == true){// 重复激活
+            if(!is_change_target){
+                double t2 = getTickCount();
+                double t = (t2 - change_time)*1000 / getTickFrequency();
+
+                if(t > 300000){
+                    printf("重复激活\r\n");
+                    change_time = getTickCount();
+                    shoot_chance_ = true;
+                }
+            }else{
+                wait_action_flag = false;
+            }
         }
 
         // 控制发射条件
@@ -168,18 +190,21 @@ public:
 private:
     // 获得发射机会的参数
     Point2f last_angle_;
+    bool wait_action_flag = true;
     int filter_chance_cnt = 0;
     int limit_filter_chance = 5;
     int limit_chance_angle = 4.0;
-    double get_change_time;
+    double change_time;
+    int get_change_time;
     bool shoot_chance_ = true;
+
 
     // 控制开火的参数
     int cnt_ = 0;
     int fire_cnt = 0;
-    int max_cnt_ = 100;             // 满足条件次数
-    float limit_angle_x_ = 1.0f;    // 条件角度阈值
-    float limit_anlge_y_ = 1.0f;
+    int max_cnt_ = 50;             // 满足条件次数
+    float limit_angle_x_ = 2.0f;    // 条件角度阈值
+    float limit_anlge_y_ = 2.0f;
 };
 
 class ResetTask{
@@ -209,13 +234,64 @@ private:
 };
 
 
+class ProPrediceTask{
+public:
+    ProPrediceTask(){}
+
+    int run(int fire_cnt, int action_cnt){
+        //退出超预测模式的条件
+        if(pro_predict_mode_flag == true)
+        {
+            // 超时时间退出
+            double t2 = getTickCount();
+            double t = (t2 - t1)*1000/getTickFrequency();
+            if(t > 1000)
+                pro_predict_mode_flag = false;
+
+            // 开火后退出
+            if(pro_fire_cnt != fire_cnt)
+            {
+                pro_predict_mode_flag = false;
+                pro_fire_cnt = fire_cnt;
+            }
+        }
+
+        // 进入超预测模式条件
+        if(pro_fire_cnt != fire_cnt)
+        {
+            if(action_cnt == 3)
+            {
+                // 激活数量变成３进入超预测模式
+                t1 = getTickCount();
+                pro_predict_mode_flag = true;
+            }
+            pro_fire_cnt = fire_cnt;
+        }
+        return pro_predict_mode_flag;
+    }
+
+private:
+    int pro_fire_cnt = 0;   // 用于判断开火变化的计数
+    bool pro_predict_mode_flag = false;
+    double t1;
+
+};
+
+
 class AutoControl
 {
 public:
     AutoControl(){}
-    int run(float current_yaw, float &current_pit,int find_flag){
+    int run(float current_yaw, float &current_pit,int find_flag, float buff_angle){
         int command_tmp = DEFAULT;
-        command_tmp = fire_task.run(Point2f(current_yaw, current_pit));
+        // 开火任务启动
+        bool is_change_target = false;
+        float diff_angle = fabs(last_buff_angle_ - buff_angle);
+        if(diff_angle > 15  && diff_angle < 350){
+            is_change_target = true;
+        }
+        last_buff_angle_ = buff_angle;
+        command_tmp = fire_task.run(Point2f(current_yaw, current_pit), is_change_target);
         if(command_tmp != DEFAULT){
             set_fire(command_);
             fire_cnt++;
@@ -223,6 +299,7 @@ public:
             //            INFO(command_);
             return command_;
         }
+        // 复位任务启动
         command_tmp = reset_task.run(find_flag);
         if(command_tmp != DEFAULT){
             // 复位绝对角度
@@ -241,9 +318,14 @@ public:
                 set_no_follow(command_);
             }
         }
+
+        //        pro_predict_flag_ = pro_predict_task.run(fire_cnt, action_cnt);
         return command_;
     }
 
+    bool GetProPredictFlag(){
+        return pro_predict_flag_;
+    }
 private:
     // 设置命令相关函数
     // 置1用 |    清零用&   跟随位0x01 开火位0x02 复位位0x04
@@ -269,6 +351,11 @@ private:
 public:
     FireTask fire_task;
     ResetTask reset_task;
+    ProPrediceTask pro_predict_task;
+
+
+    float last_buff_angle_;
+    bool pro_predict_flag_ = false;
     int command_ = 0;
     int fire_cnt = 0;
 };
@@ -327,11 +414,11 @@ private:
 
     // debug参数
 public:
-    int buff_offset_x_ = 69;// id:2 130;
-    int buff_offset_y_ = 100;// id:2 135;
-    int world_offset_x_ = 500;
-    int world_offset_y_ = 500;
-    int color_th_ = 30;
+    int buff_offset_x_ =130;//id:3 69;// id:2 130;
+    int buff_offset_y_ =83;//id:3 100;// id:2 135;
+    int world_offset_x_ = 750;
+    int world_offset_y_ = 480;
+    int color_th_ = 15;
     int gray_th_ = 50;
     float buff_angle_ = 0;
     int area_ratio_ = 500;
@@ -360,6 +447,13 @@ private:
     float last_angle_ = 0;
     float max_filter_value_ = 15;
     int direction_tmp=0;
+
+    // 超预测相关参数
+private:
+    int or_fire_cnt_ = 0;
+    bool pro_predict_mode_flag = false;
+
+
 
     int command = 0;
 };
