@@ -1,18 +1,18 @@
 #pragma once
 #include "iostream"
+#include "opencv2/opencv.hpp"
 
-
-#define ROBOT_TYPE INFANTRY // INFANTRY HERO PLANE
+#define ROBOT_TYPE INFANTRY // INFANTRY HERO
 
 // ****** 整个系统的调试  ******//
 #define WAITKEY 1
-//#define IMAGESHOW
+#define IMAGESHOW
 #define GALAXY
 //#define DEBUG_PLOT
 //****** 线程使能 *****
 #define SHORT_CAMERA_ENABLE 0
 #define LONG_CAMERA_ENABLE  1
-#define GET_STM32_THREAD
+//#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
 //#define SAVE_VIDEO_THREAD
 
@@ -56,7 +56,7 @@ galaxy_1.xml"
 #define PTZ_TO_BARREL 0.0f   // 补兵激光在２３ｍｍ下方
 
 //****** 笔记本调试相关参数 *****
-//#define DEBUG_VIDEO 1
+#define DEBUG_VIDEO 1
 #define FORCE_CHANGE_CAMERA
 struct OtherParam
 {
@@ -89,6 +89,47 @@ struct OtherParam
 
 #define B115200 0
 #define B921600 1
+
+#define name2str(name) (#name)
+
+class PutTry
+{
+public:
+    PutTry(){}
+    ~PutTry(){}
+    void TextPut_d(cv::Mat &img, double &double_text,const std::string dou_ch)
+    {
+        double self_indexd=20*self_dadd_count;
+
+        if(self_doindex_def-double_text>5)
+        {
+            self_dadd_count+=1;
+            self_doindex_def=double_text;
+        }
+        cv::Point2d view_all= cv::Point2d(5,self_indexd);
+        putText(img, dou_ch + " : "+ std::to_string(double_text),view_all,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255),1);
+    }
+    void TextPut_f(cv::Mat &img, float &float_text,const std::string flo_ch)
+    {
+        float self_indexf=20;
+
+        if(self_findex_def-float_text>5)
+        {
+            self_fadd_count+=1;
+            self_findex_def=float_text;
+        }
+        cv::Point2f view_all = cv::Point2f(300,self_indexf);
+        putText(img,flo_ch + " : " + std::to_string(float_text),view_all,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255),1);
+    }
+private:
+    int self_dadd_count=1;
+    int self_fadd_count=1;
+
+    double self_doindex_def=1e8;
+    float self_findex_def=1e8;
+
+};
+
 
 //#define TIMER_START boost::timer t_##__func__;
 //#define TIMER_END std:: cout << "[" << #__func__ << "]" << "cost time: " << t_##__func__.elapsed() << std::endl;

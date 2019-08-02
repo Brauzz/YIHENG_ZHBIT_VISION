@@ -59,7 +59,6 @@ HEADERS += \
     mainwindow.h \
     qcustomplot.h \
     base.h \
-    base_detection/base_detect.h \
     camera/save_video.h
 
 SOURCES += \
@@ -73,7 +72,6 @@ SOURCES += \
     common/thread_control.cpp \
     mainwindow.cpp \
     qcustomplot.cpp \
-    base_detection/base_detect.cpp \
     camera/save_video.cpp
 
 FORMS += \

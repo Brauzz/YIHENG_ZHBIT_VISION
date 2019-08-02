@@ -137,11 +137,14 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                 {
                     object.type_ = ACTION;  // 已经激活类型
                 }else if(small_rect_area * area_ratio>=big_rect_area && small_rect_area *2 < big_rect_area
-                         && small_rect_size_ratio > 1 && small_rect_size_ratio < 3.0f
-                         /*&& big_rect_length/small_rect_length <4 &&big_rect_length/small_rect_length >1*/)
+                         && small_rect_size_ratio > 1 && small_rect_size_ratio < 3.0f)
                 {
+
                     // 更新世界坐标系顺序
                     object.type_ = INACTION;    // 未激活类型
+                    object.UpdateOrder();
+                    object.KnowYourself(binary_color_img);
+                    vec_target.push_back(object);
                 }else
                 {
                     object.type_ = UNKOWN;    // 未激活类型
@@ -165,182 +168,63 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                 }break;
                 }
 #endif
-                if(object.type_!= UNKOWN)
-                {
-                    object.UpdateOrder();
-                    object.KnowYourself(binary_color_img);
-                    vec_target.push_back(object);
-                }
 
-                // 根据距离计算超预测点
-                //                object.UpdataPredictPoint();
-                //                circle(img , object.test_point_, 3, Scalar(22,255,25));
 #ifdef FUSION_MINAREA_ELLIPASE
             }
         }
 #endif
     }
     // 遍历所有结果并处理\选择需要击打的目标
-    //     TODO(cz): 超预测写了一版基础，未加入识别到5个激活目标后再进入超预测的逻辑，仅供参考
     Object final_target;
-    vector<Object> vec_target_tmp;
     bool find_flag = false;
+    float diff_angle = 1e8;
     // 你需要击打的能量机关类型 1(true)击打未激活 0(false)击打激活
     for(size_t i=0; i < vec_target.size(); i++)
     {
-        if(vec_target.at(i).type_ == INACTION){
-            putText(img, "INACTION", Point2f(20,20)+ vec_target.at(i).small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-        }else if(vec_target.at(i).type_ == ACTION){
-            putText(img, "ACTION", Point2f(20,20)+ vec_target.at(i).small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-        }else{
-            putText(img, "UNKOWN", Point2f(20,20)+ vec_target.at(i).small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-        }
-
-        if(vec_target.at(i).type_ == INACTION)
-        {
-            Object object_tmp = vec_target.at(i);
-            // 普通模式击打未激活机关
-#ifdef DEBUG_PUT_TEST_TARGET
-            //                putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ object_tmp.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
-#endif
-            vec_target_tmp.push_back(object_tmp);
+        Object object_tmp = vec_target.at(i);
+        // 普通模式击打未激活机关
+        if(object_tmp.type_ == INACTION){
             find_flag = true;
-        }
-    }
-    if(find_flag == true)
-    {
-        float diff_angle = 1e8;
-        float ang;
-        //        INFO(inaction_target.size());
-        for(size_t i = 0; i< vec_target_tmp.size(); i++)
-        {
-            ang = fabs(vec_target_tmp[i].diff_angle-90.0f);
+            float ang = fabs(vec_target[i].diff_angle-90.0f);
             if(ang < diff_angle)
             {
-                final_target = vec_target_tmp.at(i);
+                final_target = vec_target.at(i);
                 diff_angle = ang;
             }
             putText(img, "final_target", Point2f(10,-50)+ final_target.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
-        }
-        Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
-        vector<Point2f> vec_points_2d_tmp;
-        for(size_t k=0; k < 4; k++)
-        {
-            vec_points_2d_tmp.push_back(final_target.points_2d_.at(k) + buff_offset);
-        }
-        points_2d = vec_points_2d_tmp;
-        buff_angle_ = final_target.angle_;
-#ifdef DEBUG_PUT_TEST_ANGLE
-        for(size_t j = 0; j < 4; j++)
-        {
-            putText(img, to_string(j), Point2f(5,5)+ final_target.points_2d_[j], FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
-        }
-#endif
 
+            Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
+            vector<Point2f> vec_points_2d_tmp;
+            for(size_t k=0; k < 4; k++)
+            {
+                vec_points_2d_tmp.push_back(final_target.points_2d_.at(k) + buff_offset);
+            }
+            points_2d = vec_points_2d_tmp;
+            buff_angle_ = final_target.angle_;
+#ifdef DEBUG_PUT_TEST_ANGLE
+            for(size_t j = 0; j < 4; j++)
+            {
+                putText(img, to_string(j), Point2f(5,5)+ final_target.points_2d_[j], FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+            }
+#endif
+        }
+    }
+    if(find_flag){
+
+
+#ifdef DEBUG_PUT_TEST_TARGET
+        putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ final_target.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+#endif
 #ifdef DEBUG_DRAW_TARGET
         final_target.DrawTarget(img);
-        //        action_cnt_ = GetIndex(img, final_target, vec_color_rect);
-    }
 #endif
+    }
     return find_flag;
 }
 
 
-void makePointSafe(Point2f &point){
-    if(point.x > 640)
-        point.x = 640;
-    else if(point.x < 0)
-        point.x = 0;
-    if(point.y > 480)  //industrial 480
-        point.y = 480;
-    else if(point.y < 0)
-        point.y = 0;
-}
 
-int BuffDetector::GetIndex(Mat &img, Object object, vector<Rect> all_rect)
-{
-    if(object.angle_>45 && object.angle_<135)
-    {
-        return action_cnt_;
-    }
-    Point2f center = object.small_rect_.center;
-    float length_scale;
-    float width_scale;
-    Point2f length;
-    Point2f width;
-    Point2f test_point_;
-    vector<Point2f> vec_point;
 
-    length_scale = -1.1f;
-    width_scale = -5.0f;
-    length = object.points_2d_.at(0) - object.points_2d_.at(1);
-    width = object.points_2d_.at(0) - object.points_2d_.at(3);
-    test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
-                          , center.y + length.y * length_scale + width.y * width_scale);
-    circle(img, test_point_, 5, Scalar(0,255,0),-1);
-    putText(img, "1", test_point_, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
-    vec_point.push_back(test_point_);
-
-    length_scale = -0.8f;
-    width_scale = -7.5f;
-    length = object.points_2d_.at(0) - object.points_2d_.at(1);
-    width = object.points_2d_.at(0) - object.points_2d_.at(3);
-    test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
-                          , center.y + length.y * length_scale + width.y * width_scale);
-    circle(img, test_point_, 5, Scalar(0,255,0),-1);
-    putText(img, "2", test_point_, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
-    vec_point.push_back(test_point_);
-
-    length_scale = 0.8f;
-    width_scale = -7.5f;
-    length = object.points_2d_.at(0) - object.points_2d_.at(1);
-    width = object.points_2d_.at(0) - object.points_2d_.at(3);
-    test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
-                          , center.y + length.y * length_scale + width.y * width_scale);
-    circle(img, test_point_, 5, Scalar(0,255,0),-1);
-    putText(img, "3", test_point_, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
-    vec_point.push_back(test_point_);
-
-    length_scale = 1.1f;
-    width_scale = -5.0f;
-    length = object.points_2d_.at(0) - object.points_2d_.at(1);
-    width = object.points_2d_.at(0) - object.points_2d_.at(3);
-    test_point_ = Point2f(center.x + length.x * length_scale + width.x * width_scale
-                          , center.y + length.y * length_scale + width.y * width_scale);
-    circle(img, test_point_, 5, Scalar(0,255,0),-1);
-    putText(img, "4", test_point_, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
-    vec_point.push_back(test_point_);
-
-    int cnt = 0;
-    int lost_index = 0;
-    for(size_t i = 0; i < vec_point.size(); i++)
-    {
-        for(size_t j = 0; j < all_rect.size(); j++)
-        {
-            if(all_rect.at(j).contains(vec_point.at(i)) == true)
-            {
-                cnt ++;
-                break;
-            }else{
-                lost_index = i;
-            }
-        }
-    }
-
-    int return_value;
-    if(action_cnt_ > cnt && action_cnt_ -2 < cnt){
-        return_value =  action_cnt_;
-    }
-    else{
-        return_value =  cnt;
-    }
-
-    if(return_value == 3)
-    {
-        INFO(lost_index);
-    }
-    return return_value;
-}
 int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 {
     color_ = other_param.color;
@@ -389,37 +273,6 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
     return command;
 }
 
-int BuffDetector::getDirection(float angle)
-{
-    float error_angle =  angle - last_angle_;
-    //            cout << "error_angle" << error_angle << endl;
-    last_angle_ = angle;
-    if(fabs(error_angle) < max_filter_value_ && fabs(error_angle) > 1e-6f)
-    {
-        if(history_.size() < history_size_)
-        {
-            history_.push_back(error_angle);
-        }else {
-            history_.push_back(error_angle);
-            history_.erase(history_.begin());
-        }
-    }
-    std::vector<float>::iterator iter;
-    float sum = 0.0;
-    for (iter=history_.begin();iter!=history_.end();iter++){
-        sum += *iter;
-    }
-    sum /= history_.size();
-    cout << "sum " << sum << endl;
-
-    if(sum >= 0.5f)
-        return 1;   // shun
-    else if(sum <= 0.5f)
-        return -1;   // ni
-    else
-        return 0;
-}
-
 int BuffDetector::getSimpleDirection(float angle)
 {
     diff_angle_ = angle - last_angle_;
@@ -428,7 +281,6 @@ int BuffDetector::getSimpleDirection(float angle)
     {
         d_angle_ = (1 - r) * d_angle_ + r * diff_angle_;
     }
-
     if(d_angle_ > 2)
         return 1;
     else if(d_angle_ < -2)
@@ -437,21 +289,6 @@ int BuffDetector::getSimpleDirection(float angle)
         return 0;
 }
 
-
-void Object::Indeed_smallrect()
-{
-    if(minArea_rect.size.width>=minArea_rect.size.height)
-    {
-        float temp=minArea_rect.size.width;
-        minArea_rect.size.width=minArea_rect.size.height;
-        minArea_rect.size.height=temp;
-    }
-    small_rect_.size.width=minArea_rect.size.width;
-    small_rect_.size.height=minArea_rect.size.height;
-    small_rect_.center=fitEllipse_rect.center;
-    small_rect_.angle=fitEllipse_rect.angle;
-
-}
 
 void Object::UpdateOrder()
 {
@@ -519,16 +356,6 @@ void Object::UpdateOrder()
 #endif
 }
 
-void MakePointSafe(Point2f &point, int width, int height){
-    if(point.x > width)
-        point.x = width;
-    else if(point.x < 0)
-        point.x = 0;
-    if(point.y > height)  //industrial 480
-        point.y = height;
-    else if(point.y < 0)
-        point.y = 0;
-}
 
 int GetRectIntensity(const Mat &img, Rect rect){
     if(rect.width < 1 || rect.height < 1 || rect.x < 1 || rect.y < 1
@@ -577,145 +404,10 @@ void Object::KnowYourself(Mat &img)
     imshow("test", img);
 }
 
-void Object::UpdataPredictPoint()
-{
-    float length_scale;
-    float width_scale = width_scale_;
-    if(direction_ < 0){
-        length_scale = -length_scale_;
-    }else
-    {
-        length_scale = length_scale_;
-    }
-    Point2f vector_length = points_2d_.at(0) - points_2d_.at(1);
-    Point2f vector_width = points_2d_.at(0) - points_2d_.at(3);
-    test_point_ = Point2f(points_2d_.at(1).x + vector_length.x * length_scale + vector_width.x * width_scale
-                          , points_2d_.at(1).y + vector_length.y * length_scale + vector_width.y * width_scale);
-    MakePointSafe(test_point_, 640, 480);
-}
+
 
 double Point_distance(Point2f p1,Point2f p2)
 {
     double Dis=pow(pow((p1.x-p2.x),2)+pow((p1.y-p2.y),2),0.5);
     return Dis;
 }
-
-int AutoAttack::run(bool find_target_flag, float angle_x, float angle_y, int target_size, float gimbal, int move_static)
-{
-    float diff_gimbal=fabsf(gimbal-20);
-    adjust_control(find_target_flag,move_static,target_size);
-    switch (control_)
-    {
-    case 0:
-        if(fabs(angle_x) > 0.8f || fabs(angle_y) > 1.0f) // still not stable, wait
-        {
-            buff_mode=follow;
-            t_tocul=0;
-        }
-        else if(fabs(angle_x) < 0.8f && fabs(angle_y) < 1.0f)
-        {
-            if(t_tocul==0) //stable, shoot
-            {
-                buff_mode=shoot;
-                t_tocul++;
-            }
-            else if(t_tocul>0 && t_tocul <20) //only shoot once, then wait
-            {
-                t_tocul++;
-                buff_mode=follow;
-            }
-            else if(t_tocul>20)  // when out of the time, back to center
-            {
-                t_tocul=0;
-            }
-        }
-
-        break;
-
-    case 1:
-        float diff=fabs(gimbal-20);
-
-        if(fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count==0)
-        {
-            buff_mode=restore_center;
-            if(diff_gimbal<2)
-            {++restore_count;}
-
-        }
-        else if (fabs(angle_x) > 0.8f &&fabs(angle_y) > 1.0f && restore_count!=0)
-        {
-            if(fabs(angle_x) > 0.8f || fabs(angle_y) > 1.0f)
-            {
-                buff_mode=follow;
-                t_tocul=0;
-            }
-            else if(fabs(angle_x) < 0.8f && fabs(angle_y) < 1.0f)
-            {
-                restore_count=0;
-                if(t_tocul==0)
-                {
-                    buff_mode=shoot;
-                    t_tocul++;
-                }
-                else if(t_tocul>0 && t_tocul <20)
-                {
-                    t_tocul++;
-                    buff_mode=follow;
-                }
-                else if(t_tocul>20 && diff>2)
-                {
-                    buff_mode=restore_center;
-                }
-                else if(t_tocul>20 && diff <2)
-                {
-                    buff_mode=restore_center;
-                    t_tocul=0;
-                }
-            }
-        }
-        break;
-    }
-    return buff_mode;
-}
-
-int AutoAttack::adjust_control(bool find_target_flag, int move_static,int target_size)
-{
-    if(find_target_flag)  //如果找到目标，选择击打模式
-    {
-        center_buff=0;
-        if(move_static==0)
-        {
-            control_=0;
-        }
-        else if(abs(move_static)==1)
-        {
-            if(target_size==4)
-            {
-                control_=1;
-            }
-            else
-            {
-                control_=0;
-            }
-        }
-    }
-    else if(find_target_flag==0) // if don't find the target, back to center
-    {
-        if( center_buff==0)   //避免某一帧丢失目标
-        {
-            count_center++;
-            if(count_center>=30)
-                center_buff=1;
-        }
-        else if(center_buff==1)
-        {
-            count_center--;
-            buff_mode=restore_center;
-            if(count_center<0)
-                count_center=0;
-        }
-
-    }
-    return control_;
-}
-

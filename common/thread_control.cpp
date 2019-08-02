@@ -259,7 +259,6 @@ void ThreadControl::ImageProcess()
             other_param.cap_mode = 1;
 #endif
             ++consumption_index;
-
             command = buff_detector.BuffDetectTask(image, other_param);
             if(command)
             {
@@ -273,13 +272,7 @@ void ThreadControl::ImageProcess()
         other_param.cap_mode = armor_detector.chooseCamera(1000, 1500, other_param.cap_mode);
 #endif
         ++consumption_index;
-        find_flag = armor_detector.ArmorDetectTask(image, other_param);
-        armor_detector.getAngle(angle_x, angle_y);
-
-
-#elif(ROBOT_TYPE == PLANE)
-        ++consumption_index;
-        find_flag = armor_detector.ArmorDetectTask(image, other_param);
+        command = armor_detector.ArmorDetectTask(image, other_param);
         armor_detector.getAngle(angle_x, angle_y);
 #endif
 
@@ -293,7 +286,13 @@ void ThreadControl::ImageProcess()
 #ifdef IMAGESHOW
         imshow("image", image);
 #endif
+        static bool fast_flag = false;
+        if(!fast_flag){
         key = waitKey(WAITKEY);
+        }else{
+            key = waitKey(1);
+        }
+
         if(key == 'q')
             end_thread_flag = true;
         if(key == 'c')
@@ -302,6 +301,12 @@ void ThreadControl::ImageProcess()
                 other_param.cap_mode = 1;
             else
                 other_param.cap_mode = 0;
+        }else if(key == 's'){
+            waitKey(0);
+        }else if(key == 'g'){
+            fast_flag = !fast_flag;
+        }else if(key == 'm'){
+            other_param.mode = !other_param.mode;
         }
         END_THREAD;
 #endif

@@ -53,20 +53,6 @@ class Object
 {
 public:
     Object(){}
-
-    RotatedRect fitEllipse_rect;
-    RotatedRect minArea_rect;
-    RotatedRect small_rect_;
-    RotatedRect big_rect_;
-    vector<Point2f> points_2d_;
-    float angle_;
-    Point2f test_point_;
-    float diff_angle;
-    int direction_ = 1; // 1shun -1ni 0stop
-
-    float length_scale_ = 3;
-    float width_scale_ = -3;
-
     void DrawTarget(Mat &img)
     {
         if(type_ == INACTION)
@@ -76,30 +62,16 @@ public:
         else
             circle(img, small_rect_.center, 3, Scalar(255, 255, 255), 1);
     }
-
     void UpdateOrder();
     void KnowYourself(Mat &img);
-    void Indeed_smallrect();
-    void UpdataPredictPoint();
 
+    RotatedRect small_rect_;
+    RotatedRect big_rect_;
+    vector<Point2f> points_2d_;
+    float angle_;
+    float diff_angle;
     int type_ = UNKOWN;
 };
-
-class AutoAttack
-{
-public:
-    AutoAttack(){}
-    int run(bool find_target_flag, float angle_x, float angle_y, int target_size, float gimbal, int move_static);
-    int adjust_control(bool find_target_flag, int move_static,int target_size);
-private:
-    int control_=restore_center;
-    int buff_mode;
-    int t_tocul=0; //0=little; 1=big
-    int restore_count=0;
-    int center_buff=0;
-    int count_center=0;
-};
-
 
 class FireTask{
 public:
@@ -212,50 +184,6 @@ private:
 };
 
 
-class ProPrediceTask{
-public:
-    ProPrediceTask(){}
-
-    int run(int fire_cnt, int action_cnt){
-        //退出超预测模式的条件
-        if(pro_predict_mode_flag == true)
-        {
-            // 超时时间退出
-            double t2 = getTickCount();
-            double t = (t2 - t1)*1000/getTickFrequency();
-            if(t > 1000)
-                pro_predict_mode_flag = false;
-
-            // 开火后退出
-            if(pro_fire_cnt != fire_cnt)
-            {
-                pro_predict_mode_flag = false;
-                pro_fire_cnt = fire_cnt;
-            }
-        }
-
-        // 进入超预测模式条件
-        if(pro_fire_cnt != fire_cnt)
-        {
-            if(action_cnt == 3)
-            {
-                // 激活数量变成３进入超预测模式
-                t1 = getTickCount();
-                pro_predict_mode_flag = true;
-            }
-            pro_fire_cnt = fire_cnt;
-        }
-        return pro_predict_mode_flag;
-    }
-
-private:
-    int pro_fire_cnt = 0;   // 用于判断开火变化的计数
-    bool pro_predict_mode_flag = false;
-    double t1;
-
-};
-
-
 class AutoControl
 {
 public:
@@ -307,14 +235,9 @@ public:
                 set_no_follow(command_);
             }
         }
-
-        //        pro_predict_flag_ = pro_predict_task.run(fire_cnt, action_cnt);
         return command_;
     }
 
-    bool GetProPredictFlag(){
-        return pro_predict_flag_;
-    }
 private:
     // 设置命令相关函数
     // 置1用 |    清零用&   跟随位0x01 开火位0x02 复位位0x04
@@ -338,16 +261,11 @@ private:
     }
 
 public:
-    FireTask fire_task;
-    ResetTask reset_task;
-    ProPrediceTask pro_predict_task;
+    FireTask fire_task;     // 开火任务
+    ResetTask reset_task;   // 复位任务
 
-
-    float last_diff_buff_angle_;
-    int diff_angle_cnt_ = 0;
     bool filter_flag = false;
 
-    bool pro_predict_flag_ = false;
     int command_ = 0;
     int fire_cnt = 0;
 
@@ -420,9 +338,7 @@ public:
     //相关类申明
 private:
     SolveAngle solve_angle_long_;
-    AutoAttack auto_attack;
     AutoControl auto_control;
-    AutoAttack attack;
     MainWindow *w_;
 
 private:
@@ -444,13 +360,6 @@ private:
     float last_angle_ = 0;
     float max_filter_value_ = 15;
     int direction_tmp=0;
-
-    // 超预测相关参数
-private:
-    int or_fire_cnt_ = 0;
-    bool pro_predict_mode_flag = false;
-
-
 
     int command = 0;
 };
