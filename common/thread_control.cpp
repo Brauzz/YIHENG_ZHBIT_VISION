@@ -141,7 +141,7 @@ void ThreadControl::GetSTM32()
 
         serial_.read_data(&rx_data, mode, color, raw_gimbal_yaw);
 //        other_param.mode = mode;
-        other_param.color = color;
+//        other_param.color = color;
         GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
         float gimbal_data = dst_gimbal_yaw;
         other_param.gimbal_data = gimbal_data;
@@ -186,7 +186,7 @@ void ThreadControl::ImageProcess()
 #endif
 #endif
     serial_transmit_data tx_data;       // 串口发送stm32数据结构
-
+#ifdef ARMOR_TRACK_BAR
     namedWindow("ArmorParam");
     createTrackbar("armor_gray_th", "ArmorParam", &armor_detector.gray_th_, 255);
     createTrackbar("armor_color_th", "ArmorParam", &armor_detector.color_th_, 255);
@@ -194,12 +194,8 @@ void ThreadControl::ImageProcess()
     createTrackbar("short_offset_y","ArmorParam",&armor_detector.short_offset_y_,200);
     createTrackbar("long_offset_x","ArmorParam",&armor_detector.long_offset_x_,200);
     createTrackbar("long_offset_y","ArmorParam",&armor_detector.long_offset_y_,200);
-#ifdef PREDICT
-    createTrackbar("Qp","ArmorParam",&armor_detector.km_Qp_,1000);
-    createTrackbar("Qv","ArmorParam",&armor_detector.km_Qv_,1000);
-    createTrackbar("rp","ArmorParam",&armor_detector.km_Rp_,1000);
-    createTrackbar("rv","ArmorParam",&armor_detector.km_Rv_,1000);
 #endif
+#ifdef BUFF_TRACK_BAR
     namedWindow("BuffParam");
     createTrackbar("buff_gray_th", "BuffParam", &buff_detector.gray_th_, 255);
     createTrackbar("buff_color_th", "BuffParam", &buff_detector.color_th_, 255);
@@ -207,7 +203,11 @@ void ThreadControl::ImageProcess()
     createTrackbar("buff_offset_y_","BuffParam",&buff_detector.buff_offset_y_,200);
     createTrackbar("world_offset_x","BuffParam",&buff_detector.world_offset_x_,1000);
     createTrackbar("world_offset_y","BuffParam",&buff_detector.world_offset_y_,1000);
+    createTrackbar("fire_max_cnt","BuffParam",&buff_detector.auto_control.fire_task.max_cnt_,200);
+    createTrackbar("reset_cnt","BuffParam",&buff_detector.auto_control.reset_task.max_cnt_,200);
+    createTrackbar("repeat_time","BuffParam",&buff_detector.auto_control.fire_task.repeat_time,2000);
 
+#endif
 #ifdef DEBUG_VIDEO
 #if(DEBUG_VIDEO == 0)
     VideoCapture cap("../Videos/test.avi");

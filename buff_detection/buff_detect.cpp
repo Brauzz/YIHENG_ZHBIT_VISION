@@ -255,7 +255,7 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
         world_offset = Point2f(world_offset_x_ - 500, world_offset_y_  - 500);
 #endif
         solve_angle_long_.Generate3DPoints(2, world_offset);
-        solve_angle_long_.getBuffAngle(points_2d, 28, buff_angle_, angle_x_, angle_y_, distance_);
+        solve_angle_long_.getBuffAngle(points_2d, BULLET_SPEED, buff_angle_, angle_x_, angle_y_, distance_);
 
 
     }
@@ -401,7 +401,9 @@ void Object::KnowYourself(Mat &img)
     }
     putText(img, to_string(left_intensity), left_center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255));
     putText(img, to_string(right_intensity), right_center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255));
+#ifdef IMSHOW_2_ROI
     imshow("test", img);
+#endif
 }
 
 

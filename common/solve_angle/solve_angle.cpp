@@ -150,9 +150,9 @@ void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, 
     // 姿态结算
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
     // 距离解算
-    float H = 100;
+    float H = BUFF_H;
     float h = 430;
-    float D = 7400;
+    float D = BUFF_DISTANCE;
     float delta_h = H - h;
     float buff_h = 800*sin(buff_angle *3.14/180)+800;
     dist = sqrt(pow(delta_h+buff_h, 2) + pow(D, 2));

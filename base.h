@@ -4,27 +4,55 @@
 
 #define ROBOT_TYPE INFANTRY // INFANTRY HERO
 
-// ****** 整个系统的调试  ******//
+// 资源岛测试快速宏定义-<<<----------------
+#define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
+galaxy_0.xml"
+#define SAVE_VIDEO_THREAD
 #define WAITKEY 1
 #define IMAGESHOW
+
+// 能量机关自动控制项
+#define NO_FIRE   // 发现新目标射一发子弹
+#define NO_REPEAT_FIRE    // 没击打重复发弹
+// 调试状态
+
+#define BUFF_OFFSET_x 112// 1:80// 3:112
+#define BUFF_OFFSET_y 69// 1:125// 3:69
+#define WORLD_OFFSET_X 750
+#define WORLD_OFFSET_y 450
+#define COLOR_TH 50
+
+#define FIRE_CNT 50
+#define RESET_CNT 30
+#define REPEAT_FIRE_TIME 1000
+#define FIRE_LIMIT_ANGLE 2.0f
+#define RESET_ANGLE -20
+// 固定状态
+#define BULLET_SPEED 28
+#define BUFF_H 800
+#define BUFF_DISTANCE 7300
+// 资源岛测试快速宏定义-<<<----------------
+
+// ****** 整个系统的调试  ******//
+
 #define GALAXY
 //#define DEBUG_PLOT
 //****** 线程使能 *****
 #define SHORT_CAMERA_ENABLE 0
 #define LONG_CAMERA_ENABLE  1
-//#define GET_STM32_THREAD
+#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
-//#define SAVE_VIDEO_THREAD
+
 
 //****** 装甲板识别配置 *****
+#define ARMOR_TRACK_BAR
 #define DEBUG_ARMOR_DETECT
 #define ROI_ENABLE
-//#define PREDICT
 
 //****** 能量机关识别信息 *****
+#define BUFF_TRACK_BAR
 #define DEBUG_BUFF_DETECT
-//#define NO_FIRE
-#define NO_REPEAT_FIRE
+
 
 //****** 摄像头信息 *****
 #define VIDEO_WIDTH 640
@@ -40,8 +68,7 @@
 #define CAMERA1_PATH "/dev/video1"
 #define CAMERA0_FILEPATH "../rm-vision/camera/camera_param/\
 camera4mm_5.xml"
-#define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
-galaxy_1.xml"
+
 
 //****** 角度解算配置 *****
 //#define SET_ZEROS_GRAVITY
@@ -56,7 +83,7 @@ galaxy_1.xml"
 #define PTZ_TO_BARREL 0.0f   // 补兵激光在２３ｍｍ下方
 
 //****** 笔记本调试相关参数 *****
-#define DEBUG_VIDEO 1
+//#define DEBUG_VIDEO 1
 #define FORCE_CHANGE_CAMERA
 struct OtherParam
 {

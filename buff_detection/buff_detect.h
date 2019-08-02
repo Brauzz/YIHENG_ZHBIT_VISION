@@ -34,6 +34,7 @@ using namespace std;
 //#define AREA_LENGTH_ANGLE 2 // 1:area 2:length 3:diff_angle
 #define FUSION_MINAREA_ELLIPASE
 #define DIRECTION_FILTER
+#define IMSHOW_2_ROI
 // ---- buff debug ----
 #endif
 
@@ -84,7 +85,7 @@ public:
             if(!is_change_target){
                 double t2 = getTickCount();
                 double t = (t2 - change_time)*1000 / getTickFrequency();
-                if(t > 1000){
+                if(t > repeat_time){
                     printf("重复激活\r\n");
                     change_time = getTickCount();
 #ifndef NO_REPEAT_FIRE
@@ -140,13 +141,13 @@ public:
         change_time = getTickCount();
         wait_action_flag = true;
     }
-private:
+public:
     // 获得发射机会的参数
     Point2f last_angle_;
     bool wait_action_flag = true;
     double change_time;
     bool shoot_chance_ = true;
-
+    int repeat_time = REPEAT_FIRE_TIME;
 
     // 控制开火的参数
     int cnt_ = 0;
@@ -178,7 +179,7 @@ public:
         }
         return command;
     }
-private:
+public:
     int cnt = 0;
     int max_cnt_ = 30;   // 最大丢失目标次数
 };
@@ -220,7 +221,7 @@ public:
                 printf("reset!!!\r\n");
             }
             debug = true;
-            current_pit = -5;
+            current_pit = RESET_ANGLE;
             fire_task.set_fire_chance();// 复位获得一次开火机会
             return command_;
         }
@@ -304,20 +305,9 @@ public:
     float getDistance(){
         return distance_;
     }
-
-
-    int getDirection(float angle);
     int getSimpleDirection(float angle);
-
-
 private:
     bool DetectBuff(Mat& img, OtherParam other_param);
-    void setFilter(size_t buff_size, float filter_angle_threshold){
-        history_size_=buff_size;
-        max_filter_value_=filter_angle_threshold;
-    }
-    void trigger(int target_size,int move_static);
-    int GetIndex(Mat &img, Object object, vector<Rect> all_rect);
 
     // 外部参数
 private:
@@ -326,8 +316,8 @@ private:
 
     // debug参数
 public:
-    int buff_offset_x_ =130;//id:3 69;// id:2 130;
-    int buff_offset_y_ =83;//id:3 100;// id:2 135;
+    int buff_offset_x_ = BUFF_OFFSET_x;//id:3 112;// id:2 130;
+    int buff_offset_y_ = BUFF_OFFSET_y;//id:3 69;// id:2 135;
     int world_offset_x_ = 750;
     int world_offset_y_ = 450;
     int color_th_ = 15;
@@ -336,9 +326,10 @@ public:
     float diff_angle_ = 0;
     int area_ratio_ = 500;
     //相关类申明
+    AutoControl auto_control;
 private:
     SolveAngle solve_angle_long_;
-    AutoControl auto_control;
+
     MainWindow *w_;
 
 private:
@@ -354,11 +345,8 @@ private:
 private:
     float d_angle_ = 0;
     float r = 0.1;
+    int last_angle_;
     int find_cnt = 0;
-    vector<float> history_;
-    size_t history_size_ = 10;
-    float last_angle_ = 0;
-    float max_filter_value_ = 15;
     int direction_tmp=0;
 
     int command = 0;
