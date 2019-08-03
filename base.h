@@ -6,16 +6,16 @@
 
 // 资源岛测试快速宏定义-<<<----------------
 #define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
-galaxy_0.xml"
-#define SAVE_VIDEO_THREAD
+galaxy_2.xml"
+//#define SAVE_VIDEO_THREAD
 #define WAITKEY 1
 #define IMAGESHOW
 
 // 能量机关自动控制项
-#define NO_FIRE   // 发现新目标射一发子弹
-#define NO_REPEAT_FIRE    // 没击打重复发弹
+//#define NO_FIRE   // 发现新目标射一发子弹
+//#define NO_REPEAT_FIRE    // 没击打重复发弹
 // 调试状态
-
+// 1:    2:   3:
 #define BUFF_OFFSET_x 112// 1:80// 3:112
 #define BUFF_OFFSET_y 69// 1:125// 3:69
 #define WORLD_OFFSET_X 750
@@ -40,7 +40,7 @@ galaxy_0.xml"
 //****** 线程使能 *****
 #define SHORT_CAMERA_ENABLE 0
 #define LONG_CAMERA_ENABLE  1
-#define GET_STM32_THREAD
+//#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
 
 
@@ -83,7 +83,7 @@ camera4mm_5.xml"
 #define PTZ_TO_BARREL 0.0f   // 补兵激光在２３ｍｍ下方
 
 //****** 笔记本调试相关参数 *****
-//#define DEBUG_VIDEO 1
+#define DEBUG_VIDEO 1
 #define FORCE_CHANGE_CAMERA
 struct OtherParam
 {

@@ -155,12 +155,12 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
                 case 1:
                 {
                     double multiple_area=fabs(big_rect_area/small_rect_area);
-                    putText(img, to_string(multiple_area), Point2f(5,5)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                    putText(img, to_string(multiple_area), Point2f(50,50)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }break;
                 case 2:
                 {
                     double multiple_length=fabs(big_rect_length/small_rect_length);
-                    putText(img, to_string(multiple_length), Point2f(5,5)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
+                    putText(img, to_string(multiple_length), Point2f(50,50)+ object.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0,255,255));
                 }break;
                 case 3:
                 {
@@ -213,7 +213,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 
 
 #ifdef DEBUG_PUT_TEST_TARGET
-        putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ final_target.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
+//        putText(img, "<<---attack here"/*to_string(object_tmp.angle_)*/, Point2f(5,5)+ final_target.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 #endif
 #ifdef DEBUG_DRAW_TARGET
         final_target.DrawTarget(img);

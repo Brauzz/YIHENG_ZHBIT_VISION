@@ -114,9 +114,9 @@ void ThreadControl::GetGimbal() //give up
 #ifdef DEBUG_PLOT
         if(debug_enable_flag == true)
         {
-//            w_->addPoint(dst_gimbal_yaw,0);
-//            w_->addPoint(predict, 1);
-//            w_->plot();
+            //            w_->addPoint(dst_gimbal_yaw,0);
+            //            w_->addPoint(predict, 1);
+            //            w_->plot();
         }
 #endif
         END_THREAD;
@@ -140,8 +140,8 @@ void ThreadControl::GetSTM32()
             END_THREAD;
 
         serial_.read_data(&rx_data, mode, color, raw_gimbal_yaw);
-//        other_param.mode = mode;
-//        other_param.color = color;
+        //        other_param.mode = mode;
+        //        other_param.color = color;
         GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
         float gimbal_data = dst_gimbal_yaw;
         other_param.gimbal_data = gimbal_data;
@@ -154,8 +154,8 @@ void ThreadControl::GetSTM32()
 #ifdef DEBUG_PLOT
         if(debug_enable_flag == true)
         {
-//            w_->addPoint(cnt,0);
-//            w_->plot();
+            //            w_->addPoint(cnt,0);
+            //            w_->plot();
         }
 #endif
         gimbal_data_index++;
@@ -206,14 +206,16 @@ void ThreadControl::ImageProcess()
     createTrackbar("fire_max_cnt","BuffParam",&buff_detector.auto_control.fire_task.max_cnt_,200);
     createTrackbar("reset_cnt","BuffParam",&buff_detector.auto_control.reset_task.max_cnt_,200);
     createTrackbar("repeat_time","BuffParam",&buff_detector.auto_control.fire_task.repeat_time,2000);
-
+    createTrackbar("imshow","BuffParam",&buff_detector.imshow_flag,1);
+    createTrackbar("no fire","BuffParam",&buff_detector.auto_control.fire_task.fire_flag,1);
+    createTrackbar("no repeat fire","BuffParam",&buff_detector.auto_control.fire_task.repeat_fire_flag,1);
 #endif
 #ifdef DEBUG_VIDEO
 #if(DEBUG_VIDEO == 0)
     VideoCapture cap("../Videos/test.avi");
 #else
     VideoCapture cap("../Videos/buff_video3.avi");
-//    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
+    //    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
 #endif
 #endif
 
@@ -234,7 +236,7 @@ void ThreadControl::ImageProcess()
 #else
         cap.read(image);
         if(key == 'f'){
-           dir = !dir;
+            dir = !dir;
         }
         if(dir)
             flip(image, image, ROTATE_180);
@@ -284,14 +286,15 @@ void ThreadControl::ImageProcess()
 
 #ifdef WAITKEY
 #ifdef IMAGESHOW
-        imshow("image", image);
+        if(buff_detector.imshow_flag)
+            imshow("image", image);
 #endif
-        static bool fast_flag = false;
-        if(!fast_flag){
-        key = waitKey(WAITKEY);
-        }else{
-            key = waitKey(1);
-        }
+//        static bool fast_flag = false;
+//        if(!fast_flag){
+            key = waitKey(WAITKEY);
+//        }else{
+//            key = waitKey(1);
+//        }
 
         if(key == 'q')
             end_thread_flag = true;
@@ -304,7 +307,7 @@ void ThreadControl::ImageProcess()
         }else if(key == 's'){
             waitKey(0);
         }else if(key == 'g'){
-            fast_flag = !fast_flag;
+//            fast_flag = !fast_flag;
         }else if(key == 'm'){
             other_param.mode = !other_param.mode;
         }

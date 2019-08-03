@@ -31,7 +31,7 @@ using namespace std;
 #define DEBUG_PUT_TEST_ANGLE
 #define DEBUG_DRAW_TARGET
 //#define TEST_OTSU
-//#define AREA_LENGTH_ANGLE 2 // 1:area 2:length 3:diff_angle
+#define AREA_LENGTH_ANGLE 1 // 1:area 2:length 3:diff_angle
 #define FUSION_MINAREA_ELLIPASE
 #define DIRECTION_FILTER
 #define IMSHOW_2_ROI
@@ -86,10 +86,16 @@ public:
                 double t2 = getTickCount();
                 double t = (t2 - change_time)*1000 / getTickFrequency();
                 if(t > repeat_time){
-                    printf("重复激活\r\n");
+//                    printf("重复激活\r\n");
                     change_time = getTickCount();
 #ifndef NO_REPEAT_FIRE
-                    shoot_chance_ = true;
+                    if(repeat_fire_flag == 1){
+                        shoot_chance_ = true;
+                        printf("repeat\r\n");
+                    }else{
+                        shoot_chance_ = false;
+                         printf("repeat-default\r\n");
+                    }
 #endif
                 }
             }else{
@@ -120,12 +126,19 @@ public:
             if(shoot_chance_ == true)
             {
 #ifndef NO_FIRE
-                command = FIRE;
+                if(fire_flag == 1){
+                    command = FIRE;
+                    printf("fire\r\n");
+                }else{
+                     command = DEFAULT;
+                     printf("fire-default\r\n");
+                }
+
 #else
                 command = DEFAULT;
 #endif
                 fire_cnt++;
-//                printf("开火:%d\r\n", fire_cnt);
+                //                printf("开火:%d\r\n", fire_cnt);
                 shoot_chance_ = 0;
             }else {
                 command = DEFAULT;
@@ -148,6 +161,9 @@ public:
     double change_time;
     bool shoot_chance_ = true;
     int repeat_time = REPEAT_FIRE_TIME;
+    // debug
+    int fire_flag = 0;
+    int repeat_fire_flag = 0;
 
     // 控制开火的参数
     int cnt_ = 0;
@@ -348,6 +364,10 @@ private:
     int last_angle_;
     int find_cnt = 0;
     int direction_tmp=0;
+
+public:
+    int waitkey_flag = 1;
+    int imshow_flag = 1;
 
     int command = 0;
 };
