@@ -193,7 +193,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
             }
             putText(img, "final_target", Point2f(10,-50)+ final_target.small_rect_.center, FONT_HERSHEY_SIMPLEX, 0.5, Scalar(255,255,255));
 
-            Point2f buff_offset = Point2f(100 - buff_offset_x_, 100 - buff_offset_y_);
+            Point2f buff_offset = Point2f(buff_offset_x_ - 100, 100 - buff_offset_y_);
             vector<Point2f> vec_points_2d_tmp;
             for(size_t k=0; k < 4; k++)
             {
@@ -235,7 +235,7 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
     if(find_flag)
     {
         find_cnt ++;
-        if(find_cnt % 10==0)
+        if(find_cnt % 15==0)
         {
             //            direction_tmp = getDirection(buff_angle_);
             direction_tmp = getSimpleDirection(buff_angle_);
@@ -243,31 +243,45 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
         Point2f world_offset;
         //#define DIRECTION_FILTER
 #ifdef DIRECTION_FILTER
-        if(direction_tmp == -1)  // shun
-            world_offset = Point2f(world_offset_x_  - 500, world_offset_y_ - 500);
-        else if(direction_tmp == 1)// ni
-            world_offset = Point2f(-(world_offset_x_  - 500), -(world_offset_y_ - 500));
+        float world_offset_x = world_offset_x_ - 500;
+        float world_offset_y = 800 - pow((640000 - pow(world_offset_x, 2)), 0.5);
+//        w_->addPoint(world_offset_y, 1);
+        float pre_angle;
+        INFO(world_offset_y);
+        if(direction_tmp == 1)  // shun
+        {
+            world_offset = Point2f(-world_offset_x, -world_offset_y);
+            pre_angle = atan(world_offset_x/(800-world_offset_y));
+        }
+        else if(direction_tmp == -1)// ni
+        {
+            world_offset = Point2f(world_offset_x, -world_offset_y);
+            pre_angle = -atan(world_offset_x/(800-world_offset_y));
+        }
         else
+        {
             world_offset = Point2f(0, 0);
+            pre_angle = 0;
+        }
         //        cout << "direction " << direction_tmp << endl;
 
 #else
         world_offset = Point2f(world_offset_x_ - 500, world_offset_y_  - 500);
 #endif
         solve_angle_long_.Generate3DPoints(2, world_offset);
-        solve_angle_long_.getBuffAngle(points_2d, BULLET_SPEED, buff_angle_, angle_x_, angle_y_, distance_);
+        solve_angle_long_.getBuffAngle(points_2d, BULLET_SPEED, buff_angle_, pre_angle, angle_x_, angle_y_, distance_);
 
 
     }
     //    attack.run(find_flag,angle_x_,angle_y_,target_size,gimbal,direction_tmp);
     command = auto_control.run(angle_x_, angle_y_, find_flag, diff_angle_);
 
-
     //    pro_predict_mode_flag = auto_control.GetProPredictFlag();
 
 #ifdef DEBUG_PLOT //0紫 1橙
-    w_->addPoint((auto_control.fire_cnt%2==0)*100+100, 0);
-    w_->addPoint(fabs(diff_angle_), 1);
+//    w_->addPoint((auto_control.fire_cnt%2==0)*100+100, 0);
+    w_->addPoint(solve_angle_long_.buff_h, 0);
+
     w_->plot();
 #endif
     return command;

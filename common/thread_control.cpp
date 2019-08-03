@@ -202,7 +202,6 @@ void ThreadControl::ImageProcess()
     createTrackbar("buff_offset_x_","BuffParam",&buff_detector.buff_offset_x_,200);
     createTrackbar("buff_offset_y_","BuffParam",&buff_detector.buff_offset_y_,200);
     createTrackbar("world_offset_x","BuffParam",&buff_detector.world_offset_x_,1000);
-    createTrackbar("world_offset_y","BuffParam",&buff_detector.world_offset_y_,1000);
     createTrackbar("fire_max_cnt","BuffParam",&buff_detector.auto_control.fire_task.max_cnt_,200);
     createTrackbar("reset_cnt","BuffParam",&buff_detector.auto_control.reset_task.max_cnt_,200);
     createTrackbar("repeat_time","BuffParam",&buff_detector.auto_control.fire_task.repeat_time,2000);
@@ -214,7 +213,7 @@ void ThreadControl::ImageProcess()
 #if(DEBUG_VIDEO == 0)
     VideoCapture cap("../Videos/test.avi");
 #else
-    VideoCapture cap("../Videos/buff_video3.avi");
+    VideoCapture cap("../Videos/RM/8.3-NO1-buff/8.3-infantry1-buff-test.avi");
     //    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
 #endif
 #endif

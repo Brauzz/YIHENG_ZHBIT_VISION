@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "iostream"
 #include "opencv2/opencv.hpp"
 
@@ -6,31 +6,32 @@
 
 // 资源岛测试快速宏定义-<<<----------------
 #define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
-galaxy_2.xml"
+galaxy_0.xml"
 //#define SAVE_VIDEO_THREAD
 #define WAITKEY 1
 #define IMAGESHOW
-
 // 能量机关自动控制项
 //#define NO_FIRE   // 发现新目标射一发子弹
 //#define NO_REPEAT_FIRE    // 没击打重复发弹
 // 调试状态
 // 1:    2:   3:
-#define BUFF_OFFSET_x 112// 1:80// 3:112
-#define BUFF_OFFSET_y 69// 1:125// 3:69
+#define BUFF_OFFSET_x 127// 1:80// 3:112
+#define BUFF_OFFSET_y 88// 1:125// 3:69
+
 #define WORLD_OFFSET_X 750
-#define WORLD_OFFSET_y 450
-#define COLOR_TH 50
+#define COLOR_TH 20
 
 #define FIRE_CNT 50
 #define RESET_CNT 30
 #define REPEAT_FIRE_TIME 1000
 #define FIRE_LIMIT_ANGLE 2.0f
-#define RESET_ANGLE -20
+#define RESET_ANGLE -10 // 1:-20 else: -10
 // 固定状态
 #define BULLET_SPEED 28
 #define BUFF_H 800
-#define BUFF_DISTANCE 7300
+#define BUFF_DISTANCE 8300
+
+#define GALAXY_EXPOSURE_TIME 1500
 // 资源岛测试快速宏定义-<<<----------------
 
 // ****** 整个系统的调试  ******//
@@ -40,7 +41,7 @@ galaxy_2.xml"
 //****** 线程使能 *****
 #define SHORT_CAMERA_ENABLE 0
 #define LONG_CAMERA_ENABLE  1
-//#define GET_STM32_THREAD
+#define GET_STM32_THREAD
 //#define GET_GIMBAL_THREAD
 
 
@@ -83,7 +84,7 @@ camera4mm_5.xml"
 #define PTZ_TO_BARREL 0.0f   // 补兵激光在２３ｍｍ下方
 
 //****** 笔记本调试相关参数 *****
-#define DEBUG_VIDEO 1
+//#define DEBUG_VIDEO 1
 #define FORCE_CHANGE_CAMERA
 struct OtherParam
 {

@@ -20,7 +20,7 @@
 #include <linux/videodev2.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
-
+#include "base.h"
 CameraDevice::CameraDevice()
 {
     status = GX_STATUS_SUCCESS;
@@ -77,7 +77,7 @@ int CameraDevice::init()
             stFrameData.pImgBuf = malloc((size_t)nPayLoadSize);
 
             // 设置曝光值
-            status = GXSetFloat(hDevice, GX_FLOAT_EXPOSURE_TIME, 1500);
+            status = GXSetFloat(hDevice, GX_FLOAT_EXPOSURE_TIME, GALAXY_EXPOSURE_TIME);
 
             //设置采集模式连续采集
             //            status = GXSetEnum(hDevice, GX_ENUM_ACQUISITION_MODE, GX_ACQ_MODE_CONTINUOUS);

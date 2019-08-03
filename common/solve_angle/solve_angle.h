@@ -30,7 +30,7 @@ public:
     void getAngle(vector<Point2f>& image_point, float ballet_speed, float& angle_x, float& angle_y, float &dist);
     // 能量机关角度解算
 
-    void getBuffAngle(vector<Point2f>& image_point, float ballet_speed, float buff_angle, float &angle_x, float &angle_y, float &dist);
+    void getBuffAngle(vector<Point2f>& image_point, float ballet_speed, float buff_angle, float pre_angle, float &angle_x, float &angle_y, float &dist);
     float getBuffPitch(float dist, float tvec_y, float ballet_speed);
 
     // ---------ICRA--------------------
@@ -58,6 +58,10 @@ public:
 
     Kalman1 kalman;
     int f_ = 1500;
+
+public:
+    float buff_h;
+
 };
 
 class SimpleSolveAngle{

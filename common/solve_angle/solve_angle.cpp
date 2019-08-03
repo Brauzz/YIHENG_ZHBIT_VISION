@@ -145,17 +145,19 @@ float SolveAngle::GetPitch_ICRA(float x, float y, float v) {
 }
 
 
-void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, float buff_angle, float &angle_x, float &angle_y, float &dist)
+void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, float buff_angle, float pre_angle, float &angle_x, float &angle_y, float &dist)
 {
     // 姿态结算
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
-    // 距离解算
-    float H = BUFF_H;
-    float h = 430;
-    float D = BUFF_DISTANCE;
+    // 距离解算 参考能量机关尺寸
+    float H = BUFF_H;   // 大能量机关最底部装甲板桥面地面高度
+    float h = 430;      // 步兵枪口距离桥面高度mm
+    float D = BUFF_DISTANCE;    //步兵距离能量机关水平距离
     float delta_h = H - h;
-    float buff_h = 800*sin(buff_angle *3.14/180)+800;
-    dist = sqrt(pow(delta_h+buff_h, 2) + pow(D, 2));
+    float predict_buff_angle = buff_angle + pre_angle;
+    buff_h = 800*sin(predict_buff_angle *3.14/180)+800;   // 计算风车相对最底面装甲高度　０－１６００
+    float target_h = delta_h + buff_h;
+    dist = sqrt(pow(target_h, 2) + pow(D, 2));
 
     tvec.at<double>(2,0) = dist;
 
@@ -166,9 +168,8 @@ void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, 
     Mat t_camera_ptz(3,1,CV_64FC1,t_data);
     Mat r_camera_ptz(3,3,CV_64FC1,r_data);
     Mat position_in_ptz;
-    position_in_ptz = r_camera_ptz * tvec - t_camera_ptz;
+    position_in_ptz = /*r_camera_ptz **/ tvec - t_camera_ptz;
 
-    //计算子弹下坠补偿
     const double *_xyz = (const double *)position_in_ptz.data;
 
     // 计算角度
@@ -176,10 +177,15 @@ void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, 
 
     angle_x = static_cast<float>(atan2(xyz[0],xyz[2]));
     angle_x = static_cast<float>(angle_x) * 57.2957805f;
+
+    float thta = -static_cast<float>(atan2(xyz[1],dist)); // 云台与目标点的相对角度
+    float balta = static_cast<float>(atan2(target_h,dist)) - thta; // 云台与地面的相对角度
+
 #ifdef SET_ZEROS_GRAVITY
     angle_y = static_cast<float>(atan2(xyz[1],xyz[2]));
 #else
-    angle_y = -getBuffPitch(dist/1000, -xyz[1]/1000, ballet_speed);
+    angle_y = -getBuffPitch(dist/1000, target_h/1000, ballet_speed);
+    angle_y += balta;
 #endif
     angle_y = static_cast<float>(angle_y) * 57.2957805f ;
 }
@@ -215,7 +221,7 @@ float SolveAngle::getBuffPitch(float dist, float tvec_y, float ballet_speed)
     float y_temp, y_actual, dy;
     // 重力补偿枪口抬升角度
     float a = 0.0;
-    float GRAVITY = 9.7887f; //shenzhen 9.7887  zhuhai
+    float GRAVITY = 10.0f; //shenzhen 9.7887  zhuhai
     y_temp = tvec_y;
     // 迭代求抬升高度
     for (int i = 0; i < 10; i++) {

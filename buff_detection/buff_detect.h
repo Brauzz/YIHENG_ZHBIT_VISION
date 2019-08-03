@@ -336,7 +336,7 @@ public:
     int buff_offset_y_ = BUFF_OFFSET_y;//id:3 69;// id:2 135;
     int world_offset_x_ = 750;
     int world_offset_y_ = 450;
-    int color_th_ = 15;
+    int color_th_ = COLOR_TH;
     int gray_th_ = 50;
     float buff_angle_ = 0;
     float diff_angle_ = 0;
