@@ -131,7 +131,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 #endif
                 // 根据轮廓面积进行判断扇叶类型
 
-                float area_ratio = area_ratio_/100;
+                double area_ratio = area_ratio_/100;
                 if(small_rect_area * 12 >big_rect_area && small_rect_area* area_ratio<big_rect_area
                         && small_rect_size_ratio > 1 && small_rect_size_ratio < 3.0f)
                 {

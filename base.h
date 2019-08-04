@@ -16,7 +16,7 @@ galaxy_0.xml"
 // 调试状态
 // 1:    2:   3:
 #define BUFF_OFFSET_x 127// 1:80// 3:112
-#define BUFF_OFFSET_y 88// 1:125// 3:69
+#define BUFF_OFFSET_y 82// 1:125// 3:69
 
 #define WORLD_OFFSET_X 750
 #define COLOR_TH 20
@@ -27,9 +27,9 @@ galaxy_0.xml"
 #define FIRE_LIMIT_ANGLE 2.0f
 #define RESET_ANGLE -10 // 1:-20 else: -10
 // 固定状态
-#define BULLET_SPEED 28
+#define BULLET_SPEED 28.5
 #define BUFF_H 800
-#define BUFF_DISTANCE 8300
+#define BUFF_DISTANCE 7300
 
 #define GALAXY_EXPOSURE_TIME 1500
 // 资源岛测试快速宏定义-<<<----------------
@@ -118,43 +118,56 @@ struct OtherParam
 #define B115200 0
 #define B921600 1
 
-#define name2str(name) (#name)
+#define name_string(name) name,#name
 
 class PutTry
 {
 public:
     PutTry(){}
     ~PutTry(){}
-    void TextPut_d(cv::Mat &img, double &double_text,const std::string dou_ch)
+    void TextPut_(cv::Mat &img, double &double_text,const std::string dou_ch) //name_string(a) instead the two
     {
-        double self_indexd=20*self_dadd_count;
+        double self_indexd;
 
-        if(self_doindex_def-double_text>5)
+        if(self_index_def-double_text>1)
         {
-            self_dadd_count+=1;
-            self_doindex_def=double_text;
+            self_add_count+=1;
+            self_index_def=double_text;
         }
+        self_indexd=20*self_add_count;
         cv::Point2d view_all= cv::Point2d(5,self_indexd);
         putText(img, dou_ch + " : "+ std::to_string(double_text),view_all,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255),1);
     }
-    void TextPut_f(cv::Mat &img, float &float_text,const std::string flo_ch)
+    void TextPut_(cv::Mat &img, float &float_text,const std::string flo_ch)
     {
-        float self_indexf=20;
+        float self_indexf;
 
-        if(self_findex_def-float_text>5)
+        if(self_index_def-float_text>1)
         {
-            self_fadd_count+=1;
-            self_findex_def=float_text;
+            self_add_count+=1;
+            self_index_def=float_text;
         }
-        cv::Point2f view_all = cv::Point2f(300,self_indexf);
+        self_indexf=20*self_add_count;
+        cv::Point2f view_all = cv::Point2f(5,self_indexf);
         putText(img,flo_ch + " : " + std::to_string(float_text),view_all,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255),1);
     }
-private:
-    int self_dadd_count=1;
-    int self_fadd_count=1;
+    void TextPut_(cv::Mat &img, int &int_text,const std::string int_ch) //name_string(a) instead the two
+    {
+        double self_indexd;
 
-    double self_doindex_def=1e8;
-    float self_findex_def=1e8;
+        if(self_index_def-int_text>1)
+        {
+            self_add_count+=1;
+            self_index_def=int_text;
+        }
+        self_indexd=20*self_add_count;
+        cv::Point2d view_all= cv::Point2d(5,self_indexd);
+        putText(img, int_ch + " : "+ std::to_string(int_text),view_all,cv::FONT_HERSHEY_SIMPLEX,0.5,cv::Scalar(255,255,255),1);
+    }
+private:
+    int self_add_count=1;
+
+    double self_index_def=1e8;
 
 };
 

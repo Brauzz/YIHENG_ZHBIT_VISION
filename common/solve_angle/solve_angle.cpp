@@ -221,7 +221,7 @@ float SolveAngle::getBuffPitch(float dist, float tvec_y, float ballet_speed)
     float y_temp, y_actual, dy;
     // 重力补偿枪口抬升角度
     float a = 0.0;
-    float GRAVITY = 10.0f; //shenzhen 9.7887  zhuhai
+    float GRAVITY = 9.7887f; //shenzhen 9.7887  zhuhai
     y_temp = tvec_y;
     // 迭代求抬升高度
     for (int i = 0; i < 10; i++) {
