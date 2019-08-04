@@ -84,47 +84,6 @@ void ThreadControl::ImageProduce()
     }
 }
 
-
-#ifdef GET_GIMBAL_THREAD
-void ThreadControl::GetGimbal() //give up
-{
-    cout << " ------GIMBAL DATA RECEVICE TASK ON !!! ------ " << endl;
-    GimbalDataProcess GimDataPro;
-    serial_gimbal_data gim_rx_data_;    // 陀螺仪接受数据格式
-    float raw_gimbal_yaw, dst_gimbal_yaw = 0.0;
-    Predictor predictor(20);
-    double t_start = getTickCount();
-    double t_tmp = t_start;
-    float predict = 0.0;
-    while(1)
-    {
-        while(static_cast<int>(gimbal_data_index - consumption_index) >= BUFFER_SIZE)
-            END_THREAD;
-        serial_gimbal_.read_gimbal(&gim_rx_data_, raw_gimbal_yaw);
-        if(serial_gimbal_.success_)
-        {
-            GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
-            float gimbal_data = dst_gimbal_yaw;
-            t_tmp = getTickCount();
-            predictor.setRecord(gimbal_data, (t_tmp - t_start)*1000/getTickFrequency());
-            predict = predictor.predict(((t_tmp - t_start)*1000/getTickFrequency())+100);
-        }
-
-        gimbal_data_index++;
-#ifdef DEBUG_PLOT
-        if(debug_enable_flag == true)
-        {
-            //            w_->addPoint(dst_gimbal_yaw,0);
-            //            w_->addPoint(predict, 1);
-            //            w_->plot();
-        }
-#endif
-        END_THREAD;
-    }
-}
-#endif
-
-
 #ifdef GET_STM32_THREAD
 void ThreadControl::GetSTM32()
 {
@@ -140,10 +99,11 @@ void ThreadControl::GetSTM32()
             END_THREAD;
 
         serial_.read_data(&rx_data, mode, color, raw_gimbal_yaw);
-        //        other_param.mode = mode;
-        //        other_param.color = color;
+        other_param.mode = mode;
+        other_param.color = color;
         GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
         float gimbal_data = dst_gimbal_yaw;
+//        INFO(dst_gimbal_yaw);
         other_param.gimbal_data = gimbal_data;
 
         if((gimbal_data_index%50)==0)
@@ -179,11 +139,9 @@ void ThreadControl::ImageProcess()
     armor_detector.DebugPlotInit(&w);
 #endif
 
-#if(ROBOT_TYPE == INFANTRY)
     BuffDetector buff_detector;
 #ifdef DEBUG_PLOT
     buff_detector.DebugPlotInit(&w);
-#endif
 #endif
     serial_transmit_data tx_data;       // 串口发送stm32数据结构
 #ifdef ARMOR_TRACK_BAR
@@ -205,7 +163,6 @@ void ThreadControl::ImageProcess()
     createTrackbar("fire_max_cnt","BuffParam",&buff_detector.auto_control.fire_task.max_cnt_,200);
     createTrackbar("reset_cnt","BuffParam",&buff_detector.auto_control.reset_task.max_cnt_,200);
     createTrackbar("repeat_time","BuffParam",&buff_detector.auto_control.fire_task.repeat_time,2000);
-    createTrackbar("imshow","BuffParam",&buff_detector.imshow_flag,1);
     createTrackbar("no fire","BuffParam",&buff_detector.auto_control.fire_task.fire_flag,1);
     createTrackbar("no repeat fire","BuffParam",&buff_detector.auto_control.fire_task.repeat_fire_flag,1);
 #endif
@@ -240,7 +197,6 @@ void ThreadControl::ImageProcess()
         if(dir)
             flip(image, image, ROTATE_180);
 #endif
-#if(ROBOT_TYPE == INFANTRY)
         if(other_param.mode == 0)
         {
             //            ***************************auto_mode***********************************
@@ -268,33 +224,17 @@ void ThreadControl::ImageProcess()
             }
         }
 
-#elif(ROBOT_TYPE == HERO)
-#ifndef FORCE_CHANGE_CAMERA
-        other_param.cap_mode = armor_detector.chooseCamera(1000, 1500, other_param.cap_mode);
-#endif
-        ++consumption_index;
-        command = armor_detector.ArmorDetectTask(image, other_param);
-        armor_detector.getAngle(angle_x, angle_y);
-#endif
-
         limit_angle(angle_x, 90);
+        static bool fast_flag = false;
 #ifdef GET_STM32_THREAD
         tx_data.get_xy_data(-angle_x*32767/90, -angle_y*32767/90,command);
         serial_.send_data(tx_data);
 #endif
-
 #ifdef WAITKEY
 #ifdef IMAGESHOW
-        if(buff_detector.imshow_flag)
-            imshow("image", image);
+        imshow("image", image);
 #endif
-//        static bool fast_flag = false;
-//        if(!fast_flag){
-            key = waitKey(WAITKEY);
-//        }else{
-//            key = waitKey(1);
-//        }
-
+        key = waitKey(WAITKEY);
         if(key == 'q')
             end_thread_flag = true;
         if(key == 'c')
@@ -306,7 +246,7 @@ void ThreadControl::ImageProcess()
         }else if(key == 's'){
             waitKey(0);
         }else if(key == 'g'){
-//            fast_flag = !fast_flag;
+            fast_flag = !fast_flag;
         }else if(key == 'm'){
             other_param.mode = !other_param.mode;
         }

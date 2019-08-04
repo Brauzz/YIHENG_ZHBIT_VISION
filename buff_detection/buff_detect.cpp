@@ -228,7 +228,7 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 {
     color_ = other_param.color;
-    gimbal=other_param.gimbal_data;
+    gimbal=other_param.gimbal_data + (pitch_offset-2000)/100;
     bool find_flag = DetectBuff(img,other_param);
     int command = 0;
     bool is_change = false;
@@ -241,13 +241,11 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
             direction_tmp = getSimpleDirection(buff_angle_);
         }
         Point2f world_offset;
-        //#define DIRECTION_FILTER
+        #define DIRECTION_FILTER
 #ifdef DIRECTION_FILTER
         float world_offset_x = world_offset_x_ - 500;
         float world_offset_y = 800 - pow((640000 - pow(world_offset_x, 2)), 0.5);
-//        w_->addPoint(world_offset_y, 1);
         float pre_angle;
-        INFO(world_offset_y);
         if(direction_tmp == 1)  // shun
         {
             world_offset = Point2f(-world_offset_x, -world_offset_y);
@@ -269,7 +267,13 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
         world_offset = Point2f(world_offset_x_ - 500, world_offset_y_  - 500);
 #endif
         solve_angle_long_.Generate3DPoints(2, world_offset);
-        solve_angle_long_.getBuffAngle(points_2d, BULLET_SPEED, buff_angle_, pre_angle, angle_x_, angle_y_, distance_);
+        solve_angle_long_.getBuffAngle(1,points_2d, BULLET_SPEED
+                                       , buff_angle_, pre_angle, gimbal
+                                       , angle_x_, angle_y_, distance_);
+
+#ifdef LINER_OFFSET_PITCH
+        angle_y_ = angle_y_ + solve_angle_long_.buff_h * (pitch_offset-2000)/160000;
+#endif
 
 
     }
@@ -280,7 +284,7 @@ int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 
 #ifdef DEBUG_PLOT //0紫 1橙
 //    w_->addPoint((auto_control.fire_cnt%2==0)*100+100, 0);
-    w_->addPoint(solve_angle_long_.buff_h, 0);
+//    w_->addPoint(solve_angle_long_.buff_h, 0);
 
     w_->plot();
 #endif

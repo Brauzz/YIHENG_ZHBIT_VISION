@@ -45,12 +45,12 @@ void SolveAngle::getAngle(vector<Point2f> &image_point, float ballet_speed, floa
     float dh = ((image_point.at(3).y - image_point.at(0).y) + (image_point.at(2).y - image_point.at(1).y))/2;
     float state_dist = height_world * f_ / dh; // Z
     float final_distance = kalman.merge_run(state_dist, tvec.at<double>(2,0));
-//    tvec.at<double>(2,0)*=scale;
+    //    tvec.at<double>(2,0)*=scale;
     //    cout << tvec << endl;
     // 估计装甲板y轴坐标旋转量2
-//    double rm[3][3];
-//    Mat rotMat(3, 3, CV_64FC1, rm);
-//    Rodrigues(rvec, rotMat);
+    //    double rm[3][3];
+    //    Mat rotMat(3, 3, CV_64FC1, rm);
+    //    Rodrigues(rvec, rotMat);
     //    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;
     //    float theta_y = atan2(static_cast<float>(rm[1][0]), static_cast<float>(rm[0][0])) * 57.2958f;//x
     //    theta_y = atan2(-rm[2][0], sqrt(rm[2][0] * rm[2][0] + rm[2][2] * rm[2][2])) * 57.2958;//y
@@ -145,8 +145,11 @@ float SolveAngle::GetPitch_ICRA(float x, float y, float v) {
 }
 
 
-void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, float buff_angle, float pre_angle, float &angle_x, float &angle_y, float &dist)
+void SolveAngle::getBuffAngle(bool flag, vector<Point2f> &image_point, float ballet_speed
+                              , float buff_angle, float pre_angle, float gimbal_pitch
+                              , float &angle_x, float &angle_y, float &dist)
 {
+    INFO(gimbal_pitch);
     // 姿态结算
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
     // 距离解算 参考能量机关尺寸
@@ -177,15 +180,23 @@ void SolveAngle::getBuffAngle(vector<Point2f> &image_point, float ballet_speed, 
 
     angle_x = static_cast<float>(atan2(xyz[0],xyz[2]));
     angle_x = static_cast<float>(angle_x) * 57.2957805f;
-
+    float gimbal_y = dist * sin(gimbal_pitch*3.14/180);
     float thta = -static_cast<float>(atan2(xyz[1],dist)); // 云台与目标点的相对角度
     float balta = static_cast<float>(atan2(target_h,dist)) - thta; // 云台与地面的相对角度
 
 #ifdef SET_ZEROS_GRAVITY
     angle_y = static_cast<float>(atan2(xyz[1],xyz[2]));
 #else
-    angle_y = -getBuffPitch(dist/1000, target_h/1000, ballet_speed);
+
+#ifdef USE_GIMBAL_OFFSET
+    //    if(flag)
+    angle_y = -getBuffPitch(dist/1000, (gimbal_y - xyz[1] )/1000, ballet_speed);
+    angle_y += gimbal_pitch*3.1415926f/180;
+#else
+    //    else
+    angle_y = -getBuffPitch(dist/1000, (target_h)/1000, ballet_speed);
     angle_y += balta;
+#endif
 #endif
     angle_y = static_cast<float>(angle_y) * 57.2957805f ;
 }

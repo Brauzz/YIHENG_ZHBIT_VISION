@@ -334,8 +334,9 @@ private:
 public:
     int buff_offset_x_ = BUFF_OFFSET_x;//id:3 112;// id:2 130;
     int buff_offset_y_ = BUFF_OFFSET_y;//id:3 69;// id:2 135;
-    int world_offset_x_ = 750;
-    int world_offset_y_ = 450;
+    int world_offset_x_ = WORLD_OFFSET_X;
+    int world_offset_y_ = 500;
+    int pitch_offset = 2000;
     int color_th_ = COLOR_TH;
     int gray_th_ = 50;
     float buff_angle_ = 0;
@@ -368,6 +369,7 @@ private:
 public:
     int waitkey_flag = 1;
     int imshow_flag = 1;
+
 
     int command = 0;
 };

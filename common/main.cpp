@@ -31,10 +31,7 @@ int main()
     // 图像处理线程（自瞄、打符、串口）
     std::thread process_task(&ThreadControl::ImageProcess, &ImageControl);
 
-    // 串口数据接受线程
-#ifdef GET_GIMBAL_THREAD
-    std::thread gimbal_task(&ThreadControl::GetGimbal, &ImageControl);
-#endif
+
 #ifdef GET_STM32_THREAD
     std::thread stm32_task(&ThreadControl::GetSTM32, &ImageControl);
 #endif
@@ -44,9 +41,7 @@ int main()
 
     produce_task.join();
     process_task.join();
-#ifdef GET_GIMBAL_THREAD
-    gimbal_task.detach();
-#endif
+
 #ifdef GET_STM32_THREAD
     stm32_task.detach();
 #endif
