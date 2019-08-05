@@ -62,10 +62,12 @@ private:
     Mat image_;
     OtherParam other_param;
     MainWindow *w_;
+    int last_mode = 0;
 
     bool end_thread_flag = false;
     bool debug_enable_flag = false;
 };
+
 
 class GimbalDataProcess
 {

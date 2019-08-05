@@ -228,7 +228,9 @@ bool BuffDetector::DetectBuff(Mat& img, OtherParam other_param)
 int BuffDetector::BuffDetectTask(Mat& img, OtherParam other_param)
 {
     color_ = other_param.color;
-    gimbal=other_param.gimbal_data + (pitch_offset-2000)/100;
+//    gimbal=other_param.gimbal_data + (pitch_offset-2000)/100;
+    buff_offset_x_ = begin_offset_x_ + 3*other_param.buff_offset_x;
+    buff_offset_y_ = begin_offset_y_ + 3*other_param.buff_offset_y;
     bool find_flag = DetectBuff(img,other_param);
     int command = 0;
     bool is_change = false;

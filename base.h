@@ -88,6 +88,8 @@ struct OtherParam
     int mode = 0;        // 视觉模式，0是自瞄模式，1是能量机关模式
     int cap_mode = 1;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
     float gimbal_data;
+    float buff_offset_x;
+    float buff_offset_y;
 };
 
 // ****** common ******//

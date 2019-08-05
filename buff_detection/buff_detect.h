@@ -302,6 +302,7 @@ class BuffDetector
 public:
     BuffDetector(){
         solve_angle_long_ = SolveAngle(CAMERA1_FILEPATH, LONG_X, LONG_Y, LONG_Z, PTZ_TO_BARREL);
+        readXML();
     }
     ~BuffDetector(){}
     void DebugPlotInit(MainWindow *w){
@@ -322,6 +323,29 @@ public:
         return distance_;
     }
     int getSimpleDirection(float angle);
+
+    void readXML(){
+        FileStorage fs("../rm-vision/buff_detection/buff_offset.xml", FileStorage::READ);
+        fs["offset_x"] >> buff_offset_x_;
+        fs["offset_y"] >> buff_offset_y_;
+
+        if(buff_offset_x_ <= 0 || buff_offset_x_ >= 200)
+            buff_offset_x_ = BUFF_OFFSET_x;
+        if(buff_offset_y_ <= 0 || buff_offset_y_ >= 200)
+            buff_offset_y_ = BUFF_OFFSET_y;
+        begin_offset_x_ = buff_offset_x_;
+        begin_offset_y_ = buff_offset_y_;
+        cout << "read:"<<buff_offset_x_ << ", " << buff_offset_y_ << endl;
+        fs.release();
+    }
+    void writeXML(){
+        FileStorage fs("../rm-vision/buff_detection/buff_offset.xml", FileStorage::WRITE);
+        fs << "offset_x" << buff_offset_x_;
+        fs << "offset_y" << buff_offset_y_;
+
+        cout << "write:"<<buff_offset_x_ << ", " << buff_offset_y_ << endl;
+        fs.release();
+    }
 private:
     bool DetectBuff(Mat& img, OtherParam other_param);
 
@@ -334,6 +358,10 @@ private:
 public:
     int buff_offset_x_ = BUFF_OFFSET_x;//id:3 112;// id:2 130;
     int buff_offset_y_ = BUFF_OFFSET_y;//id:3 69;// id:2 135;
+    int begin_offset_x_ = BUFF_OFFSET_x;
+    int begin_offset_y_ = BUFF_OFFSET_y;
+
+
     int world_offset_x_ = WORLD_OFFSET_X;
     int world_offset_y_ = 500;
     int pitch_offset = 2000;
@@ -346,7 +374,6 @@ public:
     AutoControl auto_control;
 private:
     SolveAngle solve_angle_long_;
-
     MainWindow *w_;
 
 private:

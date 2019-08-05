@@ -451,7 +451,6 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
             solve_angle_long_.getAngle(points_2d_, 15,angle_x_, angle_y_ ,distance_);   // pnp姿态结算
 #endif
         }
-//        angle_x_ = kalman.run(angle_x_);
 
 #ifdef DEBUG_PLOT //0紫 1橙
         w_->addPoint(distance_, 0);

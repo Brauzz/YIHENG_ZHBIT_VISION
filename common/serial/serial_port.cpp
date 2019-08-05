@@ -92,7 +92,8 @@ void SerialPort::send_data(const struct serial_transmit_data &data)
 }
 
 // stm32 -> pc
-bool SerialPort::read_data(const struct serial_receive_data *data, bool &mode, bool &my_car_color, float &gimbal_data)
+bool SerialPort::read_data(const struct serial_receive_data *data, bool &mode, bool &my_car_color
+                           , int &buff_offset_x, int &buff_offset_y)
 {
 
     tcflush(fd, TCIFLUSH);   /* Discards old data in the rx buffer            */
@@ -120,7 +121,10 @@ bool SerialPort::read_data(const struct serial_receive_data *data, bool &mode, b
         mode = bool(read_buffer[1]);
 //        printf("buffer1 = %d\r\n", read_buffer[1]);
         my_car_color = bool(read_buffer[2]);
-        gimbal_data = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
+        buff_offset_x = char(read_buffer[3]);
+        buff_offset_y = char(read_buffer[4]);
+//        cout << "x: " << buff_offset_x << " y:" << buff_offset_y << endl;
+        //        gimbal_data = float(short((read_buffer[4]<<8) | read_buffer[3]))/100.0f;
 //        cout << gimbal_data<< endl;
         success_ = true;
         return 1;

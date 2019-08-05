@@ -149,7 +149,6 @@ void SolveAngle::getBuffAngle(bool flag, vector<Point2f> &image_point, float bal
                               , float buff_angle, float pre_angle, float gimbal_pitch
                               , float &angle_x, float &angle_y, float &dist)
 {
-    INFO(gimbal_pitch);
     // 姿态结算
     solvePnP(objectPoints, image_point, cameraMatrix, distCoeffs, rvec, tvec);
     // 距离解算 参考能量机关尺寸

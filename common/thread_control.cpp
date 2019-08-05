@@ -93,22 +93,25 @@ void ThreadControl::GetSTM32()
     float raw_gimbal_yaw, dst_gimbal_yaw;
     bool mode = 0;
     bool color = 0;
-    int cnt=0;
+    int yaw_offset = 0;
+    int pit_offset = 0;
     while(1){
         while(static_cast<int>(gimbal_data_index - consumption_index) >= BUFFER_SIZE)
             END_THREAD;
 
-        serial_.read_data(&rx_data, mode, color, raw_gimbal_yaw);
+        serial_.read_data(&rx_data, mode, color, yaw_offset, pit_offset);
         other_param.mode = mode;
         other_param.color = color;
-        GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
-        float gimbal_data = dst_gimbal_yaw;
-//        INFO(dst_gimbal_yaw);
-        other_param.gimbal_data = gimbal_data;
+        other_param.buff_offset_x = yaw_offset;
+        other_param.buff_offset_y = pit_offset;
+//        GimDataPro.ProcessGimbalData(raw_gimbal_yaw, dst_gimbal_yaw);
+//        float gimbal_data = dst_gimbal_yaw;
+//        //        INFO(dst_gimbal_yaw);
+//        other_param.gimbal_data = gimbal_data;
 
         if((gimbal_data_index%50)==0)
         {
-            printf("Id: %d, Mode: %d, Color: %d\r\n", gimbal_data_index, mode, color);
+            printf("Id: %d, Mode: %d, Color: %d, x:%d, y:%d\r\n", gimbal_data_index, mode, color, yaw_offset, pit_offset);
         }
 
 #ifdef DEBUG_PLOT
@@ -163,15 +166,19 @@ void ThreadControl::ImageProcess()
     createTrackbar("fire_max_cnt","BuffParam",&buff_detector.auto_control.fire_task.max_cnt_,200);
     createTrackbar("reset_cnt","BuffParam",&buff_detector.auto_control.reset_task.max_cnt_,200);
     createTrackbar("repeat_time","BuffParam",&buff_detector.auto_control.fire_task.repeat_time,2000);
-    createTrackbar("no fire","BuffParam",&buff_detector.auto_control.fire_task.fire_flag,1);
-    createTrackbar("no repeat fire","BuffParam",&buff_detector.auto_control.fire_task.repeat_fire_flag,1);
+    createTrackbar("fire","BuffParam",&buff_detector.auto_control.fire_task.fire_flag,1);
+    createTrackbar("repeat fire","BuffParam",&buff_detector.auto_control.fire_task.repeat_fire_flag,1);
 #endif
 #ifdef DEBUG_VIDEO
 #if(DEBUG_VIDEO == 0)
     VideoCapture cap("../Videos/test.avi");
 #else
-    VideoCapture cap("../Videos/RM/8.3-NO1-buff/8.3-infantry1-buff-test.avi");
+    VideoCapture cap;
+    int index;
+    cap.open("../Videos/test.avi");
     //    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
+    int aaa=(int)cap.get(CV_CAP_PROP_FRAME_COUNT);
+    INFO(aaa);
 #endif
 #endif
 
@@ -216,6 +223,10 @@ void ThreadControl::ImageProcess()
             other_param.cap_mode = 1;
 #endif
             ++consumption_index;
+            if(last_mode==0){
+                buff_detector.readXML();
+
+            }
             command = buff_detector.BuffDetectTask(image, other_param);
             if(command)
             {
@@ -223,10 +234,14 @@ void ThreadControl::ImageProcess()
                 distance = buff_detector.getDistance();
             }
         }
-
+        if(last_mode == 1 && other_param.mode == 0){
+            buff_detector.writeXML();
+        }
+        last_mode = other_param.mode;
         limit_angle(angle_x, 90);
         static bool fast_flag = false;
 #ifdef GET_STM32_THREAD
+//        INFO(command);
         tx_data.get_xy_data(-angle_x*32767/90, -angle_y*32767/90,command);
         serial_.send_data(tx_data);
 #endif
