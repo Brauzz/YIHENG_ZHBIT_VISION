@@ -451,7 +451,7 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
             solve_angle_long_.getAngle(points_2d_, 15,angle_x_, angle_y_ ,distance_);   // pnp姿态结算
 #endif
         }
-        angle_x_ = kalman.run(angle_x_);
+//        angle_x_ = kalman.run(angle_x_);
 
 #ifdef DEBUG_PLOT //0紫 1橙
         w_->addPoint(distance_, 0);
@@ -493,6 +493,8 @@ int ArmorDetector::ArmorDetectTask(Mat &img,OtherParam other_param)
         // ------ 二次拟合数据 ------
         angle_x_ = predict_angle_x;
 #endif
+        if(distance_ > 5000)
+            return 0;
         return 1;
 
     }else

@@ -38,7 +38,7 @@ galaxy_0.xml"
 #define GALAXY
 //#define DEBUG_PLOT
 //****** 线程使能 *****
-#define SHORT_CAMERA_ENABLE 0
+#define SHORT_CAMERA_ENABLE 1
 #define LONG_CAMERA_ENABLE  1
 #define GET_STM32_THREAD
 //****** 装甲板识别配置 *****
@@ -80,12 +80,12 @@ camera4mm_5.xml"
 #define PTZ_TO_BARREL 0.0f   // 补兵激光在２３ｍｍ下方
 
 //****** 笔记本调试相关参数 *****
-#define DEBUG_VIDEO 1
-#define FORCE_CHANGE_CAMERA
+//#define DEBUG_VIDEO 1
+//#define FORCE_CHANGE_CAMERA
 struct OtherParam
 {
     int color = 1;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
-    int mode = 1;        // 视觉模式，0是自瞄模式，1是能量机关模式
+    int mode = 0;        // 视觉模式，0是自瞄模式，1是能量机关模式
     int cap_mode = 1;    // 摄像头类型，0是短焦摄像头，1是长焦摄像头
     float gimbal_data;
 };
