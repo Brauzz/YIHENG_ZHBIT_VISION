@@ -7,7 +7,7 @@
 // 资源岛测试快速宏定义-<<<----------------
 #define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
 galaxy_0.xml"
-//#define SAVE_VIDEO_THREAD
+#define SAVE_VIDEO_THREAD
 #define WAITKEY 1
 #define IMAGESHOW
 // 能量机关自动控制项
@@ -38,7 +38,7 @@ galaxy_0.xml"
 #define GALAXY
 //#define DEBUG_PLOT
 //****** 线程使能 *****
-#define SHORT_CAMERA_ENABLE 1
+#define SHORT_CAMERA_ENABLE 0
 #define LONG_CAMERA_ENABLE  1
 #define GET_STM32_THREAD
 //****** 装甲板识别配置 *****

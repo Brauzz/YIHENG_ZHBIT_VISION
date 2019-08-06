@@ -383,7 +383,7 @@ bool ArmorDetector::DetectArmor(Mat &img, Rect roi_rect)
         // 计算当前装甲板类型，到后面task中还有滤波，可以有误差
         float armor_h = target.rect.height;
         float armor_w = target.rect.width;
-        if(armor_w / armor_h < 3.0f)
+        if(armor_w / armor_h < 3.3f)
             is_small_ = 1;
         else
             is_small_ = 0;
