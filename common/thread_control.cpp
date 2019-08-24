@@ -173,11 +173,11 @@ void ThreadControl::ImageProcess()
 #endif
 #ifdef DEBUG_VIDEO
 #if(DEBUG_VIDEO == 0)
-    VideoCapture cap("../Videos/test.avi");
+    VideoCapture cap(ARMOR_VIDEO_PATH);
 #else
     VideoCapture cap;
     int index;
-    cap.open("../Videos/test.avi");
+    cap.open(BUFF_VIDEO_PATH);
     //    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
 //    int aaa=(int)cap.get(CV_CAP_PROP_FRAME_COUNT);
 //    INFO(aaa);

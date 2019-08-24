@@ -81,6 +81,8 @@ camera4mm_5.xml"
 //****** 笔记本调试相关参数 *****
 #define DEBUG_VIDEO 1
 //#define FORCE_CHANGE_CAMERA
+#define ARMOR_VIDEO_PATH "../Videos/test.avi"
+#define BUFF_VIDEO_PATH "../Videos/test.avi"
 struct OtherParam
 {
     int color = 1;       // 我方车辆颜色，0是蓝色，1是红色。用于图像预处理
