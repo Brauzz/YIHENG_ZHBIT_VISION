@@ -3,7 +3,8 @@
 [![Gitter](https://badges.gitter.im/RoboMaster/RoboRTS.svg)](https://gitter.im/RoboMaster/RoboRTS?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 ## 介绍
-
+* weibo: [@草依山](http://weibo.com/ihubo)
+* twitter: [@ihubo](http://twitter.com/ihubo)
 <img src="images/robot.jpg" style="zoom:100%;display: inline-block; float:middle"/>
 
 RoboRTS is an open source software stack for Real-Time Strategy research on mobile robots, developed by RoboMaster and motivated by [RoboMaster AI Challenge](#competition)
