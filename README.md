@@ -1,36 +1,46 @@
-# 北理珠毅恒步兵视觉开源方案　YIHENG_ZHBIT_VISION
-[![Build Status](https://travis-ci.org/RoboMaster/RoboRTS.svg?branch=master)](https://travis-ci.org/RoboMaster/RoboRTS)
-[![Gitter](https://badges.gitter.im/RoboMaster/RoboRTS.svg)](https://gitter.im/RoboMaster/RoboRTS?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+----------
+**Robomaster2019全国赛北理珠毅恒团队步兵视觉**
+![enter description here](./images/ZZP_0896.JPG)
 
-## 介绍
-* weibo: [@草依山](http://weibo.com/ihubo)
-* twitter: [@ihubo](http://twitter.com/ihubo)
-<img src="images/robot.jpg" style="zoom:100%;display: inline-block; float:middle"/>
+ 1. **功能介绍**
+·本开源项目中Robomaster2019装甲板视觉识别和能量机关视觉识别。
+·自定义串口通讯协议与stm32进行通讯控制云台运动。
+·自动击打能量机关的控制逻辑。
+·基于Qcustomplot编写的绘制波形的上位机，可实时上传数据并显示
 
-RoboRTS is an open source software stack for Real-Time Strategy research on mobile robots, developed by RoboMaster and motivated by [RoboMaster AI Challenge](#competition)
 
-The framework of RoboRTS consists two parts: autonomous mobile robot layer and intelligent decision-making layer.
+ 2. **效果展示**
+·装甲板识别
+普通相机选用了4mm焦距640x360分辨率，可识别0m至2m装甲板，工业相机选用6mm焦距640x480分辨率，可识别1m至7m装甲板。装甲板识别预处理采用ICRA的颜色包围灰度灯条的思想，利用选择最小强度的方式，大大降低了低分辨率内八误识别问题。整体算法识别采用多线程，跑一帧图像1ms，加入roi可降至0.3ms满足实时性。
 
-<img src="images/system.png" style="zoom:80%;display: inline-block; float:middle"/>
+·能量机关识别
+能量机关采用传统方法，处理单帧图像在1.5ms左右
 
-The autonomous mobile robot layer alone can let a robot, offically supported for RoboMaster AI Robot platform, to demonstrate a certain level of intelligence. On its on-board computer runs perception, motion planning, decision modules. It is fully supported in ROS with community driven as well as platform-customized codes and examples. On its MCU, an RT low-level robot controller is implemented to govern the robot driving system.  
+ 3. **依赖工具、软硬件环境**
+软件运行环境：
+•	ubuntu 16.04
+•	OpenCV 3.4.6
+•	Qt Creator 5.10.1
+•	CMake 3.5.1
+•	GCC 5.4.0
+硬件
+·免驱摄像头
+·USB转TTL串口
 
-**TODO:** Intelligent decision-making layer includes a multi-agent decision-making framework and a game simulator, it will be released soon in the future.
 
-## Tutorial
+ 4. **编译、安装方式**
+利用Qmake进行编译
 
-For more information about RoboMaster AI Robot platform and RoboRTS framework, please refer to [RoboRTS Tutorial](https://robomaster.github.io/RoboRTS-Tutorial/#/)
+ 5. **文件目录结构及文件用途说明**
 
-## Competition
 
-RoboMaster holds AI Challenge since 2017. In the challenge, multiple robots should fight with each other on a game field automatically under different rules.
+ 6. **软件与硬件的系统框图，数据流图**
 
-For more information, please refer to
 
-- [DJI RoboMaster 2019 ICRA AI Challenge](https://icra2019.org/competitions/dji-robomaster-ai-challenge)
+ 7. **原理介绍与理论支持分析**
 
-- [DJI RoboMaster 2018 ICRA AI Challenge](https://icra2018.org/dji-robomaster-ai-challenge/)
 
-## Copyright and License
+ 8. **软件架构**
 
-RoboRTS is provided under the [GPL-v3](COPYING).
+
+ 9. **未来优化的方向（RoadMap）**
