@@ -1,8 +1,8 @@
-# RoboRTS
+# 北理珠毅恒步兵视觉开源方案　YIHENG_ZHBIT_VISION
 [![Build Status](https://travis-ci.org/RoboMaster/RoboRTS.svg?branch=master)](https://travis-ci.org/RoboMaster/RoboRTS)
 [![Gitter](https://badges.gitter.im/RoboMaster/RoboRTS.svg)](https://gitter.im/RoboMaster/RoboRTS?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-## Introduction
+## 介绍
 
 <img src="images/robot.jpg" style="zoom:100%;display: inline-block; float:middle"/>
 
