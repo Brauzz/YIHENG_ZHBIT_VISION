@@ -1,6 +1,6 @@
 ----------
 **Robomaster2019全国赛北理珠毅恒团队步兵视觉**
-![enter description here](./images/ZZP_0896.JPG)
+![步兵](./images/ZZP_0896.JPG)
 
  1. **功能介绍**
 ·本开源项目中Robomaster2019装甲板视觉识别和能量机关视觉识别。
