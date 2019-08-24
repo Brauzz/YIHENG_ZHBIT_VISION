@@ -21,6 +21,8 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include "base.h"
+
+#ifndef CANCLE_GALAXY
 CameraDevice::CameraDevice()
 {
     status = GX_STATUS_SUCCESS;
@@ -130,7 +132,7 @@ uint64_t CameraDevice::getFrameNumber()
 {
     return nFrameNum;
 }
-
+#endif
 
 //---------------------- v4l2 -----------------------
 CaptureVideo::CaptureVideo(const char* device, unsigned int in_size_buffer):video_path(device)

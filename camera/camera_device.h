@@ -17,10 +17,15 @@
 #pragma once
 
 #include <opencv2/opencv.hpp>
-#include "GxIAPI.h"
-#include "DxImageProc.h"
+#include "base.h"
+
 using namespace cv;
 using namespace std;
+
+#ifndef CANCLE_GALAXY
+#include "GxIAPI.h"
+#include "DxImageProc.h"
+
 // ---------------------------- galaxy ----------------------------
 class CameraDevice
 {
@@ -39,6 +44,7 @@ private:
     Mat src;
     uint64_t nFrameNum;
 };
+#endif
 
 
 //----------------------------- v4l2 ------------------------------

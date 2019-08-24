@@ -2,7 +2,7 @@
 #include "iostream"
 #include "opencv2/opencv.hpp"
 
-#define ROBOT_TYPE INFANTRY // INFANTRY HERO
+#define CANCLE_GALAXY   // 取消工业相机宏定义
 
 // 资源岛测试快速宏定义-<<<----------------
 #define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
@@ -34,12 +34,12 @@ galaxy_0.xml"
 #define GALAXY_EXPOSURE_TIME 1500
 // 资源岛测试快速宏定义-<<<----------------
 // ****** 整个系统的调试  ******//
-#define GALAXY
+//#define GALAXY
 //#define DEBUG_PLOT
 //****** 线程使能 *****
 #define SHORT_CAMERA_ENABLE 0
-#define LONG_CAMERA_ENABLE  1
-#define GET_STM32_THREAD
+#define LONG_CAMERA_ENABLE  0
+//#define GET_STM32_THREAD
 //****** 装甲板识别配置 *****
 #define ARMOR_TRACK_BAR
 #define DEBUG_ARMOR_DETECT

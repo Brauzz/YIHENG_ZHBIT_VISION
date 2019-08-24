@@ -40,11 +40,11 @@ INCLUDEPATH += /usr/local/include/opencv2/contrib
 LIBS += `pkg-config opencv --cflags --libs`
 
 
-LIBS += -lgxiapi \
--ldximageproc
+#LIBS += -lgxiapi \
+#-ldximageproc
 
-INCLUDEPATH += ../dhcam_install_20181107/dh_camera/daheng-sdk-x64/sdk/genicam/library/CPP/include
-INCLUDEPATH += ../dhcam_install_20181107/dh_camera/daheng-sdk-x64/sdk/include
+#INCLUDEPATH += ../dhcam_install_20181107/dh_camera/daheng-sdk-x64/sdk/genicam/library/CPP/include
+#INCLUDEPATH += ../dhcam_install_20181107/dh_camera/daheng-sdk-x64/sdk/include
 
 
 HEADERS += \
