@@ -63,17 +63,21 @@ public:
         else
             circle(img, small_rect_.center, 3, Scalar(255, 255, 255), 1);
     }
-    void UpdateOrder();
-    void KnowYourself(Mat &img);
 
-    RotatedRect small_rect_;
-    RotatedRect big_rect_;
-    vector<Point2f> points_2d_;
+    void UpdateOrder(); // 更新能量机关装甲板的绝对位置
+    void KnowYourself(Mat &img);    //判断能量机关扇叶的状态（激活　未激活）
+
+    RotatedRect small_rect_;    // 能量机关扇叶内轮廓
+    RotatedRect big_rect_;  // 能量机关扇叶外轮廓
+    vector<Point2f> points_2d_; // ｐｎｐ角度解算的四个点
     float angle_;
     float diff_angle;
     int type_ = UNKOWN;
 };
 
+/**
+ * @brief 能量机关自动开火任务
+ */
 class FireTask{
 public:
     FireTask(){}
@@ -173,6 +177,9 @@ public:
     float limit_anlge_y_ = 2.0f;
 };
 
+/**
+ * @brief 能量机关复位任务
+ */
 class ResetTask{
 public:
     ResetTask(){}
@@ -200,7 +207,9 @@ public:
     int max_cnt_ = 30;   // 最大丢失目标次数
 };
 
-
+/**
+ * @brief 能量机关自动控制
+ */
 class AutoControl
 {
 public:
@@ -302,7 +311,7 @@ class BuffDetector
 public:
     BuffDetector(){
         solve_angle_long_ = SolveAngle(CAMERA1_FILEPATH, LONG_X, LONG_Y, LONG_Z, PTZ_TO_BARREL);
-        readXML();
+        readXML();  // 读取调整参数
     }
     ~BuffDetector(){}
     void DebugPlotInit(MainWindow *w){
@@ -322,6 +331,12 @@ public:
     float getDistance(){
         return distance_;
     }
+
+    /**
+     * @brief 判断方向
+     * @param 输入能量机关角度
+     * @return
+     */
     int getSimpleDirection(float angle);
 
     void readXML(){
@@ -370,6 +385,7 @@ public:
     float buff_angle_ = 0;
     float diff_angle_ = 0;
     int area_ratio_ = 500;
+
     //相关类申明
     AutoControl auto_control;
 private:

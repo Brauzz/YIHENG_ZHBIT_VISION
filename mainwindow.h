@@ -17,9 +17,10 @@ public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
-    void addPoint(double x, int y);
-    void clearData();
-    void plot();
+
+    void addPoint(double x, int y); // 增加数据
+    void clearData();     // 清楚数据
+    void plot(); // 画曲线
 
 
 private slots:

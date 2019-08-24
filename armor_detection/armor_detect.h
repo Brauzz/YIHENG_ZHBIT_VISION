@@ -80,18 +80,24 @@ public:
 };
 
 
-
+/**
+ * @brief 装甲板检测器
+ */
 class ArmorDetector
 {
 public:
     ArmorDetector(){
-        solve_angle_ = SolveAngle(CAMERA0_FILEPATH, SHOR_X, SHOR_Y, SHOR_Z, PTZ_TO_BARREL);
-        solve_angle_long_ = SolveAngle(CAMERA1_FILEPATH, LONG_X, LONG_Y, LONG_Z, PTZ_TO_BARREL);
-        predict_ = Predictor(30);
-        zeyu_predict_ = ZeYuPredict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);
+        solve_angle_ = SolveAngle(CAMERA0_FILEPATH, SHOR_X, SHOR_Y, SHOR_Z, PTZ_TO_BARREL); // 短焦角度解算
+        solve_angle_long_ = SolveAngle(CAMERA1_FILEPATH, LONG_X, LONG_Y, LONG_Z, PTZ_TO_BARREL); // 长焦角度解算
+        predict_ = Predictor(30); // 二次多项式拟合（国赛停用）
+        zeyu_predict_ = ZeYuPredict(0.01f, 0.01f, 0.01f, 0.01f, 1.0f, 3.0f);    // 二阶ｋａｌｍａｎ预测，视觉（国赛停用）
         t_start_ = getTickCount();
     }
     ~ArmorDetector(){}
+
+    /**
+     * @brief 上位机初始化
+     */
     void DebugPlotInit(MainWindow *w){
         w_ = w;
     }
@@ -168,9 +174,12 @@ private:
     }
 
 private:
+    // 外部参数
     int color_;
     int cap_mode_;
+
 public:
+    // ｋａｌｍａｎ滤波预测参数
     int km_Qp_ = 1000;
     int km_Qv_ = 1;
     int km_Rp_ = 1;
@@ -180,7 +189,9 @@ public:
     float last_angle = 0;
     float last_v = 0;
     float last_last_v = 0;
+
 public:
+    // 调试参数
     int short_offset_x_ = 100;
     int short_offset_y_ = 100;
     int long_offset_x_ = 100;
@@ -188,7 +199,9 @@ public:
     int color_th_ = 16;
     int gray_th_ = 60;
 
+
 private:
+    // 相关类声明
     SolveAngle solve_angle_;
     SolveAngle solve_angle_long_;
     ZeYuPredict zeyu_predict_;
@@ -196,23 +209,27 @@ private:
     double t_start_;
     MainWindow *w_;
     Kalman1 kalman;
+
 private:
+    // ｒｏｉ参数
     Rect last_target_;
     int lost_cnt_ = 0;
     int detect_cnt_ = 0;
+
 private:
-    float dist_ = 3000;
-    float r_ = 0.5;
-    int update_cap_cnt = 0;
+    float dist_ = 3000; // 通过距离更换相机
+    float r_ = 0.5; // 距离刷新率 (0-1)
+    int update_cap_cnt = 0; // 用于强制限制相机更新频率
     float distance_ = 0;
     float angle_x_ = 0;
     float angle_y_ = 0;
-    bool is_small_;
     vector<Point2f> points_2d_;
 
 private:
+    // 判断大小装甲板类型相关参数
     std::list<bool> history_;
     int filter_size_ = 5;
+    bool is_small_;
 
 };
 

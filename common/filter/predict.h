@@ -19,6 +19,7 @@
 #include <list>
 using namespace cv;
 
+// 二阶ｋａｌｍａｎ滤波
 class ZeYuPredict
 {
 public:
@@ -60,7 +61,7 @@ private:
 };
 
 
-
+// 一阶ｋａｌｍａｎ滤波
 class Kalman1
 {
 public:
@@ -120,7 +121,7 @@ public:
 
 
 
-
+// 二次拟合
 class Predictor {
 public:
     Predictor(int _history_size = 5)

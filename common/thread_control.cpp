@@ -74,9 +74,9 @@ void ThreadControl::ImageProduce()
 #endif
 #if(LONG_CAMERA_ENABLE)
 #ifdef GALAXY
-            galaxy.getImage(image_);
+            galaxy.getImage(image_);    // 工业相机获取图像
 #else
-            long_camera >> image_;
+            long_camera >> image_;      // 普通长焦相机获得图像
 #endif
 #endif
         ++produce_index;
@@ -89,7 +89,7 @@ void ThreadControl::GetSTM32()
 {
     cout << " ------ STM32 DATA RECEVICE TASK ON !!! ------" << endl;
     serial_receive_data rx_data;        // 串口接收stm32数据结构
-    GimbalDataProcess GimDataPro;
+//    GimbalDataProcess GimDataPro;
     float raw_gimbal_yaw, dst_gimbal_yaw;
     bool mode = 0;
     bool color = 0;
@@ -148,6 +148,7 @@ void ThreadControl::ImageProcess()
 #endif
     serial_transmit_data tx_data;       // 串口发送stm32数据结构
 #ifdef ARMOR_TRACK_BAR
+    // 装甲板调试参数
     namedWindow("ArmorParam");
     createTrackbar("armor_gray_th", "ArmorParam", &armor_detector.gray_th_, 255);
     createTrackbar("armor_color_th", "ArmorParam", &armor_detector.color_th_, 255);
@@ -157,6 +158,7 @@ void ThreadControl::ImageProcess()
     createTrackbar("long_offset_y","ArmorParam",&armor_detector.long_offset_y_,200);
 #endif
 #ifdef BUFF_TRACK_BAR
+    // 能量机关调试参数
     namedWindow("BuffParam");
     createTrackbar("buff_gray_th", "BuffParam", &buff_detector.gray_th_, 255);
     createTrackbar("buff_color_th", "BuffParam", &buff_detector.color_th_, 255);
@@ -177,15 +179,15 @@ void ThreadControl::ImageProcess()
     int index;
     cap.open("../Videos/test.avi");
     //    cap.set(CV_CAP_PROP_POS_FRAMES, 9500);
-    int aaa=(int)cap.get(CV_CAP_PROP_FRAME_COUNT);
-    INFO(aaa);
+//    int aaa=(int)cap.get(CV_CAP_PROP_FRAME_COUNT);
+//    INFO(aaa);
 #endif
 #endif
 
     Mat image;
     float angle_x = 0.0, angle_y = 0.0, distance =  0.0;
     int command = 0;
-    char key;
+    char key = '\0';
     bool dir = false;
     while(1)
     {

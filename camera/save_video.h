@@ -2,7 +2,9 @@
 #include <opencv2/opencv.hpp>
 
 using namespace cv;
-
+/**
+ * @brief 保存视频类
+ */
 class SaveVideo
 {
 public:

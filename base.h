@@ -7,7 +7,7 @@
 // 资源岛测试快速宏定义-<<<----------------
 #define CAMERA1_FILEPATH "../rm-vision/camera/camera_param/\
 galaxy_0.xml"
-#define SAVE_VIDEO_THREAD
+//#define SAVE_VIDEO_THREAD
 #define WAITKEY 1
 #define IMAGESHOW
 // 能量机关自动控制项
@@ -21,11 +21,11 @@ galaxy_0.xml"
 #define WORLD_OFFSET_X 750
 #define COLOR_TH 20
 
-#define FIRE_CNT 30
-#define RESET_CNT 30
-#define REPEAT_FIRE_TIME 1000
+#define FIRE_CNT 30             // 越小响应越快
+#define RESET_CNT 30            // 丢失目标复位计数 越小响应越快
+#define REPEAT_FIRE_TIME 1000   // 重复发射时间，单位ｍｓ
 #define FIRE_LIMIT_ANGLE 2.0f
-#define RESET_ANGLE -10 // 1:-20 else: -10
+#define RESET_ANGLE -10 // 1:-20 else: -10  // 复位绝对角度
 // 固定状态
 #define BULLET_SPEED 28.5
 #define BUFF_H 800
@@ -33,7 +33,6 @@ galaxy_0.xml"
 
 #define GALAXY_EXPOSURE_TIME 1500
 // 资源岛测试快速宏定义-<<<----------------
-
 // ****** 整个系统的调试  ******//
 #define GALAXY
 //#define DEBUG_PLOT
@@ -80,7 +79,7 @@ camera4mm_5.xml"
 #define PTZ_TO_BARREL 0.0f   // 补兵激光在２３ｍｍ下方
 
 //****** 笔记本调试相关参数 *****
-//#define DEBUG_VIDEO 1
+#define DEBUG_VIDEO 1
 //#define FORCE_CHANGE_CAMERA
 struct OtherParam
 {
