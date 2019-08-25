@@ -37,7 +37,7 @@
 
 ![视觉识别](./images/autovision.gif)
 
-![自瞄效果](./images/autoaim_2.gif)
+![自瞄效果](./images/autoaim.gif)
 
 # 能量机关识别
 能量机关采用传统方法，处理单帧图像在1.5ms左右
