@@ -1,4 +1,9 @@
 ----------
+最新调试修订2020.2.4
+在调试过程中终端出现很多空的方括号，这是相机内外参矩阵没有读入，可自行修改绝对路径或者若使用QT默认的当前项目目录下创建编译目录，则将`base.h`中将
+`#define CAMERA0_FILEPATH `和`#define CAMERA1_FILEPATH `内容中`rm-vision`改成`rm_vision`可引导到该项目相机参数文件夹中。
+qq群号：976973704
+----------
 # Robomaster2019全国赛北理珠毅恒团队步兵视觉
 ![步兵](./images/ZZP_0896.JPG)
 
@@ -283,6 +288,7 @@ struct OtherParam
 #define CAMERA0_PATH "/dev/camera"
 #define CAMERA1_PATH "/dev/video1"
 ```
+`/dev/camera`和`/dev/video1`查看自己电脑的`/dev/*`做修改
 当需要接摄像头调试的时候需要将`#define SHORT_CAMERA_ENABLE 0`从0至1，不用时则关闭0。
 同理双摄像头长焦相机也是上述方法`#define LONG_CAMERA_ENABLE  0`从0至1，不用时则关闭0
 短焦长焦相机默认使用普通相机，若想使用工业相机只能长焦配置需要取消注释`#define GALAXY`
